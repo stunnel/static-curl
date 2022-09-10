@@ -110,6 +110,7 @@ function compile_ngtcp2 {
 }
 
 function fix {
+    # Didn't know why ld is linking .so files, so delete .so files and softlink .a to .so
     cd /usr/lib
     rm -f libnghttp3.so* libngtcp2.so* libngtcp2_crypto_openssl.so*
     ln -s libnghttp3.a libnghttp3.so
@@ -151,7 +152,7 @@ function compile_curl {
 
     # we only want to save curl here
     mkdir -p ~/release/
-    mv src/curl "~/release/curl-${arch}"
+    mv src/curl ~/release/curl-${arch}
 }
 
 install;
