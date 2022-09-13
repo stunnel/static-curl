@@ -159,6 +159,9 @@ function compile_curl {
     # we only want to save curl here
     mkdir -p ~/release/
     mv src/curl ~/release/curl-${arch}
+
+    cd ~/release/
+    tar -Jcf curl-static-${arch}-${curl_version}.tar.xz curl-${arch}
 }
 
 install;
