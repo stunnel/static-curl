@@ -97,11 +97,6 @@ function compile_ngtcp2 {
     cd "${dir}"
 
     autoreconf -i --force
-    ./configure --prefix="${PREFIX}" --enable-static # --enable-lib-only;
-    make -j$(nproc) check;
-    make install;
-
-    autoreconf -i --force
     ./configure --prefix="${PREFIX}" --enable-static --with-openssl
 
     cp -a crypto/includes/ngtcp2/* /usr/include/ngtcp2/
