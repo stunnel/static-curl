@@ -109,6 +109,12 @@ function compile_ngtcp2 {
     make install;
 }
 
+function fix_x64 {
+    if [ "${arch}" == "amd64" ]; then
+        cp -a /usr/lib64/* /usr/lib/;
+    fi
+}
+
 function fix {
     # Didn't know why ld is linking .so files, so delete .so files and softlink .a to .so
     cd /usr/lib
@@ -158,6 +164,7 @@ function compile_curl {
 install;
 init;
 compile_openssl;
+fix_x64;
 compile_nghttp3;
 compile_ngtcp2;
 fix;
