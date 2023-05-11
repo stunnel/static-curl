@@ -1,9 +1,9 @@
 #!/bin/sh
 
 # to test locally, run one of:
-# docker run --rm -v $(pwd):/tmp -w /tmp -e ARCH=amd64 alpine /tmp/build.sh
-# docker run --rm -v $(pwd):/tmp -w /tmp -e ARCH=aarch64 multiarch/alpine:aarch64-latest-stable /tmp/build.sh
-# docker run --rm -v $(pwd):/tmp -w /tmp -e ARCH=ARCH_HERE ALPINE_IMAGE_HERE /tmp/build.sh
+# docker run --rm -v $(pwd):/mnt -w /mnt -e ARCH=amd64 alpine /mnt/build.sh
+# docker run --rm -v $(pwd):/mnt -w /mnt -e ARCH=aarch64 multiarch/alpine:aarch64-latest-stable /mnt/build.sh
+# docker run --rm -v $(pwd):/mnt -w /mnt -e ARCH=ARCH_HERE ALPINE_IMAGE_HERE /mnt/build.sh
 
 init() {
     arch=$(uname -m)  # x86_64 or aarch64
@@ -62,6 +62,7 @@ change_dir() {
 
 compile_openssl() {
     change_dir;
+    mkdir -p "${PREFIX}/lib/" "${PREFIX}/lib64/" "${PREFIX}/include/";
 
     url=$(url_from_github quictls/openssl)
     filename=${url##*/}
@@ -96,6 +97,7 @@ compile_openssl() {
 compile_libssh2() {
     change_dir;
 
+    mkdir -p "${PREFIX}/lib/" "${PREFIX}/lib64/" "${PREFIX}/include/";
     url=$(url_from_github libssh2/libssh2)
     filename=${url##*/}
     dir=$(echo "${filename}" | sed -E "s/\.tar\.(xz|bz2|gz)//g")
@@ -134,7 +136,8 @@ compile_nghttp2() {
 compile_ngtcp2() {
     change_dir;
 
-    url=$(url_from_github ngtcp2/ngtcp2)
+    # url=$(url_from_github ngtcp2/ngtcp2)
+    url="https://github.com/ngtcp2/ngtcp2/releases/download/v0.14.1/ngtcp2-0.14.1.tar.xz"
     filename=${url##*/}
     dir=$(echo "${filename}" | sed -E "s/\.tar\.(xz|bz2|gz)//g")
     ${wget} "${url}"
