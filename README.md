@@ -1,8 +1,9 @@
-# Static curl
+# Static curl with HTTP3
 
-Static curl binary build with OpenSSL, HTTP3, brotli, zstd, zlib, nghttp2, nghttp3 and ngtcp2.
+Static curl binary built with HTTP3, brotli, and zstd support.
 
-The script will automatically get the latest version of each component. Just run it to compile the latest version.
+The script will automatically retrieve the latest version of each component.  
+Simply execute it to compile the most recent version.
 
 `curl -V`
 - Protocols: dict file ftp ftps gopher gophers http https imap imaps mqtt pop3 pop3s rtsp scp sftp smb smbs smtp smtps telnet tftp ws wss
