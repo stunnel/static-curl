@@ -1,10 +1,12 @@
 #!/bin/sh
 
-# to test locally, run one of:
-# docker run --rm -v $(pwd):/mnt -w /mnt -e ARCH=amd64 alpine /mnt/build.sh
-# docker run --rm -v $(pwd):/mnt -w /mnt -e ARCH=aarch64 multiarch/alpine:aarch64-latest-stable /mnt/build.sh
-# docker run --rm -v $(pwd):/mnt -w /mnt -e ARCH=ARCH_HERE ALPINE_IMAGE_HERE /mnt/build.sh
+# to compile locally, git clone and cd into this repo, then run:
+# docker run --rm -v $(pwd):/mnt -e ARCH=amd64 -e RELEASE_DIR=/mnt alpine sh /mnt/build.sh
+# docker run --rm -v $(pwd):/mnt -e ARCH=aarch64 -e RELEASE_DIR=/mnt multiarch/alpine:aarch64-latest-stable sh /mnt/build.sh
+# docker run --rm -v $(pwd):/mnt -e ARCH=ARCH_HERE -e RELEASE_DIR=/mnt ALPINE_IMAGE_HERE sh /mnt/build.sh
 
+export DIR=${DIR:-/opt} PREFIX="${DIR}/curl" RELEASE_DIR=${RELEASE_DIR:-/mnt}
+export CC=clang CXX=clang++
 
 if [ -z "${ENABLE_DEBUG}" ]; then
     export ENABLE_DEBUG="--enable-debug"
@@ -23,7 +25,6 @@ init() {
     esac
 
     wget="wget -c -q --content-disposition"
-    export CC=clang CXX=clang++ DIR=/mnt PREFIX=/opt/curl
     if [ "${arch}" = "amd64" ]; then
         export PKG_CONFIG_PATH=$PREFIX/lib/pkgconfig:$PREFIX/lib64/pkgconfig:$PKG_CONFIG_PATH
     else
@@ -282,11 +283,10 @@ compile_curl() {
     ls -lh src/curl
     ./src/curl -V
 
-    mkdir -p "${DIR}/release/"
-    mv src/curl "${DIR}/release/curl-${arch}"
-    cd "${DIR}/release/"
-    ln -sf "curl-${arch}" curl;
-    tar -Jcf "curl-static-${arch}-${curl_version}.tar.xz" "curl-${arch}" curl;
+    mkdir -p "${RELEASE_DIR}/release/"
+    ln src/curl "${RELEASE_DIR}/release/curl"
+    cd "${RELEASE_DIR}/release/"
+    tar -Jcf "curl-static-${arch}-${curl_version}.tar.xz" curl;
 }
 
 init;
