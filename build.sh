@@ -5,6 +5,13 @@
 # docker run --rm -v $(pwd):/mnt -w /mnt -e ARCH=aarch64 multiarch/alpine:aarch64-latest-stable /mnt/build.sh
 # docker run --rm -v $(pwd):/mnt -w /mnt -e ARCH=ARCH_HERE ALPINE_IMAGE_HERE /mnt/build.sh
 
+
+if [ -z "${ENABLE_DEBUG}" ]; then
+    export ENABLE_DEBUG="--enable-debug"
+else
+    export ENABLE_DEBUG=""
+fi
+
 init() {
     arch=$(uname -m)  # x86_64 or aarch64
     case "${arch}" in
@@ -249,11 +256,11 @@ curl_config() {
             --enable-ipv6 --enable-unix-sockets \
             --enable-headers-api --enable-versioned-symbols \
             --enable-threaded-resolver --enable-optimize --enable-pthreads \
-            --enable-debug --enable-warnings --enable-werror \
+            --enable-warnings --enable-werror \
             --enable-curldebug --enable-dict --enable-netrc \
             --enable-crypto-auth --enable-tls-srp --enable-dnsshuffle \
             --enable-get-easy-options \
-            --disable-ldap --without-librtmp --without-libpsl;
+            --disable-ldap --without-librtmp --without-libpsl ${ENABLE_DEBUG};
 }
 
 compile_curl() {
