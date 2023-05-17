@@ -11,4 +11,11 @@ The script will automatically get the latest version of each component. Just run
 ## Dependency
 
 - docker
-- alpine
+
+## Compile
+
+To compile locally, clone this repository and navigate to the repository directory, then execute the command.  
+
+`docker run --rm -v $(pwd):/mnt -e RELEASE_DIR=/mnt alpine sh /mnt/build.sh`
+
+The compiled files will be saved in the current "release" directory.
