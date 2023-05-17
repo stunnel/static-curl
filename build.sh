@@ -136,8 +136,8 @@ compile_nghttp2() {
 compile_ngtcp2() {
     change_dir;
 
-    # url=$(url_from_github ngtcp2/ngtcp2)
-    url="https://github.com/ngtcp2/ngtcp2/releases/download/v0.14.1/ngtcp2-0.14.1.tar.xz"
+    url=$(url_from_github ngtcp2/ngtcp2)
+    # url="https://github.com/ngtcp2/ngtcp2/releases/download/v0.14.1/ngtcp2-0.14.1.tar.xz"
     filename=${url##*/}
     dir=$(echo "${filename}" | sed -E "s/\.tar\.(xz|bz2|gz)//g")
     ${wget} "${url}"
