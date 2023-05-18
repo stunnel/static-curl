@@ -1,17 +1,19 @@
 #!/bin/sh
 
 # to compile locally, git clone and cd into this repo, then run:
-# docker run --rm -v $(pwd):/mnt -e ARCH=amd64 -e RELEASE_DIR=/mnt alpine sh /mnt/build.sh
+# docker run --rm -v $(pwd):/mnt -e RELEASE_DIR=/mnt alpine sh /mnt/build.sh
 # docker run --rm -v $(pwd):/mnt -e ARCH=aarch64 -e RELEASE_DIR=/mnt multiarch/alpine:aarch64-latest-stable sh /mnt/build.sh
 # docker run --rm -v $(pwd):/mnt -e ARCH=ARCH_HERE -e RELEASE_DIR=/mnt ALPINE_IMAGE_HERE sh /mnt/build.sh
 
-export DIR=${DIR:-/opt} PREFIX="${DIR}/curl" RELEASE_DIR=${RELEASE_DIR:-/mnt}
+export DIR=${DIR:-/opt}
+export PREFIX="${DIR}/curl"
+export RELEASE_DIR=${RELEASE_DIR:-/mnt}
 export CC=clang CXX=clang++
 
 if [ -z "${ENABLE_DEBUG}" ]; then
-    export ENABLE_DEBUG="--enable-debug"
-else
     export ENABLE_DEBUG=""
+else
+    export ENABLE_DEBUG="--enable-debug"
 fi
 
 init() {
@@ -64,7 +66,7 @@ version_from_github() {
 }
 
 change_dir() {
-    mkdir -p "${DIR}"
+    mkdir -p "${DIR}";
     cd "${DIR}";
 }
 
@@ -75,7 +77,7 @@ compile_openssl() {
     url=$(url_from_github quictls/openssl)
     filename=${url##*/}
     if [ -z "${url}" ]; then
-        openssl_tag_name=$(version_from_github quictls/openssl)  # openssl-3.0.7+quic1
+        openssl_tag_name=$(version_from_github quictls/openssl)  # openssl-3.0.8-quic1
         url="https://github.com/quictls/openssl/archive/refs/tags/${openssl_tag_name}.tar.gz"
         filename=$(curl -sIL "$url" | grep content-disposition | tail -n 1 | grep -oE "openssl\S+\.tar\.gz")
         dir=$(echo "${filename}" | sed -E "s/\.tar\.(xz|bz2|gz)//g")
@@ -137,7 +139,7 @@ compile_nghttp2() {
     PKG_CONFIG="pkg-config --static --with-path=$PREFIX/lib/pkgconfig" \
         ./configure --prefix="${PREFIX}" --enable-static --enable-http3 \
             --enable-lib-only --enable-shared=no;
-    make -j$(nproc);
+    make -j $(nproc) check;
     make install;
 }
 
@@ -160,7 +162,7 @@ compile_ngtcp2() {
 
     mkdir -p "$PREFIX/include/ngtcp2/"
     cp -af crypto/includes/ngtcp2/* "$PREFIX/include/ngtcp2/"
-    make -j$(nproc);
+    make -j $(nproc) check;
     make install;
 }
 
@@ -178,7 +180,7 @@ compile_nghttp3() {
     autoreconf -i --force
     PKG_CONFIG="pkg-config --static --with-path=$PREFIX/lib/pkgconfig" \
         ./configure --prefix="${PREFIX}" --enable-static --enable-shared=no --enable-lib-only;
-    make -j$(nproc);
+    make -j $(nproc) check;
     make install;
 }
 
@@ -228,7 +230,7 @@ compile_zstd() {
     PKG_CONFIG="pkg-config --static --with-path=$PREFIX/lib/pkgconfig" \
         make -j$(nproc) PREFIX=${PREFIX};
     make install;
-    cp -f lib/libzstd.a ${PREFIX}/lib;
+    cp -f lib/libzstd.a ${PREFIX}/lib/libzstd.a;
 }
 
 fix_x64() {
@@ -284,7 +286,7 @@ compile_curl() {
     ./src/curl -V
 
     mkdir -p "${RELEASE_DIR}/release/"
-    ln src/curl "${RELEASE_DIR}/release/curl"
+    cp -f src/curl "${RELEASE_DIR}/release/curl"
     cd "${RELEASE_DIR}/release/"
     tar -Jcf "curl-static-${arch}-${curl_version}.tar.xz" curl;
 }
