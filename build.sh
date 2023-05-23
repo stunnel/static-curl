@@ -314,6 +314,7 @@ compile_curl() {
     ls -lh src/curl
     ./src/curl -V
 
+    echo "${curl_version}" > "${RELEASE_DIR}/version.txt"
     mkdir -p "${RELEASE_DIR}/release/"
     cp -f src/curl "${RELEASE_DIR}/release/curl"
     cd "${RELEASE_DIR}/release/"
