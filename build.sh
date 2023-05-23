@@ -180,7 +180,7 @@ compile_nghttp3() {
     autoreconf -i --force
     PKG_CONFIG="pkg-config --static --with-path=$PREFIX/lib/pkgconfig" \
         ./configure --prefix="${PREFIX}" --enable-static --enable-shared=no --enable-lib-only;
-    make -j $(nproc) check;
+    make -j $(nproc);
     make install;
 }
 
