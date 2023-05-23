@@ -1,22 +1,30 @@
 #!/bin/sh
 
-# to compile locally, git clone and cd into this repo, then run:
+# To compile locally, install Docker, clone the Git repository, navigate to the repository directory,
+# and then execute the following command:
+# sh build.sh
+# script will create a container and compile curl.
+
+# to compile in docker, run:
 # docker run --rm -v $(pwd):/mnt -e RELEASE_DIR=/mnt alpine sh /mnt/build.sh
-# docker run --rm -v $(pwd):/mnt -e ARCH=aarch64 -e RELEASE_DIR=/mnt multiarch/alpine:aarch64-latest-stable sh /mnt/build.sh
-# docker run --rm -v $(pwd):/mnt -e ARCH=ARCH_HERE -e RELEASE_DIR=/mnt ALPINE_IMAGE_HERE sh /mnt/build.sh
 
-export DIR=${DIR:-/opt}
-export PREFIX="${DIR}/curl"
-export RELEASE_DIR=${RELEASE_DIR:-/mnt}
-export CC=clang CXX=clang++
-
-if [ -z "${ENABLE_DEBUG}" ]; then
-    export ENABLE_DEBUG=""
-else
-    export ENABLE_DEBUG="--enable-debug"
-fi
+# or cross compile for aarch64:
+# docker run --rm -v $(pwd):/mnt -e RELEASE_DIR=/mnt multiarch/alpine:aarch64-latest-stable sh /mnt/build.sh
+# You need to setup qemu-user-static on your host machine to run the aarch64 image.
+# references: https://hub.docker.com/r/multiarch/alpine
 
 init() {
+    export DIR=${DIR:-/opt}
+    export PREFIX="${DIR}/curl"
+    export RELEASE_DIR=${RELEASE_DIR:-/mnt}
+    export CC=clang CXX=clang++
+
+    if [ -z "${ENABLE_DEBUG}" ]; then
+        export ENABLE_DEBUG=""
+    else
+        export ENABLE_DEBUG="--enable-debug"
+    fi
+
     arch=$(uname -m)  # x86_64 or aarch64
     case "${arch}" in
         i386)    arch="386" ;;
@@ -25,6 +33,13 @@ init() {
         aarch64) arch="arm64" ;;
         armv7l)  arch="armv6l" ;;
     esac
+
+    echo "Source directory: ${DIR}"
+    echo "Prefix directory: ${PREFIX}"
+    echo "Release directory: ${RELEASE_DIR}"
+    echo "Architecture: ${arch}"
+    echo "Compiler: ${CC} ${CXX}"
+    echo "Curl Debug: ${ENABLE_DEBUG}"
 
     wget="wget -c -q --content-disposition"
     if [ "${arch}" = "amd64" ]; then
@@ -302,8 +317,28 @@ compile_curl() {
     mkdir -p "${RELEASE_DIR}/release/"
     cp -f src/curl "${RELEASE_DIR}/release/curl"
     cd "${RELEASE_DIR}/release/"
-    tar -Jcf "curl-static-${arch}-${curl_version}.tar.xz" curl;
+    tar -Jcf "curl-static-${arch}-${curl_version}.tar.xz" curl && rm -f curl;
 }
+
+if [ ! -f /.dockerenv ]; then
+    current_time=$(date "+%Y%m%d-%H%M%S")
+    logfile_name="build_curl_${current_time}.log"
+    RELEASE_DIR="/mnt"
+    # run in docker
+    cd $(dirname $0);
+    docker run --rm \
+        --name "build_curl_${current_time}" \
+        --network host \
+        -v $(pwd):${RELEASE_DIR} \
+        -e RELEASE_DIR=${RELEASE_DIR} \
+        alpine sh ${RELEASE_DIR}/build.sh 2>&1 | tee -a ${logfile_name}
+    exit 0;
+fi
+
+if [ ! -f /etc/alpine-release ]; then
+    echo "This script only works on Alpine Linux."
+    exit 1;
+fi
 
 init;
 install;
