@@ -59,7 +59,9 @@ install() {
         zlib-static zlib-dev \
         lz4-static lz4-dev \
         libidn2-static libidn2-dev \
-        libunistring-static libunistring-dev
+        libunistring-static libunistring-dev \
+        libssh2-static libssh2-dev \
+        zstd-static zstd-dev
 }
 
 url_from_github() {
@@ -345,10 +347,10 @@ init;
 install;
 set -o errexit;
 compile_openssl;
-compile_libssh2;
+#compile_libssh2;
 compile_nghttp3;
 compile_ngtcp2;
 compile_nghttp2;
 compile_brotli;
-compile_zstd;
+#compile_zstd;
 compile_curl;
