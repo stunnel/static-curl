@@ -53,7 +53,7 @@ install() {
     apk update;
     apk add \
         build-base clang automake cmake autoconf libtool linux-headers \
-        gnupg gpg-agent \
+        gnupg \
         curl wget git jq binutils xz \
         cunit-dev \
         zlib-static zlib-dev \
