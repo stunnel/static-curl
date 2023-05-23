@@ -38,6 +38,7 @@ install() {
     apk update;
     apk add \
         build-base clang automake cmake autoconf libtool linux-headers \
+        gnupg gpg-agent \
         curl wget git jq binutils xz \
         cunit-dev \
         zlib-static zlib-dev \
@@ -266,6 +267,18 @@ curl_config() {
             --disable-ldap --without-librtmp --without-libpsl ${ENABLE_DEBUG};
 }
 
+verify_curl_source() {
+    GPG_KEY="https://daniel.haxx.se/mykey.asc"
+    if [ ! -f mykey.asc ] ; then
+        wget ${GPG_KEY}
+    fi
+
+    gpg --show-keys mykey.asc | grep '^ ' | tr -d ' ' | awk '{print $0":6:"}' > /tmp/ownertrust.txt
+    gpg --import-ownertrust < /tmp/ownertrust.txt > /dev/null
+    gpg --import mykey.asc  > /dev/null
+    gpg --verify ${filename}.asc ${filename}
+}
+
 compile_curl() {
     change_dir;
 
@@ -273,7 +286,8 @@ compile_curl() {
     filename=${url##*/}
     dir=$(echo "${filename}" | sed -E "s/\.tar\.(xz|bz2|gz)//g")
     curl_version=$(echo "${dir}" | cut -d'-' -f 2)
-    ${wget} "${url}"
+    ${wget} "${url}" "${url}.asc"
+    verify_curl_source;
 
     tar -axf "${filename}"
     cd "${dir}"
