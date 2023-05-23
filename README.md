@@ -1,6 +1,6 @@
-# Static curl with HTTP3
+# Static cURL with HTTP3
 
-Static curl binary built with HTTP3, brotli, and zstd support.
+Static cURL binary built with HTTP3, brotli, and zstd support.
 
 The script will automatically retrieve the latest version of each component.  
 Simply execute it to compile the most recent version.
@@ -29,7 +29,7 @@ Simply execute it to compile the most recent version.
 
 - To compile locally, install Docker, clone the Git repository, navigate to the repository directory, and then execute the following command:  
 `sh build.sh`  
-script will create a container and compile curl.
+script will create a container and compile cURL.
 
 - To compile in docker, run:  
 `docker run --rm -v $(pwd):/mnt alpine sh /mnt/build.sh`
