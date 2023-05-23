@@ -27,8 +27,16 @@ Simply execute it to compile the most recent version.
 
 ## Compile
 
-To compile locally, clone this repository and navigate to the repository directory, then execute the command.  
+- To compile locally, install Docker, clone the Git repository, navigate to the repository directory, and then execute the following command:  
+`sh build.sh`  
+script will create a container and compile curl.
 
+- To compile in docker, run:  
 `docker run --rm -v $(pwd):/mnt -e RELEASE_DIR=/mnt alpine sh /mnt/build.sh`
 
-The compiled files will be saved in the current "release" directory.
+- Or cross compile for aarch64:  
+`docker run --rm -v $(pwd):/mnt -e RELEASE_DIR=/mnt multiarch/alpine:aarch64-latest-stable sh /mnt/build.sh`  
+You need to setup `qemu-user-static` on your host machine to run the aarch64 image.  
+references: https://hub.docker.com/r/multiarch/alpine
+
+The compiled files will be saved in the current `release` directory.
