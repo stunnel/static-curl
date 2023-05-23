@@ -14,11 +14,22 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Build Static Curl
+      - name: Build Static Curl amd64
         run: sh build.sh
+
+#      - name: Build Static Curl arm64
+#        run: |
+#          docker run --rm --privileged multiarch/qemu-user-static:register --reset
+#          docker run --rm -v $(pwd):/mnt -e RELEASE_DIR=/mnt multiarch/alpine:aarch64-latest-stable sh /mnt/build.sh
+
+      - name: Set up environment
+        run: |
+          VERSION=`cat release/version.txt`
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
 
       - name: Upload Release Asset
         uses: softprops/action-gh-release@v1
         with:
           files: release/*
+          tag_name: ${{ env.VERSION }}
           token: ${{ secrets.GITHUB_TOKEN }}
