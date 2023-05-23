@@ -14,13 +14,13 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Build Static Curl amd64
+      - name: Build Static cURL amd64
         run: sh build.sh
 
-#      - name: Build Static Curl arm64
-#        run: |
-#          docker run --rm --privileged multiarch/qemu-user-static:register --reset
-#          docker run --rm -v $(pwd):/mnt -e RELEASE_DIR=/mnt multiarch/alpine:aarch64-latest-stable sh /mnt/build.sh
+      - name: Build Static cURL arm64
+        run: |
+          docker run --rm --privileged multiarch/qemu-user-static:register --reset
+          docker run --rm -v $(pwd):/mnt -e RELEASE_DIR=/mnt multiarch/alpine:aarch64-latest-stable sh /mnt/build.sh
 
       - name: Set up environment
         run: |
