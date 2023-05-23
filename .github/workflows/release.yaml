@@ -1,0 +1,24 @@
+name: release
+
+on:
+  # run it manually
+  workflow_dispatch:
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Build Static Curl
+        run: sh build.sh
+
+      - name: Upload Release Asset
+        uses: softprops/action-gh-release@v1
+        with:
+          files: release/*
+          token: ${{ secrets.GITHUB_TOKEN }}
