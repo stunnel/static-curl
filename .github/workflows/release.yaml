@@ -24,12 +24,12 @@ jobs:
 
       - name: Set up environment
         run: |
-          VERSION=`cat release/version.txt`
+          VERSION=`cat version.txt`
           echo "VERSION=$VERSION" >> $GITHUB_ENV
 
       - name: Upload Release Asset
         uses: softprops/action-gh-release@v1
         with:
-          files: release/*
+          files: release/*.tar.xz
           tag_name: ${{ env.VERSION }}
           token: ${{ secrets.GITHUB_TOKEN }}
