@@ -54,7 +54,7 @@ install() {
     apk add \
         build-base clang automake cmake autoconf libtool linux-headers \
         gnupg \
-        curl wget git jq binutils xz \
+        curl wget git jq binutils xz groff \
         cunit-dev \
         zlib-static zlib-dev \
         lz4-static lz4-dev \
