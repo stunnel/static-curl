@@ -14,7 +14,7 @@
 # references: https://hub.docker.com/r/multiarch/alpine
 
 init() {
-    export DIR=${DIR:-/opt}
+    export DIR=${DIR:-/data}
     export PREFIX="${DIR}/curl"
     export RELEASE_DIR=${RELEASE_DIR:-/mnt}
     export CC=clang CXX=clang++
