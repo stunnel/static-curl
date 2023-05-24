@@ -262,7 +262,8 @@ fix_x64() {
 
 curl_config() {
     PKG_CONFIG="pkg-config --static" \
-        ./configure --disable-shared --enable-static \
+        ./configure --prefix="${PREFIX}" \
+            --disable-shared --enable-static \
             --with-openssl --with-brotli --with-zstd \
             --with-nghttp2 --with-nghttp3 --with-ngtcp2 \
             --with-libidn2 --with-libssh2 \
