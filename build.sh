@@ -324,34 +324,42 @@ compile_curl() {
     tar -Jcf "curl-static-${arch}-${curl_version}.tar.xz" curl && rm -f curl;
 }
 
-if [ ! -f /.dockerenv ]; then
-    current_time=$(date "+%Y%m%d-%H%M%S")
-    logfile_name="build_curl_${current_time}.log"
-    RELEASE_DIR="/mnt"
-    # run in docker
-    cd $(dirname $0);
-    docker run --rm \
-        --name "build_curl_${current_time}" \
-        --network host \
-        -v $(pwd):${RELEASE_DIR} \
-        -e RELEASE_DIR=${RELEASE_DIR} \
-        alpine sh ${RELEASE_DIR}/build.sh 2>&1 | tee -a ${logfile_name}
-    exit 0;
-fi
+main() {
+    if [ ! -f /.dockerenv ]; then
+        cd $(dirname $0);
+        base_name=$(basename $0)
+        current_time=$(date "+%Y%m%d-%H%M%S")
+        logfile_name="build_curl_${current_time}.log"
+        RELEASE_DIR=${RELEASE_DIR:-/mnt}
 
-if [ ! -f /etc/alpine-release ]; then
-    echo "This script only works on Alpine Linux."
-    exit 1;
-fi
+        # run in docker
+        docker run --rm \
+            --name "build_curl_${current_time}" \
+            --network host \
+            -v $(pwd):${RELEASE_DIR} \
+            -e RELEASE_DIR=${RELEASE_DIR} \
+            alpine sh ${RELEASE_DIR}/${base_name} 2>&1 | tee -a ${logfile_name}
+        exit 0;
+    fi
 
-init;
-install;
-set -o errexit;
-compile_quictls;
-#compile_libssh2;
-compile_nghttp3;
-compile_ngtcp2;
-compile_nghttp2;
-compile_brotli;
-#compile_zstd;
-compile_curl;
+    if [ ! -f /etc/alpine-release ]; then
+        echo "This script only works on Alpine Linux."
+        exit 1;
+    fi
+
+    init;
+    install;
+    set -o errexit;
+    compile_quictls;
+    #compile_libssh2;
+    compile_nghttp3;
+    compile_ngtcp2;
+    compile_nghttp2;
+    compile_brotli;
+    #compile_zstd;
+    compile_curl;
+}
+
+if [ "${1}" != "--source-only" ]; then
+    main "${@}";
+fi
