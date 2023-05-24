@@ -88,15 +88,15 @@ change_dir() {
     cd "${DIR}";
 }
 
-compile_openssl() {
+compile_quictls() {
     change_dir;
     mkdir -p "${PREFIX}/lib/" "${PREFIX}/lib64/" "${PREFIX}/include/";
 
     url=$(url_from_github quictls/openssl)
     filename=${url##*/}
     if [ -z "${url}" ]; then
-        openssl_tag_name=$(version_from_github quictls/openssl)  # openssl-3.0.8-quic1
-        url="https://github.com/quictls/openssl/archive/refs/tags/${openssl_tag_name}.tar.gz"
+        quictls_tag_name=$(version_from_github quictls/openssl)  # openssl-3.0.8-quic1
+        url="https://github.com/quictls/openssl/archive/refs/tags/${quictls_tag_name}.tar.gz"
         filename=$(curl -sIL "$url" | grep content-disposition | tail -n 1 | grep -oE "openssl\S+\.tar\.gz")
         dir=$(echo "${filename}" | sed -E "s/\.tar\.(xz|bz2|gz)//g")
 
@@ -347,7 +347,7 @@ fi
 init;
 install;
 set -o errexit;
-compile_openssl;
+compile_quictls;
 #compile_libssh2;
 compile_nghttp3;
 compile_ngtcp2;
