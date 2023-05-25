@@ -311,7 +311,7 @@ compile_curl() {
     cd "${dir}"
 
     curl_config;
-    make -j$(nproc) V=1 LDFLAGS="-static -all-static" CFLAGS="-O3";
+    make -j$(nproc) V=1 LDFLAGS="-L${PREFIX}/lib -static -all-static" CFLAGS="-O3";
 
     strip src/curl
     ls -lh src/curl
