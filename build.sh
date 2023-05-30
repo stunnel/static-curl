@@ -38,7 +38,7 @@ init() {
     echo "Compiler: ${CC} ${CXX}"
     echo "Curl Debug: ${ENABLE_DEBUG}"
 
-    wget="wget -c -q --content-disposition"
+    wget="wget -c --content-disposition"
     export PKG_CONFIG_PATH=$PREFIX/lib/pkgconfig:$PREFIX/lib64/pkgconfig:$PKG_CONFIG_PATH
 }
 
