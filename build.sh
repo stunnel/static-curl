@@ -325,30 +325,40 @@ compile_curl() {
 }
 
 main() {
+    # If not in docker, run the script in docker and exit
     if [ ! -f /.dockerenv ]; then
+        echo "Not running in docker, starting a docker container to build cURL."
         cd $(dirname $0);
         base_name=$(basename $0)
         current_time=$(date "+%Y%m%d-%H%M%S")
         logfile_name="build_curl_${current_time}.log"
         RELEASE_DIR=${RELEASE_DIR:-/mnt}
 
-        # run in docker
+        # Run in docker,
+        #   delete the container after running,
+        #   mount the current directory to the container,
+        #   set the RELEASE_DIR env variable,
+        #   log the output to a file.
         docker run --rm \
             --name "build_curl_${current_time}" \
             --network host \
             -v $(pwd):${RELEASE_DIR} \
             -e RELEASE_DIR=${RELEASE_DIR} \
             alpine sh ${RELEASE_DIR}/${base_name} 2>&1 | tee -a ${logfile_name}
+
+        # Exit script after docker finishes
         exit 0;
     fi
 
+    # Check if the script is running in alpine
     if [ ! -f /etc/alpine-release ]; then
         echo "This script only works on Alpine Linux."
         exit 1;
     fi
 
-    init;
-    install;
+    # Compile cURL
+    init;               # Initialize the build env
+    install;            # Install dependencies
     set -o errexit;
     compile_quictls;
     #compile_libssh2;
@@ -360,6 +370,8 @@ main() {
     compile_curl;
 }
 
+# If the first argument is not "--source-only" then run the script,
+# otherwise just provide the functions
 if [ "${1}" != "--source-only" ]; then
     main "${@}";
 fi
