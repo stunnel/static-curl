@@ -27,11 +27,8 @@ init() {
 
     arch=$(uname -m)  # x86_64 or aarch64
     case "${arch}" in
-        i386)    arch="386" ;;
-        i686)    arch="386" ;;
         x86_64)  arch="amd64" ;;
         aarch64) arch="arm64" ;;
-        armv7l)  arch="armv6l" ;;
     esac
 
     echo "Source directory: ${DIR}"
@@ -42,11 +39,7 @@ init() {
     echo "Curl Debug: ${ENABLE_DEBUG}"
 
     wget="wget -c -q --content-disposition"
-    if [ "${arch}" = "amd64" ]; then
-        export PKG_CONFIG_PATH=$PREFIX/lib/pkgconfig:$PREFIX/lib64/pkgconfig:$PKG_CONFIG_PATH
-    else
-        export PKG_CONFIG_PATH=$PREFIX/lib/pkgconfig:$PKG_CONFIG_PATH
-    fi
+    export PKG_CONFIG_PATH=$PREFIX/lib/pkgconfig:$PREFIX/lib64/pkgconfig:$PKG_CONFIG_PATH
 }
 
 install() {
@@ -89,6 +82,7 @@ change_dir() {
 }
 
 compile_quictls() {
+    echo "Compiling quictls..."
     change_dir;
     mkdir -p "${PREFIX}/lib/" "${PREFIX}/lib64/" "${PREFIX}/include/";
 
@@ -119,10 +113,10 @@ compile_quictls() {
         enable-weak-ssl-ciphers;
     make -j "$(nproc)";
     make install_sw;
-    fix_x64;
 }
 
 compile_libssh2() {
+    echo "Compiling libssh2..."
     change_dir;
 
     mkdir -p "${PREFIX}/lib/" "${PREFIX}/lib64/" "${PREFIX}/include/";
@@ -143,6 +137,7 @@ compile_libssh2() {
 }
 
 compile_nghttp2() {
+    echo "Compiling nghttp2..."
     change_dir;
 
     url=$(url_from_github nghttp2/nghttp2)
@@ -162,6 +157,7 @@ compile_nghttp2() {
 }
 
 compile_ngtcp2() {
+    echo "Compiling ngtcp2..."
     change_dir;
 
     url=$(url_from_github ngtcp2/ngtcp2)
@@ -185,6 +181,7 @@ compile_ngtcp2() {
 }
 
 compile_nghttp3() {
+    echo "Compiling nghttp3..."
     change_dir;
 
     url=$(url_from_github ngtcp2/nghttp3)
@@ -203,6 +200,7 @@ compile_nghttp3() {
 }
 
 compile_brotli() {
+    echo "Compiling brotli..."
     change_dir;
 
     url=$(url_from_github google/brotli)
@@ -235,6 +233,7 @@ compile_brotli() {
 }
 
 compile_zstd() {
+    echo "Compiling zstd..."
     change_dir;
 
     url=$(url_from_github facebook/zstd)
@@ -249,15 +248,6 @@ compile_zstd() {
         make -j$(nproc) PREFIX=${PREFIX};
     make install;
     cp -f lib/libzstd.a ${PREFIX}/lib/libzstd.a;
-}
-
-fix_x64() {
-    if [ "${arch}" = "amd64" ]; then
-        if [ ! -d "${PREFIX}/lib" ]; then
-            mkdir -p "${PREFIX}/lib"
-        fi
-        cp -af $PREFIX/lib64/* $PREFIX/lib/;
-    fi
 }
 
 curl_config() {
@@ -311,7 +301,7 @@ compile_curl() {
     cd "${dir}"
 
     curl_config;
-    make -j$(nproc) V=1 LDFLAGS="-L${PREFIX}/lib -static -all-static" CFLAGS="-O3";
+    make -j$(nproc) V=1 LDFLAGS="-L${PREFIX}/lib -L${PREFIX}/lib64 -static -all-static" CFLAGS="-O3";
 
     strip src/curl
     ls -lh src/curl
