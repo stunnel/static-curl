@@ -169,9 +169,9 @@ compile_ngtcp2() {
     cd "${dir}"
 
     autoreconf -i --force
-    PKG_CONFIG="pkg-config --static --with-path=${PREFIX}/lib/pkgconfig" \
-        ./configure --prefix="${PREFIX}" --enable-static --with-openssl \
-            --with-libnghttp3 --enable-lib-only --enable-shared=no;
+    PKG_CONFIG="pkg-config --static --with-path=${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig" \
+        ./configure --prefix="${PREFIX}" --enable-static --with-openssl=${PREFIX} \
+            --with-libnghttp3=${PREFIX} --enable-lib-only --enable-shared=no;
 
     make -j $(nproc) check;
     make install;
