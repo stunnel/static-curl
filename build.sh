@@ -174,8 +174,6 @@ compile_ngtcp2() {
         ./configure --prefix="${PREFIX}" --enable-static --with-openssl \
             --with-libnghttp3 --enable-lib-only --enable-shared=no;
 
-    mkdir -p "$PREFIX/include/ngtcp2/"
-    cp -af crypto/includes/ngtcp2/* "$PREFIX/include/ngtcp2/"
     make -j $(nproc) check;
     make install;
 }
