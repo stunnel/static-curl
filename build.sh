@@ -92,16 +92,17 @@ compile_quictls() {
 
     url=$(url_from_github quictls/openssl)
     filename=${url##*/}
+
     if [ -z "${url}" ]; then
         quictls_tag_name=$(version_from_github quictls/openssl)  # openssl-3.0.8-quic1
         url="https://github.com/quictls/openssl/archive/refs/tags/${quictls_tag_name}.tar.gz"
         filename=$(curl -sIL "$url" | grep content-disposition | tail -n 1 | grep -oE "openssl\S+\.tar\.gz")
-        dir=$(echo "${filename}" | sed -E "s/\.tar\.(xz|bz2|gz)//g")
+    fi
 
-        if [ ! -d "${dir}" ]; then
-            download "${url}"
-            tar -axf "${filename}"
-        fi
+    dir=$(echo "${filename}" | sed -E "s/\.tar\.(xz|bz2|gz)//g")
+    if [ ! -d "${dir}" ]; then
+        download "${url}"
+        tar -axf "${filename}"
     fi
 
     cd "${dir}";
