@@ -308,14 +308,38 @@ compile_curl() {
     make -j$(nproc) V=1 LDFLAGS="-L${PREFIX}/lib -L${PREFIX}/lib64 -static -all-static" CFLAGS="-O3";
 
     strip src/curl
-    ls -lh src/curl
+    ls -l src/curl
     ./src/curl -V
 
     echo "${curl_version}" > "${RELEASE_DIR}/version.txt"
     mkdir -p "${RELEASE_DIR}/release/"
     cp -f src/curl "${RELEASE_DIR}/release/curl"
     cd "${RELEASE_DIR}/release/"
+    create_release_note;
     tar -Jcf "curl-static-${arch}-${curl_version}.tar.xz" curl && rm -f curl;
+}
+
+create_release_note() {
+    echo "Creating release note..."
+    components=$(./curl -V | head -n 1 | sed 's/ /\n/g' | grep '/' | sed 's#^#- #g')
+    protocols=$(./curl -V | grep Protocols | cut -d":" -f2 | sed -e 's/^[[:space:]]*//')
+    features=$(./curl -V | grep Features | cut -d":" -f2 | sed -e 's/^[[:space:]]*//')
+
+    cat > release.md<<EOF
+# Static cURL ${curl_version}
+
+## Components
+
+${components}
+
+## Protocols
+
+${protocols}
+
+## Features
+
+${features}
+EOF
 }
 
 main() {
