@@ -14,21 +14,21 @@
 # references: https://hub.docker.com/r/multiarch/alpine
 
 init() {
-    DIR=${DIR:-/data}
-    PREFIX="${DIR}/curl"
-    RELEASE_DIR=${RELEASE_DIR:-/mnt}
-    CC=clang CXX=clang++
+    export DIR=${DIR:-/data}
+    export PREFIX="${DIR}/curl"
+    export RELEASE_DIR=${RELEASE_DIR:-/mnt}
+    export CC=clang CXX=clang++
 
     if [ -z "${ENABLE_DEBUG}" ]; then
-        ENABLE_DEBUG=""
+        export ENABLE_DEBUG=""
     else
-        ENABLE_DEBUG="--enable-debug"
+        export ENABLE_DEBUG="--enable-debug"
     fi
 
     arch=$(uname -m)  # x86_64 or aarch64
     case "${arch}" in
-        x86_64)  arch="amd64" ;;
-        aarch64) arch="arm64" ;;
+        x86_64)  export arch="amd64" ;;
+        aarch64) export arch="arm64" ;;
     esac
 
     echo "Source directory: ${DIR}"
@@ -38,8 +38,7 @@ init() {
     echo "Compiler: ${CC} ${CXX}"
     echo "Curl Debug: ${ENABLE_DEBUG}"
 
-    wget="wget -c --content-disposition"
-    PKG_CONFIG_PATH=$PREFIX/lib/pkgconfig:$PREFIX/lib64/pkgconfig:$PKG_CONFIG_PATH
+    export PKG_CONFIG_PATH=$PREFIX/lib/pkgconfig:$PREFIX/lib64/pkgconfig:$PKG_CONFIG_PATH
 }
 
 install() {
