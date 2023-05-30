@@ -75,6 +75,11 @@ version_from_github() {
     echo "${release_version}"
 }
 
+download() {
+    echo "Downloading $@..."
+    wget -c --no-verbose --content-disposition "$@"
+}
+
 change_dir() {
     mkdir -p "${DIR}";
     cd "${DIR}";
@@ -94,7 +99,7 @@ compile_quictls() {
         dir=$(echo "${filename}" | sed -E "s/\.tar\.(xz|bz2|gz)//g")
 
         if [ ! -d "${dir}" ]; then
-            ${wget} "${url}"
+            download "${url}"
             tar -axf "${filename}"
         fi
     fi
@@ -122,7 +127,7 @@ compile_libssh2() {
     url=$(url_from_github libssh2/libssh2)
     filename=${url##*/}
     dir=$(echo "${filename}" | sed -E "s/\.tar\.(xz|bz2|gz)//g")
-    ${wget} "${url}"
+    download "${url}"
 
     tar -axf "${filename}"
     cd "${dir}"
@@ -142,7 +147,7 @@ compile_nghttp2() {
     url=$(url_from_github nghttp2/nghttp2)
     filename=${url##*/}
     dir=$(echo "${filename}" | sed -E "s/\.tar\.(xz|bz2|gz)//g")
-    ${wget} "${url}"
+    download "${url}"
 
     tar -axf "${filename}"
     cd "${dir}"
@@ -163,7 +168,7 @@ compile_ngtcp2() {
     # url="https://github.com/ngtcp2/ngtcp2/releases/download/v0.14.1/ngtcp2-0.14.1.tar.xz"
     filename=${url##*/}
     dir=$(echo "${filename}" | sed -E "s/\.tar\.(xz|bz2|gz)//g")
-    ${wget} "${url}"
+    download "${url}"
 
     tar -axf "${filename}"
     cd "${dir}"
@@ -184,7 +189,7 @@ compile_nghttp3() {
     url=$(url_from_github ngtcp2/nghttp3)
     filename=${url##*/}
     dir=$(echo "${filename}" | sed -E "s/\.tar\.(xz|bz2|gz)//g")
-    ${wget} "${url}"
+    download "${url}"
 
     tar -axf "${filename}"
     cd "${dir}"
@@ -209,7 +214,7 @@ compile_brotli() {
         filename="brotli-${brotli_version}.tar.gz"
     fi
     dir=$(echo "${filename}" | sed -E "s/\.tar\.(xz|bz2|gz)//g")
-    ${wget} "${url}"
+    download "${url}"
 
     tar -axf "${filename}"
     cd "${dir}"
@@ -236,7 +241,7 @@ compile_zstd() {
     url=$(url_from_github facebook/zstd)
     filename=${url##*/}
     dir=$(echo "${filename}" | sed -E "s/\.tar\.(xz|bz2|gz)//g")
-    ${wget} "${url}"
+    download "${url}"
 
     tar -axf "${filename}"
     cd "${dir}"
@@ -275,7 +280,7 @@ curl_config() {
 verify_curl_source() {
     GPG_KEY="https://daniel.haxx.se/mykey.asc"
     if [ ! -f mykey.asc ] ; then
-        wget ${GPG_KEY}
+        download ${GPG_KEY}
     fi
 
     gpg --show-keys mykey.asc | grep '^ ' | tr -d ' ' | awk '{print $0":6:"}' > /tmp/ownertrust.txt
@@ -292,7 +297,7 @@ compile_curl() {
     filename=${url##*/}
     dir=$(echo "${filename}" | sed -E "s/\.tar\.(xz|bz2|gz)//g")
     curl_version=$(echo "${dir}" | cut -d'-' -f 2)
-    ${wget} "${url}" "${url}.asc"
+    download "${url}" "${url}.asc"
     verify_curl_source;
 
     tar -axf "${filename}"
