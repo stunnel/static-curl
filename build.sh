@@ -38,7 +38,7 @@ init() {
     echo "Compiler: ${CC} ${CXX}"
     echo "Curl Debug: ${ENABLE_DEBUG}"
 
-    export PKG_CONFIG_PATH=$PREFIX/lib/pkgconfig:$PREFIX/lib64/pkgconfig:$PKG_CONFIG_PATH
+    export PKG_CONFIG_PATH="${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig:${PKG_CONFIG_PATH}"
 }
 
 install() {
@@ -52,12 +52,11 @@ install() {
         lz4-static lz4-dev \
         libidn2-static libidn2-dev \
         libunistring-static libunistring-dev \
-        libssh2-static libssh2-dev \
         zstd-static zstd-dev
 }
 
 url_from_github() {
-    browser_download_urls=$(curl -s "https://api.github.com/repos/${1}/releases" | \
+    browser_download_urls=$(curl -s "https://api.github.com/repos/$1/releases" | \
         jq -r '.[0]' | \
         grep browser_download_url)
 
@@ -88,7 +87,6 @@ change_dir() {
 compile_quictls() {
     echo "Compiling quictls..."
     change_dir;
-    mkdir -p "${PREFIX}/lib/" "${PREFIX}/lib64/" "${PREFIX}/include/";
 
     url=$(url_from_github quictls/openssl)
     filename=${url##*/}
@@ -96,7 +94,7 @@ compile_quictls() {
     if [ -z "${url}" ]; then
         quictls_tag_name=$(version_from_github quictls/openssl)  # openssl-3.0.8-quic1
         url="https://github.com/quictls/openssl/archive/refs/tags/${quictls_tag_name}.tar.gz"
-        filename=$(curl -sIL "$url" | grep content-disposition | tail -n 1 | grep -oE "openssl\S+\.tar\.gz")
+        filename=$(curl -sIL "${url}" | grep content-disposition | tail -n 1 | grep -oE "openssl\S+\.tar\.gz")
     fi
 
     dir=$(echo "${filename}" | sed -E "s/\.tar\.(xz|bz2|gz)//g")
@@ -124,7 +122,6 @@ compile_libssh2() {
     echo "Compiling libssh2..."
     change_dir;
 
-    mkdir -p "${PREFIX}/lib/" "${PREFIX}/lib64/" "${PREFIX}/include/";
     url=$(url_from_github libssh2/libssh2)
     filename=${url##*/}
     dir=$(echo "${filename}" | sed -E "s/\.tar\.(xz|bz2|gz)//g")
@@ -135,8 +132,10 @@ compile_libssh2() {
 
     autoreconf -fi
 
-    PKG_CONFIG="pkg-config --static --with-path=$PREFIX/lib/pkgconfig" \
-        ./configure --prefix="${PREFIX}" --enable-static --enable-shared=no --with-crypto=openssl
+    PKG_CONFIG="pkg-config --static --with-path=${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig" \
+        LDFLAGS="-L${PREFIX}/lib -L${PREFIX}/lib64" CFLAGS="-O3" \
+        ./configure --prefix="${PREFIX}" --enable-static --enable-shared=no \
+            --with-crypto=openssl --with-libssl-prefix=${PREFIX}
     make -j "$(nproc)";
     make install;
 }
@@ -154,7 +153,7 @@ compile_nghttp2() {
     cd "${dir}"
 
     autoreconf -i --force
-    PKG_CONFIG="pkg-config --static --with-path=$PREFIX/lib/pkgconfig" \
+    PKG_CONFIG="pkg-config --static --with-path=${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig" \
         ./configure --prefix="${PREFIX}" --enable-static --enable-http3 \
             --enable-lib-only --enable-shared=no;
     make -j $(nproc) check;
@@ -196,7 +195,7 @@ compile_nghttp3() {
     cd "${dir}"
 
     autoreconf -i --force
-    PKG_CONFIG="pkg-config --static --with-path=$PREFIX/lib/pkgconfig" \
+    PKG_CONFIG="pkg-config --static --with-path=${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig" \
         ./configure --prefix="${PREFIX}" --enable-static --enable-shared=no --enable-lib-only;
     make -j $(nproc);
     make install;
@@ -223,9 +222,9 @@ compile_brotli() {
     mkdir -p out
     cd out/
 
-    PKG_CONFIG="pkg-config --static --with-path=$PREFIX/lib/pkgconfig" \
+    PKG_CONFIG="pkg-config --static --with-path=${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig" \
         cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${PREFIX} ..;
-    PKG_CONFIG="pkg-config --static --with-path=$PREFIX/lib/pkgconfig" \
+    PKG_CONFIG="pkg-config --static --with-path=${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig" \
         cmake --build . --config Release --target install;
 
     make install;
@@ -247,7 +246,7 @@ compile_zstd() {
     tar -axf "${filename}"
     cd "${dir}"
 
-    PKG_CONFIG="pkg-config --static --with-path=$PREFIX/lib/pkgconfig" \
+    PKG_CONFIG="pkg-config --static --with-path=${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig" \
         make -j$(nproc) PREFIX=${PREFIX};
     make install;
     cp -f lib/libzstd.a ${PREFIX}/lib/libzstd.a;
@@ -379,7 +378,7 @@ main() {
     install;            # Install dependencies
     set -o errexit;
     compile_quictls;
-    #compile_libssh2;
+    compile_libssh2;
     compile_nghttp3;
     compile_ngtcp2;
     compile_nghttp2;
@@ -390,6 +389,6 @@ main() {
 
 # If the first argument is not "--source-only" then run the script,
 # otherwise just provide the functions
-if [ "${1}" != "--source-only" ]; then
-    main "${@}";
+if [ "$1" != "--source-only" ]; then
+    main "$@";
 fi
