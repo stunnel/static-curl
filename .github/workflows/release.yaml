@@ -20,7 +20,7 @@ jobs:
       - name: Build Static cURL arm64
         run: |
           docker run --rm --privileged multiarch/qemu-user-static:register --reset
-          docker run --rm -v $(pwd):/mnt -e RELEASE_DIR=/mnt multiarch/alpine:aarch64-latest-stable sh /mnt/build.sh
+          docker run --rm -v $(pwd):/mnt -e RELEASE_DIR=/mnt multiarch/alpine:arm64-edge sh /mnt/build.sh
 
       - name: Set up environment
         run: |
