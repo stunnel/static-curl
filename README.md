@@ -32,11 +32,13 @@ Simply execute it to compile the most recent version.
 script will create a container and compile cURL.
 
 - To compile in docker, run:  
-`docker run --rm -v $(pwd):/mnt alpine sh /mnt/build.sh`
+`docker run --rm -v $(pwd):/mnt alpine:latest sh /mnt/build.sh`
 
-- Or cross compile for aarch64:  
-`docker run --rm -v $(pwd):/mnt multiarch/alpine:aarch64-latest-stable sh /mnt/build.sh`  
-You need to setup `qemu-user-static` on your host machine to run the aarch64 image.  
+- If you don't have an arm64 server, you can cross compile for arm64 and armv7,  
+  but it will take a very long time, about 17 times longer than amd64:  
+`docker run --rm --privileged multiarch/qemu-user-static:register --reset`  
+`docker run --rm -v $(pwd):/mnt multiarch/alpine:arm64-edge sh /mnt/build.sh`  
+`docker run --rm -v $(pwd):/mnt multiarch/alpine:armv7-edge sh /mnt/build.sh`  
 references: https://hub.docker.com/r/multiarch/alpine
 
 The compiled files will be saved in the current `release` directory.
