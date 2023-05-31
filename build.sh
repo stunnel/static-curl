@@ -6,10 +6,12 @@
 # script will create a container and compile curl.
 
 # to compile in docker, run:
-# docker run --rm -v $(pwd):/mnt -e RELEASE_DIR=/mnt alpine sh /mnt/build.sh
+# docker run --rm -v $(pwd):/mnt -e RELEASE_DIR=/mnt alpine:latest sh /mnt/build.sh
 
-# or cross compile for aarch64:
-# docker run --rm -v $(pwd):/mnt -e RELEASE_DIR=/mnt multiarch/alpine:aarch64-latest-stable sh /mnt/build.sh
+# or cross compile for arm64 and armv7:
+# docker run --rm -v $(pwd):/mnt -e RELEASE_DIR=/mnt multiarch/alpine:arm64-edge sh /mnt/build.sh
+# docker run --rm -v $(pwd):/mnt -e RELEASE_DIR=/mnt multiarch/alpine:armv7-edge sh /mnt/build.sh
+
 # You need to setup qemu-user-static on your host machine to run the aarch64 image.
 # references: https://hub.docker.com/r/multiarch/alpine
 
@@ -29,6 +31,7 @@ init() {
     case "${arch}" in
         x86_64)  export arch="amd64" ;;
         aarch64) export arch="arm64" ;;
+        armv7l)  export arch="armv7" ;;
     esac
 
     echo "Source directory: ${DIR}"
@@ -43,6 +46,7 @@ init() {
 
 install() {
     apk update;
+    apk upgrade;
     apk add \
         build-base clang automake cmake autoconf libtool linux-headers \
         gnupg \
@@ -319,6 +323,10 @@ compile_curl() {
 }
 
 create_release_note() {
+    if [ -f release.md ]; then
+        return
+    fi
+
     echo "Creating release note..."
     components=$(./curl -V | head -n 1 | sed 's/ /\n/g' | grep '/' | sed 's#^#- #g')
     protocols=$(./curl -V | grep Protocols | cut -d":" -f2 | sed -e 's/^[[:space:]]*//')
