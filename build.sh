@@ -2,17 +2,17 @@
 
 # To compile locally, install Docker, clone the Git repository, navigate to the repository directory,
 # and then execute the following command:
-# sh build.sh
+# `sh build.sh`
 # script will create a container and compile curl.
 
 # to compile in docker, run:
-# docker run --rm -v $(pwd):/mnt -e RELEASE_DIR=/mnt alpine:latest sh /mnt/build.sh
+# `docker run --rm -v $(pwd):/mnt -e RELEASE_DIR=/mnt alpine:latest sh /mnt/build.sh`
 
-# or cross compile for arm64 and armv7:
-# docker run --rm -v $(pwd):/mnt -e RELEASE_DIR=/mnt multiarch/alpine:arm64-edge sh /mnt/build.sh
-# docker run --rm -v $(pwd):/mnt -e RELEASE_DIR=/mnt multiarch/alpine:armv7-edge sh /mnt/build.sh
-
-# You need to setup qemu-user-static on your host machine to run the aarch64 image.
+# If you don't have an arm64 server, you can cross compile for arm64 and armv7,
+# but it will take a very long time, about 17 times longer than amd64:
+# `docker run --rm --privileged multiarch/qemu-user-static:register --reset`
+# `docker run --rm -v $(pwd):/mnt -e RELEASE_DIR=/mnt multiarch/alpine:arm64-edge sh /mnt/build.sh`
+# `docker run --rm -v $(pwd):/mnt -e RELEASE_DIR=/mnt multiarch/alpine:armv7-edge sh /mnt/build.sh`
 # references: https://hub.docker.com/r/multiarch/alpine
 
 init() {
