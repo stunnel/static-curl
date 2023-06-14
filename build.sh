@@ -79,7 +79,7 @@ version_from_github() {
 }
 
 download() {
-    echo "Downloading $@..."
+    echo "Downloading $* ..."
     wget -c --no-verbose --content-disposition "$@"
 }
 
@@ -89,14 +89,14 @@ change_dir() {
 }
 
 compile_quictls() {
-    echo "Compiling quictls..."
+    echo "Compiling quictls ..."
     change_dir;
 
     url=$(url_from_github quictls/openssl)
     filename=${url##*/}
 
     if [ -z "${url}" ]; then
-        quictls_tag_name=$(version_from_github quictls/openssl)  # openssl-3.0.8-quic1
+        quictls_tag_name=$(version_from_github quictls/openssl)  # openssl-3.0.9-quic1
         url="https://github.com/quictls/openssl/archive/refs/tags/${quictls_tag_name}.tar.gz"
         filename=$(curl -sIL "${url}" | grep content-disposition | tail -n 1 | grep -oE "openssl\S+\.tar\.gz")
     fi
@@ -123,7 +123,7 @@ compile_quictls() {
 }
 
 compile_libssh2() {
-    echo "Compiling libssh2..."
+    echo "Compiling libssh2 ..."
     change_dir;
 
     url=$(url_from_github libssh2/libssh2)
@@ -139,13 +139,13 @@ compile_libssh2() {
     PKG_CONFIG="pkg-config --static --with-path=${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig" \
         LDFLAGS="-L${PREFIX}/lib -L${PREFIX}/lib64" CFLAGS="-O3" \
         ./configure --prefix="${PREFIX}" --enable-static --enable-shared=no \
-            --with-crypto=openssl --with-libssl-prefix=${PREFIX}
+            --with-crypto=openssl --with-libssl-prefix="${PREFIX}"
     make -j "$(nproc)";
     make install;
 }
 
 compile_nghttp2() {
-    echo "Compiling nghttp2..."
+    echo "Compiling nghttp2 ..."
     change_dir;
 
     url=$(url_from_github nghttp2/nghttp2)
@@ -160,16 +160,16 @@ compile_nghttp2() {
     PKG_CONFIG="pkg-config --static --with-path=${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig" \
         ./configure --prefix="${PREFIX}" --enable-static --enable-http3 \
             --enable-lib-only --enable-shared=no;
-    make -j $(nproc) check;
+    make -j "$(nproc)" check;
     make install;
 }
 
 compile_ngtcp2() {
-    echo "Compiling ngtcp2..."
+    echo "Compiling ngtcp2 ..."
     change_dir;
 
     # url=$(url_from_github ngtcp2/ngtcp2)
-    url="https://github.com/ngtcp2/ngtcp2/releases/download/v0.15.0/ngtcp2-0.15.0.tar.xz"  # breaking changes again ...
+    url="https://github.com/ngtcp2/ngtcp2/releases/download/v0.15.0/ngtcp2-0.15.0.tar.xz"
     filename=${url##*/}
     dir=$(echo "${filename}" | sed -E "s/\.tar\.(xz|bz2|gz)//g")
     download "${url}"
@@ -179,15 +179,15 @@ compile_ngtcp2() {
 
     autoreconf -i --force
     PKG_CONFIG="pkg-config --static --with-path=${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig" \
-        ./configure --prefix="${PREFIX}" --enable-static --with-openssl=${PREFIX} \
-            --with-libnghttp3=${PREFIX} --enable-lib-only --enable-shared=no;
+        ./configure --prefix="${PREFIX}" --enable-static --with-openssl="${PREFIX}" \
+            --with-libnghttp3="${PREFIX}" --enable-lib-only --enable-shared=no;
 
-    make -j $(nproc) check;
+    make -j "$(nproc)" check;
     make install;
 }
 
 compile_nghttp3() {
-    echo "Compiling nghttp3..."
+    echo "Compiling nghttp3 ..."
     change_dir;
 
     url=$(url_from_github ngtcp2/nghttp3)
@@ -201,12 +201,12 @@ compile_nghttp3() {
     autoreconf -i --force
     PKG_CONFIG="pkg-config --static --with-path=${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig" \
         ./configure --prefix="${PREFIX}" --enable-static --enable-shared=no --enable-lib-only;
-    make -j $(nproc);
+    make -j "$(nproc)";
     make install;
 }
 
 compile_brotli() {
-    echo "Compiling brotli..."
+    echo "Compiling brotli ..."
     change_dir;
 
     url=$(url_from_github google/brotli)
@@ -227,7 +227,7 @@ compile_brotli() {
     cd out/
 
     PKG_CONFIG="pkg-config --static --with-path=${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig" \
-        cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${PREFIX} ..;
+        cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="${PREFIX}" ..;
     PKG_CONFIG="pkg-config --static --with-path=${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig" \
         cmake --build . --config Release --target install;
 
@@ -239,7 +239,7 @@ compile_brotli() {
 }
 
 compile_zstd() {
-    echo "Compiling zstd..."
+    echo "Compiling zstd ..."
     change_dir;
 
     url=$(url_from_github facebook/zstd)
@@ -251,14 +251,15 @@ compile_zstd() {
     cd "${dir}"
 
     PKG_CONFIG="pkg-config --static --with-path=${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig" \
-        make -j$(nproc) PREFIX=${PREFIX};
+        make -j "$(nproc)" PREFIX="${PREFIX}";
     make install;
-    cp -f lib/libzstd.a ${PREFIX}/lib/libzstd.a;
+    cp -f lib/libzstd.a "${PREFIX}/lib/libzstd.a";
 }
 
 curl_config() {
     PKG_CONFIG="pkg-config --static" \
         ./configure --prefix="${PREFIX}" \
+            --build="${arch}-pc-linux-musl" \
             --disable-shared --enable-static \
             --with-openssl --with-brotli --with-zstd \
             --with-nghttp2 --with-nghttp3 --with-ngtcp2 \
@@ -290,7 +291,7 @@ verify_curl_source() {
     gpg --show-keys mykey.asc | grep '^ ' | tr -d ' ' | awk '{print $0":6:"}' > /tmp/ownertrust.txt
     gpg --import-ownertrust < /tmp/ownertrust.txt > /dev/null
     gpg --import mykey.asc  > /dev/null
-    gpg --verify ${filename}.asc ${filename}
+    gpg --verify "${filename}.asc" "${filename}"
 }
 
 compile_curl() {
@@ -308,7 +309,7 @@ compile_curl() {
     cd "${dir}"
 
     curl_config;
-    make -j$(nproc) V=1 LDFLAGS="-L${PREFIX}/lib -L${PREFIX}/lib64 -static -all-static" CFLAGS="-O3";
+    make -j "$(nproc)" V=1 LDFLAGS="-L${PREFIX}/lib -L${PREFIX}/lib64 -static -all-static" CFLAGS="-O3";
 
     strip src/curl
     ls -l src/curl
@@ -353,8 +354,8 @@ main() {
     # If not in docker, run the script in docker and exit
     if [ ! -f /.dockerenv ]; then
         echo "Not running in docker, starting a docker container to build cURL."
-        cd $(dirname $0);
-        base_name=$(basename $0)
+        cd "$(dirname "$0")";
+        base_name=$(basename "$0")
         current_time=$(date "+%Y%m%d-%H%M%S")
         logfile_name="build_curl_${current_time}.log"
         RELEASE_DIR=${RELEASE_DIR:-/mnt}
@@ -367,9 +368,9 @@ main() {
         docker run --rm \
             --name "build_curl_${current_time}" \
             --network host \
-            -v $(pwd):${RELEASE_DIR} \
-            -e RELEASE_DIR=${RELEASE_DIR} \
-            alpine sh ${RELEASE_DIR}/${base_name} 2>&1 | tee -a ${logfile_name}
+            -v "$(pwd):${RELEASE_DIR}" \
+            -e RELEASE_DIR="${RELEASE_DIR}" \
+            alpine sh "${RELEASE_DIR}/${base_name}" 2>&1 | tee -a "${logfile_name}"
 
         # Exit script after docker finishes
         exit 0;
