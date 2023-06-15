@@ -385,7 +385,7 @@ main() {
     # Compile cURL
     init;               # Initialize the build env
     install;            # Install dependencies
-    set -o errexit;
+    set -o errexit -o xtrace;
     compile_quictls;
     compile_libssh2;
     compile_nghttp3;
