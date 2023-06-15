@@ -64,11 +64,11 @@ url_from_github() {
         jq -r '.[0]' | \
         grep browser_download_url)
 
-    browser_download_url=$(echo -e "${browser_download_urls}" | grep ".tar.xz\"" || \
-                           echo -e "${browser_download_urls}" | grep ".tar.bz2\"" || \
-                           echo -e "${browser_download_urls}" | grep ".tar.gz\"")
+    browser_download_url=$(printf "%s" "${browser_download_urls}" | grep ".tar.xz\"" || \
+                           printf "%s" "${browser_download_urls}" | grep ".tar.bz2\"" || \
+                           printf "%s" "${browser_download_urls}" | grep ".tar.gz\"")
 
-    url=$(echo -e "${browser_download_url}" | head -1 | awk '{print $2}' | sed 's/"//g')
+    url=$(printf "%s" "${browser_download_url}" | head -1 | awk '{print $2}' | sed 's/"//g')
 
     echo "${url}"
 }
