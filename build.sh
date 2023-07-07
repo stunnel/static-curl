@@ -279,7 +279,7 @@ curl_config() {
             --enable-curldebug --enable-dict --enable-netrc \
             --enable-crypto-auth --enable-tls-srp --enable-dnsshuffle \
             --enable-get-easy-options \
-            --disable-ldap --without-librtmp --without-libpsl ${ENABLE_DEBUG};
+            --disable-ldap ${ENABLE_DEBUG};
 }
 
 verify_curl_source() {
