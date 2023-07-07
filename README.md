@@ -21,9 +21,11 @@ Simply execute it to compile the most recent version.
 - Protocols: dict file ftp ftps gopher gophers http https imap imaps mqtt pop3 pop3s rtsp scp sftp smb smbs smtp smtps telnet tftp ws wss
 - Features: alt-svc AsynchDNS brotli Debug HSTS HTTP2 HTTP3 HTTPS-proxy IDN IPv6 Largefile libz NTLM NTLM_WB SSL threadsafe TLS-SRP TrackMemory UnixSockets zstd
 
-## Dependency
+## Usage
 
-- docker
+Download the latest release from the [Releases page](https://github.com/stunnel/static-curl/releases/latest).  
+Extract the archive and use it.  
+The binary is built with GitHub Actions.
 
 ## Compile
 
@@ -32,10 +34,20 @@ Simply execute it to compile the most recent version.
 script will create a container and compile cURL.
 
 - To compile in docker, run:  
-`docker run --rm -v $(pwd):/mnt alpine:latest sh /mnt/build.sh`
+  ```shell
+  docker run --rm -v $(pwd):/mnt \
+      -e RELEASE_DIR=/mnt \
+      -e CURL_VERSION=8.1.2 \
+      -e QUICTLS_VERSION=3.0.9 \
+      -e NGTCP2_VERSION=0.15.0 \
+      -e NGHTTP3_VERSION=0.12.0 \
+      -e NGHTTP2_VERSION=1.54.0 \
+      alpine:latest sh /mnt/build.sh
+  ```
+  **There might be some breaking changes in ngtcp2, so it's important to ensure that its version is compatible with the current version of cURL.**
 
-- If you don't have an arm64 server, you can cross compile for arm64 and armv7,  
-  but it will take a very long time, about 17 times longer than amd64:  
+- If you don't have an arm64 server, you can cross-compile for arm64 and armv7 etc.  
+  However, please note that this process will take significantly longer, approximately 17 times longer than compiling for amd64.  
 `docker run --rm --privileged multiarch/qemu-user-static:register --reset`  
 `docker run --rm -v $(pwd):/mnt multiarch/alpine:arm64-edge sh /mnt/build.sh`  
 `docker run --rm -v $(pwd):/mnt multiarch/alpine:armv7-edge sh /mnt/build.sh`  
