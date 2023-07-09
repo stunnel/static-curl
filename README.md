@@ -29,6 +29,13 @@ The binary is built with GitHub Actions.
 
 ## Compile
 
+There are currently two scripts available:
+
+- build.sh: Only supports building for the host architecture.
+- curl-static-cross.sh: Uses qbt-musl-cross-make for cross-compilation, supporting x86_64, aarch64, armv7l, armv6, i686, riscv64, s390x, mips64, mips64el, mips, mipsel, powerpc64le, and powerpc architectures.
+
+### How to compile
+
 - To compile locally, install Docker, clone the Git repository, navigate to the repository directory, and then execute the following command:  
 `sh build.sh`  
 script will create a container and compile cURL.
