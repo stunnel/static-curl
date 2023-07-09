@@ -70,23 +70,22 @@ install() {
 }
 
 url_from_github() {
-    local browser_download_urls browser_download_url json url repo version tag_name tags
+    local browser_download_urls browser_download_url url repo version tag_name tags
     repo=$1
     version=$2
 
-    json=$(curl -s "https://api.github.com/repos/${repo}/releases")
+    curl -s "https://api.github.com/repos/${repo}/releases" -o "github-${repo#*/}.json"
     if [ -z "${version}" ]; then
-        tags=$(echo "${json}" | jq -r '.[0]')
+        tags=$(jq -r '.[0]' "github-${repo#*/}.json")
     else
-        tags=$(echo "${json}" | \
-                jq -r ".[] | select((.tag_name == \"${version}\")
-                or (.tag_name | startswith(\"${version}\"))
-                or (.tag_name | endswith(\"${version}\"))
-                or (.tag_name | contains(\"${version}\"))
-                or (.name == \"${version}\")
-                or (.name | startswith(\"${version}\"))
-                or (.name | endswith(\"${version}\"))
-                or (.name | contains(\"${version}\")))")
+        tags=$(jq -r ".[] | select((.tag_name == \"${version}\")
+               or (.tag_name | startswith(\"${version}\"))
+               or (.tag_name | endswith(\"${version}\"))
+               or (.tag_name | contains(\"${version}\"))
+               or (.name == \"${version}\")
+               or (.name | startswith(\"${version}\"))
+               or (.name | endswith(\"${version}\"))
+               or (.name | contains(\"${version}\")))" "github-${repo#*/}.json")
     fi
 
     browser_download_urls=$(echo "${tags}" | jq -r '.assets[]' | grep browser_download_url || true)
@@ -95,9 +94,12 @@ url_from_github() {
         tag_name=$(echo "${tags}" | jq -r '.tag_name')
         url="https://github.com/${repo}/archive/refs/tags/${tag_name}.tar.gz"
     else
-        browser_download_url=$(printf "%s" "${browser_download_urls}" | grep ".tar.xz\"" || \
-                               printf "%s" "${browser_download_urls}" | grep ".tar.bz2\"" || \
-                               printf "%s" "${browser_download_urls}" | grep ".tar.gz\"")
+        suffixes="tar.xz tar.gz tar.bz2 tgz"
+        for suffix in ${suffixes}; do
+            browser_download_url=$(printf "%s" "${browser_download_urls}" | grep "${suffix}" || true)
+            [ -n "$browser_download_url" ] && break
+        done
+
         url=$(printf "%s" "${browser_download_url}" | head -1 | awk '{print $2}' | sed 's/"//g')
     fi
 
