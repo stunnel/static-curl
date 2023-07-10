@@ -61,3 +61,7 @@ script will create a container and compile cURL.
 references: https://hub.docker.com/r/multiarch/alpine
 
 The compiled files will be saved in the current `release` directory.
+
+## Why build cURL on my own?
+
+Because I need to test HTTP3, but currently there is no Linux distribution's cURL that supports HTTP3.
