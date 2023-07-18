@@ -24,6 +24,9 @@
 # Supported architectures: x86_64, aarch64, armv7l, i686, riscv64, s390x,
 #                          mips64, mips64el, mips, mipsel, powerpc64le, powerpc
 
+# There might be some breaking changes in ngtcp2, so it's important to ensure
+# that its version is compatible with the current version of cURL.
+
 
 init_env() {
     export DIR=${DIR:-/data}
@@ -442,7 +445,7 @@ curl_config() {
 }
 
 compile_curl() {
-    echo "Compiling curl..."
+    echo "Compiling cURL..."
     local url
     change_dir;
 
