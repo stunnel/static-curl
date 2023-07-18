@@ -45,7 +45,7 @@ jobs:
           NGHTTP3_VERSION: ${{ vars.NGHTTP3_VERSION }}
           NGHTTP2_VERSION: ${{ vars.NGHTTP2_VERSION }}
           ARCH: "all"
-          ARCHS: "x86_64 aarch64 armv7l armv6 i686 riscv64 s390x mips64 mips64el mips mipsel powerpc64le powerpc"
+          ARCHS: "x86_64 aarch64 armv7l i686 riscv64 s390x mips64 mips64el mips mipsel powerpc64le powerpc"
 
       - name: Set up environment
         run: |
