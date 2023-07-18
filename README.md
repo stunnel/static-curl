@@ -31,34 +31,32 @@ The binary is built with GitHub Actions.
 
 There are currently two scripts available:
 
+- curl-static-cross.sh: Uses qbt-musl-cross-make for cross-compilation, supporting x86_64, aarch64, armv7l, i686, riscv64, s390x, mips64, mips64el, mips, mipsel, powerpc64le, and powerpc architectures.
 - build.sh: Only supports building for the host architecture.
-- curl-static-cross.sh: Uses qbt-musl-cross-make for cross-compilation, supporting x86_64, aarch64, armv7l, armv6, i686, riscv64, s390x, mips64, mips64el, mips, mipsel, powerpc64le, and powerpc architectures.
 
 ### How to compile
 
 - To compile locally, install Docker, clone the Git repository, navigate to the repository directory, and then execute the following command:  
-`sh build.sh`  
+`sh curl-static-cross.sh`  
 script will create a container and compile cURL.
 
 - To compile in docker, run:  
   ```shell
-  docker run --rm -v $(pwd):/mnt \
-      -e RELEASE_DIR=/mnt \
+  docker run --network host --rm -v $(pwd):/mnt -w /mnt \
+      --name "build-curl-$(date +%Y%m%d-%H%M)" \
+      -e ARCH=all \
+      -e ARCHS="x86_64 aarch64 armv7l i686 riscv64 s390x mips64 mips64el mips mipsel powerpc64le powerpc" \
       -e CURL_VERSION=8.1.2 \
       -e QUICTLS_VERSION=3.0.9 \
       -e NGTCP2_VERSION=0.15.0 \
       -e NGHTTP3_VERSION=0.12.0 \
       -e NGHTTP2_VERSION=1.54.0 \
-      alpine:latest sh /mnt/build.sh
+      -e ZLIB_VERSION=1.2.13 \
+      -e LIBUNISTRING_VERSION=1.1 \
+      -e LIBIDN2_VERSION=2.3.4 \
+      alpine:latest sh /mnt/curl-static-cross.sh
   ```
   **There might be some breaking changes in ngtcp2, so it's important to ensure that its version is compatible with the current version of cURL.**
-
-- If you don't have an arm64 server, you can cross-compile for arm64 and armv7 etc.  
-  However, please note that this process will take significantly longer, approximately 17 times longer than compiling for amd64.  
-`docker run --rm --privileged multiarch/qemu-user-static:register --reset`  
-`docker run --rm -v $(pwd):/mnt multiarch/alpine:arm64-edge sh /mnt/build.sh`  
-`docker run --rm -v $(pwd):/mnt multiarch/alpine:armv7-edge sh /mnt/build.sh`  
-references: https://hub.docker.com/r/multiarch/alpine
 
 The compiled files will be saved in the current `release` directory.
 
