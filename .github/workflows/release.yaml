@@ -1,5 +1,4 @@
-
-name: beta
+name: release
 
 on:
   # run it manually
