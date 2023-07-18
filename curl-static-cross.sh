@@ -33,11 +33,12 @@ init_env() {
     export PREFIX="${DIR}/curl"
     export RELEASE_DIR=${RELEASE_DIR:-/mnt}
 
-    if [ -z "${ENABLE_DEBUG}" ]; then
-        export ENABLE_DEBUG=""
-    else
-        export ENABLE_DEBUG="--enable-debug"
-    fi
+    case "${ENABLE_DEBUG}" in
+        true|1|yes|on|y|Y)
+            export ENABLE_DEBUG="--enable-debug" ;;
+        *)
+            export ENABLE_DEBUG="" ;;
+    esac
 
     echo "Source directory: ${DIR}"
     echo "Prefix directory: ${PREFIX}"
@@ -86,7 +87,7 @@ install_cross_compile() {
 
     export CC=${DIR}/${SOURCE_DIR}/bin/${SOURCE_DIR}-cc \
            CXX=${DIR}/${SOURCE_DIR}/bin/${SOURCE_DIR}-c++ \
-           strip=${DIR}/${SOURCE_DIR}/bin/${SOURCE_DIR}-strip \
+           STRIP=${DIR}/${SOURCE_DIR}/bin/${SOURCE_DIR}-strip \
            PATH=${DIR}/${SOURCE_DIR}/bin:$PATH
 }
 
@@ -103,9 +104,6 @@ arch_variants() {
         *)       export arch="${ARCH}" ;;
     esac
 
-    [ "${ARCH}" = "x86_64" ] && export CC=clang CXX=clang++ strip=strip
-
-    echo "Installing QEMU ..."
     export EC_NISTP_64_GCC_128=""
     export OPENSSL_ARCH=""
 
@@ -139,8 +137,18 @@ arch_variants() {
                         OPENSSL_ARCH="linux-ppc" ;;
     esac
 
-    if [ "${ARCH}" != "x86_64" ]; then
+    if [ "${ARCH}" != "$(uname -m)" ]; then
+        # If the architecture is not the same as the host, need to cross compile
+        echo "Cross compiling for ${ARCH} ..."
+        export CROSS=1
+        echo "Installing QEMU ..."
         apk add "qemu-${qemu_arch}";
+        install_cross_compile;
+    else
+        # If the architecture is the same as the host, no need to cross compile
+        echo "Compiling for ${ARCH} ..."
+        export CROSS=0
+        export CC=clang CXX=clang++ STRIP=strip
     fi
 }
 
@@ -289,7 +297,7 @@ compile_libssh2() {
 
     autoreconf -fi
 
-    if [ -z "${ARCH}" ] || [ "${ARCH}" = "x86_64" ]; then
+    if [ "${CROSS}" -ne 1 ]; then
         host_config=""
     else
         host_config="--host=${ARCH}-pc-linux-musl"
@@ -311,7 +319,7 @@ compile_nghttp2() {
     download_and_extract "${url}"
 
     autoreconf -i --force
-    if [ -z "${ARCH}" ] || [ "${ARCH}" = "x86_64" ]; then
+    if [ "${CROSS}" -ne 1 ]; then
         host_config=""
     else
         host_config="--host=${ARCH}-pc-linux-musl"
@@ -332,7 +340,7 @@ compile_ngtcp2() {
     download_and_extract "${url}"
 
     autoreconf -i --force
-    if [ -z "${ARCH}" ] || [ "${ARCH}" = "x86_64" ]; then
+    if [ "${CROSS}" -ne 1 ]; then
         host_config=""
     else
         host_config="--host=${ARCH}-pc-linux-musl"
@@ -354,7 +362,7 @@ compile_nghttp3() {
     download_and_extract "${url}"
 
     autoreconf -i --force
-    if [ -z "${ARCH}" ] || [ "${ARCH}" = "x86_64" ]; then
+    if [ "${CROSS}" -ne 1 ]; then
         host_config=""
     else
         host_config="--host=${ARCH}-pc-linux-musl"
@@ -408,7 +416,7 @@ curl_config() {
     enable_libidn2="--with-libidn2"
     enable_libssh2="--with-libssh2"
 
-    if [ -n "${ARCH}" ]; then
+    if [ "${CROSS}" -ne 1 ]; then
         host_config="--host=${ARCH}-pc-linux-musl"
     fi
 
@@ -461,7 +469,7 @@ compile_curl() {
 tar_curl() {
     mkdir -p "${RELEASE_DIR}/release/" "${RELEASE_DIR}/bin/"
 
-    ${strip} src/curl
+    "${STRIP}" src/curl
     ls -l src/curl
     src/curl -V || true
 
@@ -503,13 +511,11 @@ EOF
 compile() {
     local unsupported_arch
     arch_variants;
-    if [ -n "${ARCH}" ] && [ "${ARCH}" != "x86_64" ]; then
-        install_cross_compile;
+
+    if [ "${CROSS}" -eq 1 ]; then
+        # need to compile zlib and zstd for cross compile
         compile_zlib;
         compile_zstd;
-    fi
-
-    if [ "${ARCH}" != "x86_64" ]; then
         compile_libunistring;
         compile_libidn2;
     fi
@@ -518,6 +524,7 @@ compile() {
 
     unsupported_arch="powerpc mipsel mips"
     if ! echo "$unsupported_arch" | grep -q "\\b${ARCH}\\b"; then
+        # TODO: libssh2 is failing to compile on powerpc, mipsel and mips, need to fix it
         compile_libssh2;
     fi
 
@@ -537,7 +544,7 @@ main() {
         cd "$(dirname "$0")";
         base_name=$(basename "$0")
         current_time=$(date "+%Y%m%d-%H%M")
-        [ -z "${ARCH}" ] && ARCH="x86_64"
+        [ -z "${ARCH}" ] && ARCH=$(uname -m)
         container_name="build-curl-${ARCH}-${current_time}"
         RELEASE_DIR=${RELEASE_DIR:-/mnt}
 
@@ -579,7 +586,13 @@ main() {
     set -o errexit -o xtrace;
 
     # if ${ARCH} = "all", then compile all the ARCHS
-    if [ "${ARCH}" = "all" ]; then
+    if [ "${ARCH}" = "all" ] && [ "$(uname -m)" != "x86_64" ]; then
+        echo "Cross compiling is only supported on x86_64."
+        exit 1;
+    elif [ "${ARCH}" = "all" ] && [ "${ARCHS}" = "" ]; then
+        echo "Please set the ARCHS environment variable."
+        exit 1;
+    elif [ "${ARCH}" = "all" ]; then
         echo "Compiling for all ARCHs: ${ARCHS}"
         for arch_temp in ${ARCHS}; do
             # Set the ARCH, PREFIX and PKG_CONFIG_PATH env variables
