@@ -53,12 +53,16 @@ jobs:
           VERSION=`cat version.txt`
           echo "VERSION=$VERSION" >> $GITHUB_ENV
 
+      - name: List compiled files
+        run: |
+          ls -l release bin
+          file bin/curl*
+
       - name: Upload Release Asset
         uses: softprops/action-gh-release@v1
+        if: github.ref == 'refs/heads/main'
         with:
           files: release/curl-static-*.tar.xz
           body_path: release/release.md
-          tag_name: ${{ github.ref }}
+          tag_name: ${{ env.VERSION }}
           token: ${{ secrets.GITHUB_TOKEN }}
-          draft: true
-          prerelease: true
