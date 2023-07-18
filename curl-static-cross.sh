@@ -1,7 +1,5 @@
 #!/bin/sh
 
-# IMPORTANT: This script is still experimental and cannot be guaranteed to run correctly.
-
 # To compile locally, install Docker, clone the Git repository, navigate to the repository directory,
 # and then execute the following command:
 # ARCH=aarch64 CURL_VERSION=8.1.2 QUICTLS_VERSION=3.0.9 NGTCP2_VERSION=0.15.0 sh build-curl-cross.sh
@@ -12,7 +10,7 @@
 #     --name "build-curl-$(date +%Y%m%d-%H%M)" \
 #     -e RELEASE_DIR=/mnt \
 #     -e ARCH=aarch64 \
-#     -e ARCHS="x86_64 aarch64 armv7l armv6 i686 riscv64 s390x" \
+#     -e ARCHS="x86_64 aarch64 armv7l i686 riscv64 s390x" \
 #     -e ENABLE_DEBUG=1 \
 #     -e CURL_VERSION=8.1.2 \
 #     -e QUICTLS_VERSION=3.0.9 \
@@ -23,8 +21,11 @@
 #     -e LIBUNISTRING_VERSION=1.1 \
 #     -e LIBIDN2_VERSION=2.3.4 \
 #     alpine:latest sh /mnt/build-curl-cross.sh
-# Supported architectures: x86_64, aarch64, armv7l, armv6, i686, riscv64, s390x,
+# Supported architectures: x86_64, aarch64, armv7l, i686, riscv64, s390x,
 #                          mips64, mips64el, mips, mipsel, powerpc64le, powerpc
+
+# There might be some breaking changes in ngtcp2, so it's important to ensure
+# that its version is compatible with the current version of cURL.
 
 
 init_env() {
@@ -63,7 +64,6 @@ install_package() {
         libunistring-static libunistring-dev \
         libidn2-static libidn2-dev \
         zstd-static zstd-dev
-        # libssh2-static libssh2-dev \
 }
 
 install_cross_compile() {
@@ -81,9 +81,8 @@ install_cross_compile() {
 
     ln -s "${DIR}/${SOURCE_DIR}/${SOURCE_DIR}" "/${SOURCE_DIR}"
     cd "/${SOURCE_DIR}/lib/"
-    mv libatomic.so libatomic.so.bak  # ld-musl-armhf.so.1
+    mv libatomic.so libatomic.so.bak
     ln -s libatomic.a libatomic.so
-    # ln -s libc.so ld-musl-armhf.so.1
 
     export CC=${DIR}/${SOURCE_DIR}/bin/${SOURCE_DIR}-cc \
            CXX=${DIR}/${SOURCE_DIR}/bin/${SOURCE_DIR}-c++ \
@@ -446,7 +445,7 @@ curl_config() {
 }
 
 compile_curl() {
-    echo "Compiling curl..."
+    echo "Compiling cURL..."
     local url
     change_dir;
 
@@ -531,6 +530,7 @@ compile() {
 
 main() {
     local base_name current_time container_name arch_temp
+
     # If not in docker, run the script in docker and exit
     if [ ! -f /.dockerenv ]; then
         echo "Not running in docker, starting a docker container to build cURL."
@@ -543,8 +543,8 @@ main() {
 
         # Run in docker,
         #   delete the container after running,
-        #   mount the current directory to the container,
-        #   set the RELEASE_DIR env variable,
+        #   mount the current directory into the container,
+        #   pass all the environment variables to the container,
         #   log the output to a file.
         docker run --rm \
             --name "${container_name}" \
@@ -568,7 +568,7 @@ main() {
         exit;
     fi
 
-    # Check if the script is running in alpine
+    # Check if the script is running in Alpine
     if [ ! -f /etc/alpine-release ]; then
         echo "This script only works on Alpine Linux."
         exit 1;
@@ -578,18 +578,21 @@ main() {
     install_package;            # Install dependencies
     set -o errexit -o xtrace;
 
-    # if ${ARCH} = "all", then compile all ARCHS
+    # if ${ARCH} = "all", then compile all the ARCHS
     if [ "${ARCH}" = "all" ]; then
+        echo "Compiling for all ARCHs: ${ARCHS}"
         for arch_temp in ${ARCHS}; do
+            # Set the ARCH, PREFIX and PKG_CONFIG_PATH env variables
             export ARCH=${arch_temp}
             export PREFIX="${DIR}/curl-${ARCH}"
             export PKG_CONFIG_PATH="${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig"
 
+            echo "Compiling for ${arch_temp}..."
             echo "Prefix directory: ${PREFIX}"
-            echo "PKG_CONFIG_PATH: ${PKG_CONFIG_PATH}"
             compile;
         done
     else
+        # else compile for the specified ARCH
         compile;
     fi
 }

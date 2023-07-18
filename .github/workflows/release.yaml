@@ -9,26 +9,57 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Use variables
+        run: |
+          echo "cURL version: ${CURL_VERSION}"
+          echo "QuicTLS version: ${QUICTLS_VERSION}"
+          echo "ngtcp2 version: ${NGTCP2_VERSION}"
+          echo "nghttp3 version: ${NGHTTP3_VERSION}"
+          echo "nghttp2 version: ${NGHTTP2_VERSION}"
+        env:
+          CURL_VERSION: ${{ vars.CURL_VERSION }}
+          QUICTLS_VERSION: ${{ vars.QUICTLS_VERSION }}
+          NGTCP2_VERSION: ${{ vars.NGTCP2_VERSION }}
+          NGHTTP3_VERSION: ${{ vars.NGHTTP3_VERSION }}
+          NGHTTP2_VERSION: ${{ vars.NGHTTP2_VERSION }}
+
       - name: Checkout
         uses: actions/checkout@v3
         with:
           fetch-depth: 1
 
-      - name: Build Static cURL amd64
-        run: sh build.sh
-
-      - name: Build Static cURL arm64
+      - name: Cross Build Static cURL
         run: |
-          docker run --rm --privileged multiarch/qemu-user-static:register --reset
-          docker run --rm -v $(pwd):/mnt -e RELEASE_DIR=/mnt multiarch/alpine:arm64-edge sh /mnt/build.sh
+          ARCH="${ARCH}"
+          ARCHS="${ARCHS}"
+          CURL_VERSION=${CURL_VERSION}
+          QUICTLS_VERSION=${QUICTLS_VERSION}
+          NGTCP2_VERSION=${NGTCP2_VERSION}
+          NGHTTP3_VERSION=${NGHTTP3_VERSION}
+          NGHTTP2_VERSION=${NGHTTP2_VERSION}
+          sh curl-static-cross.sh
+        env:
+          CURL_VERSION: ${{ vars.CURL_VERSION }}
+          QUICTLS_VERSION: ${{ vars.QUICTLS_VERSION }}
+          NGTCP2_VERSION: ${{ vars.NGTCP2_VERSION }}
+          NGHTTP3_VERSION: ${{ vars.NGHTTP3_VERSION }}
+          NGHTTP2_VERSION: ${{ vars.NGHTTP2_VERSION }}
+          ARCH: "all"
+          ARCHS: "x86_64 aarch64 armv7l i686 riscv64 s390x mips64 mips64el mips mipsel powerpc64le powerpc"
 
       - name: Set up environment
         run: |
           VERSION=`cat version.txt`
           echo "VERSION=$VERSION" >> $GITHUB_ENV
 
+      - name: List compiled files
+        run: |
+          ls -l release bin
+          file bin/curl*
+
       - name: Upload Release Asset
         uses: softprops/action-gh-release@v1
+        if: github.ref == 'refs/heads/main'
         with:
           files: release/curl-static-*.tar.xz
           body_path: release/release.md
