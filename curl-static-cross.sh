@@ -508,7 +508,7 @@ create_release_note() {
     local components protocols features
 
     echo "Creating release note..."
-    components=$(release/curl -V | head -n 1 | sed 's/ /\n/g' | grep '/' | sed 's#^#- #g' || true)
+    components=$("bin/curl-${arch}" -V | head -n 1 | sed 's/ /\n/g' | grep '/' | sed 's#^#- #g' || true)
     protocols=$(grep Protocols "${1}/config.log" | cut -d":" -f2 | sed -e 's/^[[:space:]]*//')
     features=$(grep Features "${1}/config.log" | cut -d":" -f2 | sed -e 's/^[[:space:]]*//')
 
