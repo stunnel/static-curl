@@ -2,7 +2,7 @@
 
 # To compile locally, install Docker, clone the Git repository, navigate to the repository directory,
 # and then execute the following command:
-# ARCH=aarch64 CURL_VERSION=8.1.2 QUICTLS_VERSION=3.0.9 NGTCP2_VERSION=0.15.0 sh build-curl-cross.sh
+# ARCH=aarch64 CURL_VERSION=8.1.2 QUICTLS_VERSION=3.0.9 NGTCP2_VERSION=0.15.0 sh curl-static-cross.sh
 # script will create a container and compile curl.
 
 # or compile or cross-compile in docker, run:
@@ -20,7 +20,7 @@
 #     -e ZLIB_VERSION=1.2.13 \
 #     -e LIBUNISTRING_VERSION=1.1 \
 #     -e LIBIDN2_VERSION=2.3.4 \
-#     alpine:latest sh /mnt/build-curl-cross.sh
+#     alpine:latest sh curl-static-cross.sh
 # Supported architectures: x86_64, aarch64, armv7l, i686, riscv64, s390x,
 #                          mips64, mips64el, mips, mipsel, powerpc64le, powerpc
 
@@ -449,7 +449,7 @@ curl_config() {
             --enable-curldebug --enable-dict --enable-netrc \
             --enable-crypto-auth --enable-tls-srp --enable-dnsshuffle \
             --enable-get-easy-options \
-            --disable-ldap ${ENABLE_DEBUG};
+            --disable-ldap "${ENABLE_DEBUG}";
 }
 
 compile_curl() {
