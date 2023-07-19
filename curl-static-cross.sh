@@ -72,7 +72,11 @@ install_cross_compile() {
     change_dir;
     local url
 
-    curl -s "https://api.github.com/repos/userdocs/qbt-musl-cross-make/releases" -o "github-qbt-musl-cross-make.json"
+    if [ ! -f "github-qbt-musl-cross-make.json" ]; then
+        # GitHub API has a limit of 60 requests per hour, cache the results.
+        curl -s "https://api.github.com/repos/userdocs/qbt-musl-cross-make/releases" -o "github-qbt-musl-cross-make.json"
+    fi
+
     browser_download_url=$(jq -r '.' "github-qbt-musl-cross-make.json" \
         | grep browser_download_url \
         | grep -i "${ARCH}-" \
@@ -157,7 +161,11 @@ url_from_github() {
     repo=$1
     version=$2
 
-    curl -s "https://api.github.com/repos/${repo}/releases" -o "github-${repo#*/}.json"
+    if [ ! -f "github-${repo#*/}.json" ]; then
+        # GitHub API has a limit of 60 requests per hour, cache the results.
+        curl -s "https://api.github.com/repos/${repo}/releases" -o "github-${repo#*/}.json"
+    fi
+
     if [ -z "${version}" ]; then
         tags=$(jq -r '.[0]' "github-${repo#*/}.json")
     else
@@ -194,22 +202,29 @@ download_and_extract() {
     local url
 
     url="$1"
-    wget -c --no-verbose --content-disposition "${url}";
+    FILENAME=${url##*/}
 
-    FILENAME=$(curl -sIL "${url}" | sed -n -e 's/^Content-Disposition:.*filename=//ip' | \
-        tail -1 | sed 's/\r//g; s/\n//g; s/\"//g' | grep -oP '[\x20-\x7E]+' || true)
-    if [ "${FILENAME}" = "" ]; then
-        FILENAME=${url##*/}
+    if [ ! -f "${FILENAME}" ]; then
+        wget -c --no-verbose --content-disposition "${url}";
+
+        FILENAME=$(curl -sIL "${url}" | sed -n -e 's/^Content-Disposition:.*filename=//ip' | \
+            tail -1 | sed 's/\r//g; s/\n//g; s/\"//g' | grep -oP '[\x20-\x7E]+' || true)
+        if [ "${FILENAME}" = "" ]; then
+            FILENAME=${url##*/}
+        fi
+
+        echo "Downloaded ${FILENAME} ..."
+    else
+        echo "Already downloaded ${FILENAME} ..."
     fi
 
+    # If the file is a tarball, extract it
     if expr "${FILENAME}" : '.*\.\(tar\.xz\|tar\.gz\|tar\.bz2\|tgz\)$' > /dev/null; then
         SOURCE_DIR=$(echo "${FILENAME}" | sed -E "s/\.tar\.(xz|bz2|gz)//g" | sed 's/\.tgz//g')
         [ -d "${SOURCE_DIR}" ] && rm -rf "${SOURCE_DIR}"
         tar -axf "${FILENAME}"
         cd "${SOURCE_DIR}"
     fi
-
-    echo "Downloaded ${FILENAME} ..."
 }
 
 change_dir() {
