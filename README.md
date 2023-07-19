@@ -29,10 +29,7 @@ The binary is built with GitHub Actions.
 
 ## Compile
 
-There are currently two scripts available:
-
-- curl-static-cross.sh: Uses qbt-musl-cross-make for cross-compilation, supporting x86_64, aarch64, armv7l, i686, riscv64, s390x, mips64, mips64el, mips, mipsel, powerpc64le, and powerpc architectures.
-- build.sh: Only supports building for the host architecture.
+This script uses `qbt-musl-cross-make` for cross-compilation, supporting x86_64, aarch64, armv7l, i686, riscv64, s390x, mips64, mips64el, mips, mipsel, powerpc64le, and powerpc architectures.
 
 ### How to compile
 
@@ -54,7 +51,7 @@ script will create a container and compile cURL.
       -e ZLIB_VERSION=1.2.13 \
       -e LIBUNISTRING_VERSION=1.1 \
       -e LIBIDN2_VERSION=2.3.4 \
-      alpine:latest sh /mnt/curl-static-cross.sh
+      alpine:latest sh curl-static-cross.sh
   ```
   **There might be some breaking changes in ngtcp2, so it's important to ensure that its version is compatible with the current version of cURL.**
 
