@@ -297,10 +297,10 @@ compile_libssh2() {
 
     autoreconf -fi
 
-    if [ "${CROSS}" -ne 1 ]; then
-        host_config=""
-    else
+    if [ "${CROSS}" -eq 1 ]; then
         host_config="--host=${ARCH}-pc-linux-musl"
+    else
+        host_config=""
     fi
     PKG_CONFIG="pkg-config --static --with-path=${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig" \
         LDFLAGS="-L${PREFIX}/lib -L${PREFIX}/lib64" CFLAGS="-O3" \
@@ -319,10 +319,10 @@ compile_nghttp2() {
     download_and_extract "${url}"
 
     autoreconf -i --force
-    if [ "${CROSS}" -ne 1 ]; then
-        host_config=""
-    else
+    if [ "${CROSS}" -eq 1 ]; then
         host_config="--host=${ARCH}-pc-linux-musl"
+    else
+        host_config=""
     fi
     PKG_CONFIG="pkg-config --static --with-path=${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig" \
         ./configure "${host_config}" --prefix="${PREFIX}" --enable-static --enable-http3 \
@@ -340,10 +340,10 @@ compile_ngtcp2() {
     download_and_extract "${url}"
 
     autoreconf -i --force
-    if [ "${CROSS}" -ne 1 ]; then
-        host_config=""
-    else
+    if [ "${CROSS}" -eq 1 ]; then
         host_config="--host=${ARCH}-pc-linux-musl"
+    else
+        host_config=""
     fi
     PKG_CONFIG="pkg-config --static --with-path=${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig" \
         ./configure "${host_config}" --prefix="${PREFIX}" --enable-static --with-openssl="${PREFIX}" \
@@ -362,10 +362,10 @@ compile_nghttp3() {
     download_and_extract "${url}"
 
     autoreconf -i --force
-    if [ "${CROSS}" -ne 1 ]; then
-        host_config=""
-    else
+    if [ "${CROSS}" -eq 1 ]; then
         host_config="--host=${ARCH}-pc-linux-musl"
+    else
+        host_config=""
     fi
     PKG_CONFIG="pkg-config --static --with-path=${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig" \
         ./configure "${host_config}" --prefix="${PREFIX}" --enable-static --enable-shared=no --enable-lib-only;
@@ -416,7 +416,7 @@ curl_config() {
     enable_libidn2="--with-libidn2"
     enable_libssh2="--with-libssh2"
 
-    if [ "${CROSS}" -ne 1 ]; then
+    if [ "${CROSS}" -eq 1 ]; then
         host_config="--host=${ARCH}-pc-linux-musl"
     fi
 
