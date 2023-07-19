@@ -11,7 +11,7 @@ Simply execute it to compile the most recent version.
 - [libssh2](https://github.com/libssh2/libssh2)
 - [nghttp3](https://github.com/ngtcp2/nghttp3)
 - [ngtcp2](https://github.com/ngtcp2/ngtcp2)
-- [nghttp2](https://github.com/nghttp2/nghttp[curl-static-cross.sh](curl-static-cross.sh)2)
+- [nghttp2](https://github.com/nghttp2/nghttp2)
 - [brotli](https://github.com/google/brotli)
 - [zstd](https://github.com/facebook/zstd)
 - [zlib](https://zlib.net)
