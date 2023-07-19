@@ -50,6 +50,12 @@ init_env() {
     echo "ngtcp2 version: ${NGTCP2_VERSION}"
     echo "nghttp3 version: ${NGHTTP3_VERSION}"
     echo "nghttp2 version: ${NGHTTP2_VERSION}"
+    echo "zlib version: ${ZLIB_VERSION}"
+    echo "libunistring version: ${LIBUNISTRING_VERSION}"
+    echo "libidn2 version: ${LIBIDN2_VERSION}"
+    echo "brotli version: ${BROTLI_VERSION}"
+    echo "zstd version: ${ZSTD_VERSION}"
+    echo "libssh2 version: ${LIBSSH2_VERSION}"
 
     export PKG_CONFIG_PATH="${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig"
 }
@@ -307,7 +313,7 @@ compile_libssh2() {
     local url host_config
     change_dir;
 
-    url=$(url_from_github libssh2/libssh2)
+    url=$(url_from_github libssh2/libssh2 "${LIBSSH2_VERSION}")
     download_and_extract "${url}"
 
     autoreconf -fi
@@ -393,7 +399,7 @@ compile_brotli() {
     local url
     change_dir;
 
-    url=$(url_from_github google/brotli)
+    url=$(url_from_github google/brotli "${BROTLI_VERSION}")
     download_and_extract "${url}"
 
     mkdir -p out
@@ -416,7 +422,7 @@ compile_zstd() {
     local url
     change_dir;
 
-    url=$(url_from_github facebook/zstd)
+    url=$(url_from_github facebook/zstd "${ZSTD_VERSION}")
     download_and_extract "${url}"
 
     PKG_CONFIG="pkg-config --static --with-path=${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig" \
@@ -582,6 +588,9 @@ main() {
             -e NGHTTP3_VERSION="${NGHTTP3_VERSION}" \
             -e NGHTTP2_VERSION="${NGHTTP2_VERSION}" \
             -e ZLIB_VERSION="${ZLIB_VERSION}" \
+            -e ZSTD_VERSION="${ZSTD_VERSION}" \
+            -e BROTLI_VERSION="${BROTLI_VERSION}" \
+            -e LIBSSH2_VERSION="${LIBSSH2_VERSION}" \
             -e LIBUNISTRING_VERSION="${LIBUNISTRING_VERSION}" \
             -e LIBIDN2_VERSION="${LIBIDN2_VERSION}" \
             alpine:latest sh "${RELEASE_DIR}/${base_name}" 2>&1 | tee -a "${container_name}.log"
