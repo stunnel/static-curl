@@ -79,7 +79,10 @@ jobs:
       - name: List compiled files
         run: |
           ls -l release bin
+          echo
           file bin/curl*
+          echo
+          sha256sum bin/curl*
 
       - name: Upload Release Asset
         uses: softprops/action-gh-release@v1
