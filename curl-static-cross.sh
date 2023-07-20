@@ -530,11 +530,11 @@ EOF
 }
 
 create_checksum() {
-    cd "${RELEASE_DIR}/bin"
+    cd "${RELEASE_DIR}"
     local output_sha256 markdown_table
 
     echo "Creating checksum..."
-    output_sha256=$(sha256sum curl-* | sed 's/curl-/curl\t/g')
+    output_sha256=$(sha256sum bin/curl-* | sed 's#bin/curl-#curl\t#g')
     markdown_table=$(printf "%s" "${output_sha256}" |
         awk 'BEGIN {print "| File |  Arch  | SHA256 |\n|------|--------|--------|"} {printf("| %s | %s  | %s |\n", $2, $3, $1)}')
 
