@@ -508,7 +508,7 @@ create_release_note() {
     local components protocols features
 
     echo "Creating release note..."
-    components=$("bin/curl-${arch}" -V | head -n 1 | sed 's/ /\n/g' | grep '/' | sed 's#^#- #g' || true)
+    components=$("bin/curl-${arch}" -V | head -n 1 | sed 's#OpenSSL/#quictls/#g' | sed 's/ /\n/g' | grep '/' | sed 's#^#- #g' || true)
     protocols=$(grep Protocols "${1}/config.log" | cut -d":" -f2 | sed -e 's/^[[:space:]]*//')
     features=$(grep Features "${1}/config.log" | cut -d":" -f2 | sed -e 's/^[[:space:]]*//')
 
@@ -526,6 +526,24 @@ ${protocols}
 ## Features
 
 ${features}
+EOF
+}
+
+create_checksum() {
+    cd "${RELEASE_DIR}/bin"
+    local output_sha256 markdown_table
+
+    echo "Creating checksum..."
+    output_sha256=$(sha256sum curl-* | sed 's/curl-/curl\t/g')
+    markdown_table=$(printf "%s" "${output_sha256}" |
+        awk 'BEGIN {print "| File |  Arch  | SHA256 |\n|------|--------|--------|"} {printf("| %s | %s  | %s |\n", $2, $3, $1)}')
+
+    cat >> release/release.md<<EOF
+
+## Checksums
+
+${markdown_table}
+
 EOF
 }
 
@@ -632,6 +650,8 @@ main() {
         # else compile for the specified ARCH
         compile;
     fi
+
+    create_checksum;
 }
 
 # If the first argument is not "--source-only" then run the script,
