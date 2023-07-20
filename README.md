@@ -29,13 +29,26 @@ The binary is built with GitHub Actions.
 
 ## Compile
 
-This script uses `qbt-musl-cross-make` for cross-compilation, supporting x86_64, aarch64, armv7l, i686, riscv64, s390x, mips64, mips64el, mips, mipsel, powerpc64le, and powerpc architectures.
+This script uses `qbt-musl-cross-make` for cross-compilation, supporting the following architectures:
+
+- x86_64
+- aarch64
+- armv7l
+- i686
+- riscv64
+- s390x
+- mips64
+- mips64el
+- mips
+- mipsel
+- powerpc64le
+- powerpc
 
 ### How to compile
 
 - To compile locally, install Docker, clone the Git repository, navigate to the repository directory, and then execute the following command:  
 `sh curl-static-cross.sh`  
-script will create a container and compile cURL.
+script will create a container and compile the host architecture cURL only.
 
 - To compile in docker, run:  
   ```shell
@@ -43,17 +56,35 @@ script will create a container and compile cURL.
       --name "build-curl-$(date +%Y%m%d-%H%M)" \
       -e ARCH=all \
       -e ARCHS="x86_64 aarch64 armv7l i686 riscv64 s390x mips64 mips64el mips mipsel powerpc64le powerpc" \
-      -e CURL_VERSION=8.1.2 \
-      -e QUICTLS_VERSION=3.0.9 \
-      -e NGTCP2_VERSION=0.15.0 \
-      -e NGHTTP3_VERSION=0.12.0 \
-      -e NGHTTP2_VERSION=1.54.0 \
-      -e ZLIB_VERSION=1.2.13 \
-      -e LIBUNISTRING_VERSION=1.1 \
-      -e LIBIDN2_VERSION=2.3.4 \
+      -e CURL_VERSION="" \
+      -e QUICTLS_VERSION="" \
+      -e NGTCP2_VERSION="" \
+      -e NGHTTP3_VERSION="" \
+      -e NGHTTP2_VERSION="" \
+      -e ZLIB_VERSION="" \
+      -e LIBUNISTRING_VERSION="" \
+      -e LIBIDN2_VERSION="" \
       alpine:latest sh curl-static-cross.sh
   ```
-  **There might be some breaking changes in ngtcp2, so it's important to ensure that its version is compatible with the current version of cURL.**
+  **There might be some breaking changes in `ngtcp2`, so it's important to ensure that its version is compatible with the current version of cURL.**
+
+Supported Environment Variables list:  
+For all `VERSION` variables, leaving them blank will automatically fetch the latest version.
+
+- `ARCH`: The architecture to compile. The default is the host architecture. If set to `all`, all architectures listed in `ARCHS` will be compiled.
+- `ARCHS`: The list of architectures to compile. You can set one or multiple architectures from the following options: `x86_64 aarch64 armv7l i686 riscv64 s390x mips64 mips64el mips mipsel powerpc64le powerpc`.
+- `CURL_VERSION`: The version of cURL.
+- `QUICTLS_VERSION`: The version of quictls.
+- `NGTCP2_VERSION`: The version of ngtcp2.
+- `NGHTTP3_VERSION`: The version of nghttp3.
+- `NGHTTP2_VERSION`: The version of nghttp2.
+- `LIBUNISTRING_VERSION`: The version of libunistring.
+- `LIBIDN2_VERSION`: The version of libidn2.
+- `LIBSSH2_VERSION`: The version of libssh2.
+- `ZLIB_VERSION`: The version of zlib.
+- `BROTLI_VERSION`: The version of brotli.
+- `ZSTD_VERSION`: The version of zstd.
+- `ENABLE_DEBUG`: Enable curl debug. Default is `false`, set to `true` or `yes` to enable it.
 
 The compiled files will be saved in the current `release` directory.
 
