@@ -54,6 +54,7 @@ jobs:
           BROTLI_VERSION=${BROTLI_VERSION}
           ZSTD_VERSION=${ZSTD_VERSION}
           LIBSSH2_VERSION=${LIBSSH2_VERSION}
+          TOKEN_READ=${TOKEN_READ}
           sh curl-static-mac.sh
         env:
           TOKEN_READ: ${{ secrets.TOKEN_READ }}
