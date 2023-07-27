@@ -93,7 +93,9 @@ url_from_github() {
 
     if [ ! -f "github-${repo#*/}.json" ]; then
         # GitHub API has a limit of 60 requests per hour, cache the results.
-        curl -s "https://api.github.com/repos/${repo}/releases" -o "github-${repo#*/}.json"
+        curl "https://api.github.com/repos/${repo}/releases" \
+            -w "http_code: %{http_code} download_size: %{size_download} bytes\n" \
+            -o "github-${repo#*/}.json" --compressed -s -L
     fi
 
     if [ -z "${version}" ]; then
