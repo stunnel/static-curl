@@ -96,15 +96,13 @@ url_from_github() {
         echo "Downloading ${repo} releases from GitHub ..."
         echo "URL: https://api.github.com/repos/${repo}/releases"
         set +o xtrace
-        token="${TOKEN_READ}"
-        [ -z "${token}" ] && token=$(cat .token)
+        [ -n "${TOKEN_READ}" ] && token_header="-H Authorization: \"token ${TOKEN_READ}\""
         status_code=$(curl "https://api.github.com/repos/${repo}/releases" \
             -w "%{http_code}" \
             -o "github-${repo#*/}.json" \
             -H "Accept: application/vnd.github.v3+json" \
-            -H "Authorization: token ${token}" \
-            -s -L --compressed;)
-        token=""
+            "${token_header}" -s -L --compressed;)
+        token_header=""
         set -o xtrace
         if [ "${status_code}" -ne 200 ]; then
             echo "Failed to download ${repo} releases from GitHub."

@@ -22,6 +22,7 @@ jobs:
           echo "brotli version: ${BROTLI_VERSION}"
           echo "zstd version: ${ZSTD_VERSION}"
           echo "libssh2 version: ${LIBSSH2_VERSION}"
+          echo "test env: ${TEST_ENV}"
         env:
           CURL_VERSION: ${{ vars.CURL_VERSION }}
           QUICTLS_VERSION: ${{ vars.QUICTLS_VERSION }}
@@ -34,6 +35,7 @@ jobs:
           BROTLI_VERSION: ${{ vars.BROTLI_VERSION }}
           ZSTD_VERSION: ${{ vars.ZSTD_VERSION }}
           LIBSSH2_VERSION: ${{ vars.LIBSSH2_VERSION }}
+          TEST_ENV: ${{ vars.TEST_ENV }}
 
       - name: Checkout
         uses: actions/checkout@v3
@@ -42,7 +44,6 @@ jobs:
 
       - name: Build Static cURL on macOS
         run: |
-          echo "${TOKEN_READ}" > .token
           ARCHS="${ARCHS}"
           CURL_VERSION=${CURL_VERSION}
           QUICTLS_VERSION=${QUICTLS_VERSION}
