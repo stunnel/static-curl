@@ -99,7 +99,6 @@ url_from_github() {
             -w "%{http_code}" \
             -o "github-${repo#*/}.json" \
             -H "Accept: application/vnd.github.v3+json" \
-            -H "Authorization: Bearer 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" \
             -s -L --compressed;)
         if [ "${status_code}" -ne 200 ]; then
             echo "Failed to download ${repo} releases from GitHub."
