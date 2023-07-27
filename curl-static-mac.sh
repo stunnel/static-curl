@@ -14,7 +14,7 @@ init_env() {
     export DIR="${HOME}/curl"
     export PREFIX="${DIR}"
     export RELEASE_DIR="${DIR}"
-    export CC=/usr/local/opt/llvm@16/bin/clang CXX=/usr/local/opt/llvm@16/bin/clang++
+    export CC=/usr/local/opt/llvm/bin/clang CXX=/usr/local/opt/llvm/bin/clang++
     # export CC=clang CXX=clang++
     number=$(sysctl -n hw.ncpu 2>/dev/null)
     export CPU_CORES=${number:-1}
@@ -67,7 +67,7 @@ init_env() {
 }
 
 install_package() {
-    brew install automake autoconf libtool binutils pkg-config coreutils cmake make llvm@16 \
+    brew install automake autoconf libtool binutils pkg-config coreutils cmake make llvm \
          curl wget git jq xz ripgrep gnu-sed groff gnupg pcre2 cunit;
     # brew uninstall --ignore-dependencies openssl@1.1 openssl@3;
 }
