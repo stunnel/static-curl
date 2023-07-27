@@ -504,7 +504,7 @@ tar_curl() {
 
 create_release_note() {
     cd "${RELEASE_DIR}"
-    [ -f release.md ] && return
+    [ -f release/release.md ] && return
     local components protocols features
 
     echo "Creating release note..."
