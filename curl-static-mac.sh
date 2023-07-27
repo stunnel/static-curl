@@ -129,7 +129,7 @@ url_from_github() {
         url=$(printf "%s" "${browser_download_url}" | head -1 | awk '{print $2}' | sed 's/"//g')
     fi
 
-    echo "${url}"
+    export URL="${url}"
 }
 
 download_and_extract() {
@@ -172,7 +172,8 @@ compile_zlib() {
     local url
     change_dir;
 
-    url=$(url_from_github madler/zlib "${ZLIB_VERSION}")
+    url_from_github madler/zlib "${ZLIB_VERSION}"
+    url="${URL}"
     download_and_extract "${url}"
 
     LDFLAGS="${LDFLAGS}" \
@@ -219,7 +220,8 @@ compile_quictls() {
     local url
     change_dir;
 
-    url=$(url_from_github quictls/openssl "${QUICTLS_VERSION}")
+    url_from_github quictls/openssl "${QUICTLS_VERSION}"
+    url="${URL}"
     download_and_extract "${url}"
 
      LDFLAGS="${LDFLAGS}" \
@@ -244,7 +246,8 @@ compile_libssh2() {
     local url
     change_dir;
 
-    url=$(url_from_github libssh2/libssh2 "${LIBSSH2_VERSION}")
+    url_from_github libssh2/libssh2 "${LIBSSH2_VERSION}"
+    url="${URL}"
     download_and_extract "${url}"
 
     autoreconf -fi
@@ -262,7 +265,8 @@ compile_nghttp2() {
     local url
     change_dir;
 
-    url=$(url_from_github nghttp2/nghttp2 "${NGHTTP2_VERSION}")
+    url_from_github nghttp2/nghttp2 "${NGHTTP2_VERSION}"
+    url="${URL}"
     download_and_extract "${url}"
 
     autoreconf -i --force
@@ -278,7 +282,8 @@ compile_ngtcp2() {
     local url
     change_dir;
 
-    url=$(url_from_github ngtcp2/ngtcp2 "${NGTCP2_VERSION}")
+    url_from_github ngtcp2/ngtcp2 "${NGTCP2_VERSION}"
+    url="${URL}"
     download_and_extract "${url}"
 
     autoreconf -i --force
@@ -302,7 +307,8 @@ compile_nghttp3() {
     local url
     change_dir;
 
-    url=$(url_from_github ngtcp2/nghttp3 "${NGHTTP3_VERSION}")
+    url_from_github ngtcp2/nghttp3 "${NGHTTP3_VERSION}"
+    url="${URL}"
     download_and_extract "${url}"
 
     autoreconf -i --force
@@ -318,7 +324,8 @@ compile_brotli() {
     local url
     change_dir;
 
-    url=$(url_from_github google/brotli "${BROTLI_VERSION}")
+    url_from_github google/brotli "${BROTLI_VERSION}"
+    url="${URL}"
     download_and_extract "${url}"
 
     mkdir -p out
@@ -341,7 +348,8 @@ compile_zstd() {
     local url
     change_dir;
 
-    url=$(url_from_github facebook/zstd "${ZSTD_VERSION}")
+    url_from_github facebook/zstd "${ZSTD_VERSION}"
+    url="${URL}"
     download_and_extract "${url}"
 
     #cmake -B build-cmake-debug -S build/cmake -G Ninja -DCMAKE_OSX_ARCHITECTURES="x86_64;x86_64h;arm64"
@@ -392,7 +400,8 @@ compile_curl() {
     local url
     change_dir;
 
-    url=$(url_from_github curl/curl "${CURL_VERSION}")
+    url_from_github curl/curl "${CURL_VERSION}"
+    url="${URL}"
     download_and_extract "${url}"
     [ -z "${CURL_VERSION}" ] && CURL_VERSION=$(echo "${SOURCE_DIR}" | cut -d'-' -f 2)
 
