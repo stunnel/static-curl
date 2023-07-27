@@ -56,7 +56,6 @@ jobs:
           BROTLI_VERSION=${BROTLI_VERSION}
           ZSTD_VERSION=${ZSTD_VERSION}
           LIBSSH2_VERSION=${LIBSSH2_VERSION}
-          TOKEN_READ=${TOKEN_READ}
           bash curl-static-mac.sh
         env:
           CURL_VERSION: ${{ vars.CURL_VERSION }}
@@ -70,7 +69,6 @@ jobs:
           BROTLI_VERSION: ${{ vars.BROTLI_VERSION }}
           ZSTD_VERSION: ${{ vars.ZSTD_VERSION }}
           LIBSSH2_VERSION: ${{ vars.LIBSSH2_VERSION }}
-          TOKEN_READ: ${{ vars.TOKEN_READ }}
           ARCHS: "x86_64"
 
       - name: Set up environment

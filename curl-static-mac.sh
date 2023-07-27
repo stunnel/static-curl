@@ -1,9 +1,8 @@
 #!/bin/sh
 
-# To compile locally, install Docker, clone the Git repository, navigate to the repository directory,
+# To compile locally, clone the Git repository, navigate to the repository directory,
 # and then execute the following command:
-# ARCH=aarch64 CURL_VERSION=8.1.2 QUICTLS_VERSION=3.0.9 NGTCP2_VERSION=0.15.0 sh curl-static-cross.sh
-# script will create a container and compile curl.
+# ARCH=aarch64 CURL_VERSION=8.1.2 QUICTLS_VERSION=3.0.9 NGTCP2_VERSION=0.15.0 sh curl-static-mac.sh
 
 # There might be some breaking changes in ngtcp2, so it's important to ensure
 # that its version is compatible with the current version of cURL.
@@ -43,27 +42,8 @@ init_env() {
     echo "zstd version: ${ZSTD_VERSION}"
     echo "libssh2 version: ${LIBSSH2_VERSION}"
 
-#    export PKG_CONFIG_PATH="/usr/local/opt/quictls/lib/pkgconfig:\
-#/usr/local/opt/libnghttp2/lib/pkgconfig:/usr/local/opt/zlib/lib/pkgconfig:\
-#/usr/local/opt/zstd/lib/pkgconfig:/usr/local/opt/libidn2/lib/pkgconfig:\
-#/usr/local/opt/libunistring/lib/pkgconfig:/usr/local/opt/brotli/lib/pkgconfig:\
-#/usr/local/opt/libssh2/lib/pkgconfig";
-#    export LIB_PATH="/usr/local/opt/quictls/lib:\
-#/usr/local/opt/libnghttp2/lib:/usr/local/opt/zlib/lib:\
-#/usr/local/opt/zstd/lib:/usr/local/opt/libidn2/lib:\
-#/usr/local/opt/libunistring/lib:/usr/local/opt/brotli/lib:\
-#/usr/local/opt/libssh2/lib";
-#    export CPATH="/usr/local/opt/quictls/include:\
-#/usr/local/opt/libnghttp2/include:/usr/local/opt/zlib/include:\
-#/usr/local/opt/zstd/include:/usr/local/opt/libidn2/include:\
-#/usr/local/opt/libunistring/include:/usr/local/opt/brotli/include:\
-#/usr/local/opt/libssh2/include";
-
     export LDFLAGS="-framework CoreFoundation -framework SystemConfiguration"
     export PKG_CONFIG_PATH="${PREFIX}/lib/pkgconfig"
-#    export LDFLAGS="-L/usr/local/opt/quictls/lib"
-#    export CPPFLAGS="-I/usr/local/opt/quictls/include"
-#    export CFLAGS="-I/usr/local/opt/quictls/include"
 }
 
 install_package() {
@@ -95,15 +75,11 @@ url_from_github() {
         # GitHub API has a limit of 60 requests per hour, cache the results.
         echo "Downloading ${repo} releases from GitHub ..."
         echo "URL: https://api.github.com/repos/${repo}/releases"
-        set +o xtrace
-        [ -n "${TOKEN_READ}" ] && token_header="-H Authorization: \"token ${TOKEN_READ}\""
         status_code=$(curl "https://api.github.com/repos/${repo}/releases" \
             -w "%{http_code}" \
             -o "github-${repo#*/}.json" \
             -H "Accept: application/vnd.github.v3+json" \
-            "${token_header}" -s -L --compressed;)
-        token_header=""
-        set -o xtrace
+            -s -L --compressed)
         if [ "${status_code}" -ne 200 ]; then
             echo "Failed to download ${repo} releases from GitHub."
             cat "github-${repo#*/}.json"
@@ -365,11 +341,6 @@ compile_zstd() {
     url="${URL}"
     download_and_extract "${url}"
 
-    #cmake -B build-cmake-debug -S build/cmake -G Ninja -DCMAKE_OSX_ARCHITECTURES="x86_64;x86_64h;arm64"
-    #cd build-cmake-debug
-    #ninja
-    #sudo ninja install
-
     PKG_CONFIG="pkg-config --static" LDFLAGS="${LDFLAGS}" \
         gmake -j "${CPU_CORES}" PREFIX="${PREFIX}";
     gmake install;
@@ -423,9 +394,7 @@ compile_curl() {
         CFLAGS="-I${PREFIX}/include -I${PREFIX}/include/brotli" \
         CPPFLAGS="-I${PREFIX}/include -I${PREFIX}/include/brotli" \
         gmake -j "${CPU_CORES}";
-#        LDFLAGS="-static" \
-#        CFLAGS="-I${CPATH} -I${PREFIX}/include" \
-#        CPPFLAGS="-I${CPATH} -I${PREFIX}/include";
+
     tar_curl;
 }
 
