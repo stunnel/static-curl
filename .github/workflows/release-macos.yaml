@@ -54,7 +54,7 @@ jobs:
           BROTLI_VERSION=${BROTLI_VERSION}
           ZSTD_VERSION=${ZSTD_VERSION}
           LIBSSH2_VERSION=${LIBSSH2_VERSION}
-          sh curl-static-cross.sh
+          sh curl-static-mac.sh
         env:
           CURL_VERSION: ${{ vars.CURL_VERSION }}
           QUICTLS_VERSION: ${{ vars.QUICTLS_VERSION }}
