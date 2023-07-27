@@ -26,8 +26,10 @@ init_env() {
             export ENABLE_DEBUG="" ;;
     esac
 
+    local token_read
+    token_read=$(echo "${TOKEN_READ}" | cut -c 1-8)
     echo "Test: ${TEST_ENV}"
-    echo "GitHub Token: $(echo "${TOKEN_READ}" | cut -c 1-8)"
+    echo "GitHub Token: ${token_read}"
     echo "Source directory: ${DIR}"
     echo "Prefix directory: ${PREFIX}"
     echo "Release directory: ${RELEASE_DIR}"
