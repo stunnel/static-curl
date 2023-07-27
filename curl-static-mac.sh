@@ -113,7 +113,9 @@ url_from_github() {
               echo "${tags}" | rg browser_download_url || true)
 
     if [ -z "${browser_download_urls}" ]; then
-        tag_name=$(echo "${tags}" | jq -r '.tag_name')
+        tag_name=$(echo "${tags}" | jq -r '.tag_name' ||
+                   echo "${tags}" | rg '"tag_name"' | sed 's/"tag_name": "\([^"]*\)",/\1/')
+        # parse error sometimes: Invalid string: control characters from U+0000 through U+001F must be escaped at line 51, column 1
         url="https://github.com/${repo}/archive/refs/tags/${tag_name}.tar.gz"
     else
         suffixes="tar.xz tar.gz tar.bz2 tgz"
