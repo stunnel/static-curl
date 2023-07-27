@@ -96,7 +96,8 @@ url_from_github() {
         echo "Downloading ${repo} releases from GitHub ..."
         echo "URL: https://api.github.com/repos/${repo}/releases"
         set +o xtrace
-        token=$(cat .token)
+        token="${TOKEN_READ}"
+        [ -z "${token}" ] && token=$(cat .token)
         status_code=$(curl "https://api.github.com/repos/${repo}/releases" \
             -w "%{http_code}" \
             -o "github-${repo#*/}.json" \
