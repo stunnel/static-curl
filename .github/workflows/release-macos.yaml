@@ -41,21 +41,7 @@ jobs:
           fetch-depth: 1
 
       - name: Build Static cURL on macOS
-        run: |
-          ARCHS="${ARCHS}"
-          CURL_VERSION=${CURL_VERSION}
-          QUICTLS_VERSION=${QUICTLS_VERSION}
-          NGTCP2_VERSION=${NGTCP2_VERSION}
-          NGHTTP3_VERSION=${NGHTTP3_VERSION}
-          NGHTTP2_VERSION=${NGHTTP2_VERSION}
-          LIBIDN2_VERSION=${LIBIDN2_VERSION}
-          LIBUNISTRING_VERSION=${LIBUNISTRING_VERSION}
-          ZLIB_VERSION=${ZLIB_VERSION}
-          BROTLI_VERSION=${BROTLI_VERSION}
-          ZSTD_VERSION=${ZSTD_VERSION}
-          LIBSSH2_VERSION=${LIBSSH2_VERSION}
-          TOKEN_READ=${TOKEN_READ}
-          sh curl-static-mac.sh
+        run: bash curl-static-mac.sh
         env:
           TOKEN_READ: ${{ secrets.TOKEN_READ }}
           CURL_VERSION: ${{ vars.CURL_VERSION }}
@@ -69,6 +55,7 @@ jobs:
           BROTLI_VERSION: ${{ vars.BROTLI_VERSION }}
           ZSTD_VERSION: ${{ vars.ZSTD_VERSION }}
           LIBSSH2_VERSION: ${{ vars.LIBSSH2_VERSION }}
+          TEST_ENV: "macOS"
           ARCHS: "x86_64"
 
       - name: Set up environment

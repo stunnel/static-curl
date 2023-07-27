@@ -26,6 +26,7 @@ init_env() {
             export ENABLE_DEBUG="" ;;
     esac
 
+    echo "Test: ${TEST_ENV}"
     echo "GitHub Token: $(echo "${TOKEN_READ}" | cut -c 1-8)"
     echo "Source directory: ${DIR}"
     echo "Prefix directory: ${PREFIX}"
