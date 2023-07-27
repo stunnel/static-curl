@@ -80,6 +80,8 @@ jobs:
           echo
           file bin/curl*
           echo
+          otool -L bin/curl*
+          echo
           sha256sum bin/curl*
 
       - name: Upload Release Asset
