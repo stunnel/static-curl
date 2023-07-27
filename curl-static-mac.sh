@@ -109,7 +109,8 @@ url_from_github() {
                or (.name | contains(\"${version}\")))" "github-${repo#*/}.json")
     fi
 
-    browser_download_urls=$(echo "${tags}" | jq -r '.assets[]' | rg browser_download_url || true)
+    browser_download_urls=$(echo "${tags}" | jq -r '.assets[]' | rg browser_download_url ||
+              echo "${tags}" | rg browser_download_url || true)
 
     if [ -z "${browser_download_urls}" ]; then
         tag_name=$(echo "${tags}" | jq -r '.tag_name')
