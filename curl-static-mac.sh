@@ -29,6 +29,7 @@ init_env() {
     local token_read
     token_read=$(echo "${TOKEN_READ}" | cut -c 1-8)
     echo "Test: ${TEST_ENV}"
+    echo "Test Secret: ${TEST_SECRET}"
     echo "GitHub Token: ${token_read}"
     echo "Source directory: ${DIR}"
     echo "Prefix directory: ${PREFIX}"
