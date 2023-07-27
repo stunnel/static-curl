@@ -95,11 +95,16 @@ url_from_github() {
         # GitHub API has a limit of 60 requests per hour, cache the results.
         echo "Downloading ${repo} releases from GitHub ..."
         echo "URL: https://api.github.com/repos/${repo}/releases"
-        curl "https://api.github.com/repos/${repo}/releases" \
-            -w "http_code: %{http_code} download_size: %{size_download} bytes\n" \
+        status_code=$(curl "https://api.github.com/repos/${repo}/releases" \
+            -w "%{http_code}" \
             -o "github-${repo#*/}.json" \
             -H "Accept: application/vnd.github.v3+json" \
-            -s -L --compressed;
+            -s -L --compressed;)
+        if [ "${status_code}" -ne 200 ]; then
+            echo "Failed to download ${repo} releases from GitHub."
+            cat "github-${repo#*/}.json"
+            exit 1
+        fi
     fi
 
     if [ -z "${version}" ]; then
