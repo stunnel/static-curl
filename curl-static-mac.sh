@@ -68,8 +68,7 @@ init_env() {
 
 install_package() {
     brew install automake autoconf libtool binutils pkg-config coreutils cmake make llvm@16 \
-        curl wget git jq xz ripgrep gnu-sed groff gnupg pcre2 cunit ninja \
-        quictls libnghttp2;
+         curl wget git jq xz ripgrep gnu-sed groff gnupg pcre2 cunit;
     # brew uninstall --ignore-dependencies openssl@1.1 openssl@3;
 }
 
