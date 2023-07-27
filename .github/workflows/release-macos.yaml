@@ -40,7 +40,7 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Cross Build Static cURL
+      - name: Build Static cURL on macOS
         run: |
           ARCHS="${ARCHS}"
           CURL_VERSION=${CURL_VERSION}
