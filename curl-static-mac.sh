@@ -26,6 +26,7 @@ init_env() {
             export ENABLE_DEBUG="" ;;
     esac
 
+    echo "GitHub Token: $(echo "${TOKEN_READ}" | cut -c 1-8)"
     echo "Source directory: ${DIR}"
     echo "Prefix directory: ${PREFIX}"
     echo "Release directory: ${RELEASE_DIR}"
@@ -100,7 +101,7 @@ url_from_github() {
             -w "http_code: %{http_code} download_size: %{size_download} bytes\n" \
             -o "github-${repo#*/}.json" \
             -H "Accept: application/vnd.github.v3+json" \
-            -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+            -H "Authorization: Bearer ${TOKEN_READ}" \
             -s -L --compressed;
         set -o xtrace
     fi
