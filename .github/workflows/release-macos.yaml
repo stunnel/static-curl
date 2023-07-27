@@ -22,6 +22,7 @@ jobs:
           echo "brotli version: ${BROTLI_VERSION}"
           echo "zstd version: ${ZSTD_VERSION}"
           echo "libssh2 version: ${LIBSSH2_VERSION}"
+          echo "test env: ${TEST_ENV}"
         env:
           CURL_VERSION: ${{ vars.CURL_VERSION }}
           QUICTLS_VERSION: ${{ vars.QUICTLS_VERSION }}
@@ -34,13 +35,14 @@ jobs:
           BROTLI_VERSION: ${{ vars.BROTLI_VERSION }}
           ZSTD_VERSION: ${{ vars.ZSTD_VERSION }}
           LIBSSH2_VERSION: ${{ vars.LIBSSH2_VERSION }}
+          TEST_ENV: ${{ vars.TEST_ENV }}
 
       - name: Checkout
         uses: actions/checkout@v3
         with:
           fetch-depth: 1
 
-      - name: Cross Build Static cURL
+      - name: Build Static cURL on macOS
         run: |
           ARCHS="${ARCHS}"
           CURL_VERSION=${CURL_VERSION}
@@ -54,7 +56,7 @@ jobs:
           BROTLI_VERSION=${BROTLI_VERSION}
           ZSTD_VERSION=${ZSTD_VERSION}
           LIBSSH2_VERSION=${LIBSSH2_VERSION}
-          sh curl-static-cross.sh
+          bash curl-static-mac.sh
         env:
           CURL_VERSION: ${{ vars.CURL_VERSION }}
           QUICTLS_VERSION: ${{ vars.QUICTLS_VERSION }}
@@ -79,6 +81,8 @@ jobs:
           ls -l release bin
           echo
           file bin/curl*
+          echo
+          otool -L bin/curl*
           echo
           sha256sum bin/curl*
 
