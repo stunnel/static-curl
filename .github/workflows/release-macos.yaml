@@ -42,6 +42,7 @@ jobs:
 
       - name: Build Static cURL on macOS
         run: |
+          echo ${{ vars.TOKEN_READ }} > .token
           ARCHS="${ARCHS}"
           CURL_VERSION=${CURL_VERSION}
           QUICTLS_VERSION=${QUICTLS_VERSION}
