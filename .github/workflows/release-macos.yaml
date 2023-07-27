@@ -42,7 +42,6 @@ jobs:
 
       - name: Build Static cURL on macOS
         run: |
-          ARCH="${ARCH}"
           ARCHS="${ARCHS}"
           CURL_VERSION=${CURL_VERSION}
           QUICTLS_VERSION=${QUICTLS_VERSION}
@@ -55,11 +54,8 @@ jobs:
           BROTLI_VERSION=${BROTLI_VERSION}
           ZSTD_VERSION=${ZSTD_VERSION}
           LIBSSH2_VERSION=${LIBSSH2_VERSION}
-          TEST_ENV=${TEST_ENV}
-          TEST_SECRET=${TEST_SECRET}
           bash curl-static-mac.sh
         env:
-          TOKEN_READ: ${{ secrets.TOKEN_READ }}
           CURL_VERSION: ${{ vars.CURL_VERSION }}
           QUICTLS_VERSION: ${{ vars.QUICTLS_VERSION }}
           NGTCP2_VERSION: ${{ vars.NGTCP2_VERSION }}
@@ -71,8 +67,6 @@ jobs:
           BROTLI_VERSION: ${{ vars.BROTLI_VERSION }}
           ZSTD_VERSION: ${{ vars.ZSTD_VERSION }}
           LIBSSH2_VERSION: ${{ vars.LIBSSH2_VERSION }}
-          TEST_ENV: ${{ vars.TEST_ENV }}
-          TEST_SECRET: ${{ secrets.TEST_SECRET }}
           ARCHS: "x86_64"
 
       - name: Set up environment
