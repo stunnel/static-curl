@@ -56,6 +56,7 @@ jobs:
           LIBSSH2_VERSION=${LIBSSH2_VERSION}
           sh curl-static-mac.sh
         env:
+          GITHUB_TOKEN: ${{ secrets.TOKEN_READ }}
           CURL_VERSION: ${{ vars.CURL_VERSION }}
           QUICTLS_VERSION: ${{ vars.QUICTLS_VERSION }}
           NGTCP2_VERSION: ${{ vars.NGTCP2_VERSION }}

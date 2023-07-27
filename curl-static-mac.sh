@@ -93,9 +93,16 @@ url_from_github() {
 
     if [ ! -f "github-${repo#*/}.json" ]; then
         # GitHub API has a limit of 60 requests per hour, cache the results.
+        echo "Downloading ${repo} releases from GitHub ..."
+        echo "URL: https://api.github.com/repos/${repo}/releases"
+        set +o xtrace
         curl "https://api.github.com/repos/${repo}/releases" \
             -w "http_code: %{http_code} download_size: %{size_download} bytes\n" \
-            -o "github-${repo#*/}.json" --compressed -s -L
+            -o "github-${repo#*/}.json" \
+            -H "Accept: application/vnd.github.v3+json" \
+            -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+            -s -L --compressed;
+        set -o xtrace
     fi
 
     if [ -z "${version}" ]; then
