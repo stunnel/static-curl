@@ -2,7 +2,7 @@
 
 # To compile locally, clone the Git repository, navigate to the repository directory,
 # and then execute the following command:
-# ARCH=aarch64 CURL_VERSION=8.1.2 QUICTLS_VERSION=3.0.9 NGTCP2_VERSION=0.15.0 sh curl-static-mac.sh
+# ARCH=aarch64 CURL_VERSION=8.1.2 QUICTLS_VERSION=3.0.9 NGTCP2_VERSION=0.15.0 bash curl-static-mac.sh
 
 # There might be some breaking changes in ngtcp2, so it's important to ensure
 # that its version is compatible with the current version of cURL.
@@ -10,11 +10,9 @@
 
 init_env() {
     local number
-    export DIR="${HOME}/curl"
-    export PREFIX="${DIR}"
-    export RELEASE_DIR="${DIR}"
+    export DIR="${DIR:-${HOME}/build}"
+    export PREFIX="${DIR}/curl"
     export CC=/usr/local/opt/llvm/bin/clang CXX=/usr/local/opt/llvm/bin/clang++
-    # export CC=clang CXX=clang++
     number=$(sysctl -n hw.ncpu 2>/dev/null)
     export CPU_CORES=${number:-1}
 
@@ -27,7 +25,7 @@ init_env() {
 
     echo "Source directory: ${DIR}"
     echo "Prefix directory: ${PREFIX}"
-    echo "Release directory: ${RELEASE_DIR}"
+    echo "Release directory: ${HOME}"
     echo "Architecture: ${ARCH}"
     echo "Compiler: ${CC} ${CXX}"
     echo "cURL version: ${CURL_VERSION}"
@@ -67,7 +65,7 @@ arch_variants() {
 }
 
 url_from_github() {
-    local browser_download_urls browser_download_url url repo version tag_name tags
+    local browser_download_urls browser_download_url url repo version tag_name tags auth_header
     repo=$1
     version=$2
 
@@ -75,11 +73,22 @@ url_from_github() {
         # GitHub API has a limit of 60 requests per hour, cache the results.
         echo "Downloading ${repo} releases from GitHub ..."
         echo "URL: https://api.github.com/repos/${repo}/releases"
+
+        # get token from github settings
+        set +o xtrace
+        if [ -n "${TOKEN_READ}" ]; then
+            auth_header="token ${TOKEN_READ}"
+        else
+            auth_header=""
+        fi
         status_code=$(curl "https://api.github.com/repos/${repo}/releases" \
             -w "%{http_code}" \
             -o "github-${repo#*/}.json" \
-            -H "Accept: application/vnd.github.v3+json" \
+            -H "Authorization: ${auth_header}" \
             -s -L --compressed)
+        auth_header=""
+        set -o xtrace
+
         if [ "${status_code}" -ne 200 ]; then
             echo "Failed to download ${repo} releases from GitHub."
             cat "github-${repo#*/}.json"
@@ -384,6 +393,9 @@ compile_curl() {
     local url
     change_dir;
 
+    mkdir -p "${PREFIX}/lib/dylib"
+    mv "${PREFIX}/lib/"*.dylib "${PREFIX}/lib/dylib/"
+
     url_from_github curl/curl "${CURL_VERSION}"
     url="${URL}"
     download_and_extract "${url}"
@@ -399,17 +411,20 @@ compile_curl() {
 }
 
 tar_curl() {
-    mkdir -p "${RELEASE_DIR}/release/" "${RELEASE_DIR}/bin/"
+    mkdir -p "${HOME}/release/" "${HOME}/bin/"
 
     strip src/curl
     ls -l src/curl
+    file src/curl
+    otool -L src/curl
+    sha256sum src/curl
     src/curl -V || true
 
-    echo "${CURL_VERSION}" > "${RELEASE_DIR}/version.txt"
-    cp -f src/curl "${RELEASE_DIR}/release/curl"
-    ln "${RELEASE_DIR}/release/curl" "${RELEASE_DIR}/bin/curl-${arch}"
-    tar -Jcf "${RELEASE_DIR}/release/curl-macos-${arch}-${CURL_VERSION}.tar.xz" -C "${RELEASE_DIR}/release" curl;
-    rm -f "${RELEASE_DIR}/release/curl";
+    echo "${CURL_VERSION}" > "${HOME}/curl_version.txt"
+    cp -f src/curl "${HOME}/release/curl"
+    ln "${HOME}/release/curl" "${HOME}/bin/curl-${arch}"
+    tar -Jcf "${HOME}/release/curl-macos-${arch}-${CURL_VERSION}.tar.xz" -C "${HOME}/release" curl;
+    rm -f "${HOME}/release/curl";
 }
 
 compile() {
