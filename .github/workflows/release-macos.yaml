@@ -80,7 +80,7 @@ jobs:
         run: |
           ls -l "${HOME}"
           VERSION=`cat "${HOME}/curl_version.txt" 2>/dev/null || cat /tmp/curl_version.txt`
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "VERSION=${VERSION}" >> $GITHUB_ENV
           echo "RELEASE_HOME=${HOME}" >> $GITHUB_ENV
 
       - name: Upload Release Asset
