@@ -67,7 +67,7 @@ arch_variants() {
 }
 
 url_from_github() {
-    local browser_download_urls browser_download_url url repo version tag_name tags
+    local browser_download_urls browser_download_url url repo version tag_name tags auth_header
     repo=$1
     version=$2
 
@@ -75,11 +75,22 @@ url_from_github() {
         # GitHub API has a limit of 60 requests per hour, cache the results.
         echo "Downloading ${repo} releases from GitHub ..."
         echo "URL: https://api.github.com/repos/${repo}/releases"
+
+        # get token from github settings
+        set +o xtrace
+        if [ -n "${TOKEN_READ}" ]; then
+            auth_header="token ${TOKEN_READ}"
+        else
+            auth_header=""
+        fi
         status_code=$(curl "https://api.github.com/repos/${repo}/releases" \
             -w "%{http_code}" \
             -o "github-${repo#*/}.json" \
-            -H "Accept: application/vnd.github.v3+json" \
+            -H "Authorization: ${auth_header}" \
             -s -L --compressed)
+        auth_header=""
+        set -o xtrace
+
         if [ "${status_code}" -ne 200 ]; then
             echo "Failed to download ${repo} releases from GitHub."
             cat "github-${repo#*/}.json"
