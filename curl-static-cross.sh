@@ -268,6 +268,7 @@ compile_zlib() {
 
     url_from_github madler/zlib "${ZLIB_VERSION}"
     url="${URL}"
+    download_and_extract "${url}"
 
     ./configure --prefix="${PREFIX}" --static;
     make -j "$(nproc)";
