@@ -12,7 +12,6 @@ init_env() {
     local number
     export DIR="${DIR:-${HOME}/build}"
     export PREFIX="${DIR}/curl"
-    export RELEASE_DIR="${RELEASE_DIR:-${DIR}}"
     export CC=/usr/local/opt/llvm/bin/clang CXX=/usr/local/opt/llvm/bin/clang++
     number=$(sysctl -n hw.ncpu 2>/dev/null)
     export CPU_CORES=${number:-1}
@@ -26,7 +25,7 @@ init_env() {
 
     echo "Source directory: ${DIR}"
     echo "Prefix directory: ${PREFIX}"
-    echo "Release directory: ${RELEASE_DIR}"
+    echo "Release directory: ${HOME}"
     echo "Architecture: ${ARCH}"
     echo "Compiler: ${CC} ${CXX}"
     echo "cURL version: ${CURL_VERSION}"
@@ -394,6 +393,9 @@ compile_curl() {
     local url
     change_dir;
 
+    mkdir -p "${PREFIX}/lib/dylib"
+    mv "${PREFIX}/lib/"*.dylib "${PREFIX}/lib/dylib/"
+
     url_from_github curl/curl "${CURL_VERSION}"
     url="${URL}"
     download_and_extract "${url}"
@@ -409,20 +411,20 @@ compile_curl() {
 }
 
 tar_curl() {
-    mkdir -p "${RELEASE_DIR}/release/" "${RELEASE_DIR}/bin/"
+    mkdir -p "${HOME}/release/" "${HOME}/bin/"
 
     strip src/curl
     ls -l src/curl
     file src/curl
     otool -L src/curl
+    sha256sum src/curl
     src/curl -V || true
 
-    echo "${CURL_VERSION}" > "${RELEASE_DIR}/curl_version.txt"
-    ln -s "${RELEASE_DIR}/curl_version.txt" /tmp/curl_version.txt
-    cp -f src/curl "${RELEASE_DIR}/release/curl"
-    ln "${RELEASE_DIR}/release/curl" "${RELEASE_DIR}/bin/curl-${arch}"
-    tar -Jcf "${RELEASE_DIR}/release/curl-macos-${arch}-${CURL_VERSION}.tar.xz" -C "${RELEASE_DIR}/release" curl;
-    rm -f "${RELEASE_DIR}/release/curl";
+    echo "${CURL_VERSION}" > "${HOME}/curl_version.txt"
+    cp -f src/curl "${HOME}/release/curl"
+    ln "${HOME}/release/curl" "${HOME}/bin/curl-${arch}"
+    tar -Jcf "${HOME}/release/curl-macos-${arch}-${CURL_VERSION}.tar.xz" -C "${HOME}/release" curl;
+    rm -f "${HOME}/release/curl";
 }
 
 compile() {

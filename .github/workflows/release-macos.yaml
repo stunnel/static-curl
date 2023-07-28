@@ -25,18 +25,18 @@ jobs:
           echo "test env: ${TEST_ENV}"
           echo "test secret: ${TEST_SECRET}"
         env:
-          CURL_VERSION: ${{ env.CURL_VERSION }}
-          QUICTLS_VERSION: ${{ env.QUICTLS_VERSION }}
-          NGTCP2_VERSION: ${{ env.NGTCP2_VERSION }}
-          NGHTTP3_VERSION: ${{ env.NGHTTP3_VERSION }}
-          NGHTTP2_VERSION: ${{ env.NGHTTP2_VERSION }}
-          LIBIDN2_VERSION: ${{ env.LIBIDN2_VERSION }}
-          LIBUNISTRING_VERSION: ${{ env.LIBUNISTRING_VERSION }}
-          ZLIB_VERSION: ${{ env.ZLIB_VERSION }}
-          BROTLI_VERSION: ${{ env.BROTLI_VERSION }}
-          ZSTD_VERSION: ${{ env.ZSTD_VERSION }}
-          LIBSSH2_VERSION: ${{ env.LIBSSH2_VERSION }}
-          TEST_ENV: ${{ env.TEST_ENV }}
+          CURL_VERSION: ${{ vars.CURL_VERSION }}
+          QUICTLS_VERSION: ${{ vars.QUICTLS_VERSION }}
+          NGTCP2_VERSION: ${{ vars.NGTCP2_VERSION }}
+          NGHTTP3_VERSION: ${{ vars.NGHTTP3_VERSION }}
+          NGHTTP2_VERSION: ${{ vars.NGHTTP2_VERSION }}
+          LIBIDN2_VERSION: ${{ vars.LIBIDN2_VERSION }}
+          LIBUNISTRING_VERSION: ${{ vars.LIBUNISTRING_VERSION }}
+          ZLIB_VERSION: ${{ vars.ZLIB_VERSION }}
+          BROTLI_VERSION: ${{ vars.BROTLI_VERSION }}
+          ZSTD_VERSION: ${{ vars.ZSTD_VERSION }}
+          LIBSSH2_VERSION: ${{ vars.LIBSSH2_VERSION }}
+          TEST_ENV: ${{ vars.TEST_ENV }}
           TEST_SECRET: ${{ secrets.TEST_SECRET }}
 
       - name: Checkout
@@ -61,34 +61,24 @@ jobs:
           TOKEN_READ=${TOKEN_READ}
           bash curl-static-mac.sh
         env:
-          CURL_VERSION: ${{ env.CURL_VERSION }}
-          QUICTLS_VERSION: ${{ env.QUICTLS_VERSION }}
-          NGTCP2_VERSION: ${{ env.NGTCP2_VERSION }}
-          NGHTTP3_VERSION: ${{ env.NGHTTP3_VERSION }}
-          NGHTTP2_VERSION: ${{ env.NGHTTP2_VERSION }}
-          LIBIDN2_VERSION: ${{ env.LIBIDN2_VERSION }}
-          LIBUNISTRING_VERSION: ${{ env.LIBUNISTRING_VERSION }}
-          ZLIB_VERSION: ${{ env.ZLIB_VERSION }}
-          BROTLI_VERSION: ${{ env.BROTLI_VERSION }}
-          ZSTD_VERSION: ${{ env.ZSTD_VERSION }}
-          LIBSSH2_VERSION: ${{ env.LIBSSH2_VERSION }}
+          CURL_VERSION: ${{ vars.CURL_VERSION }}
+          QUICTLS_VERSION: ${{ vars.QUICTLS_VERSION }}
+          NGTCP2_VERSION: ${{ vars.NGTCP2_VERSION }}
+          NGHTTP3_VERSION: ${{ vars.NGHTTP3_VERSION }}
+          NGHTTP2_VERSION: ${{ vars.NGHTTP2_VERSION }}
+          LIBIDN2_VERSION: ${{ vars.LIBIDN2_VERSION }}
+          LIBUNISTRING_VERSION: ${{ vars.LIBUNISTRING_VERSION }}
+          ZLIB_VERSION: ${{ vars.ZLIB_VERSION }}
+          BROTLI_VERSION: ${{ vars.BROTLI_VERSION }}
+          ZSTD_VERSION: ${{ vars.ZSTD_VERSION }}
+          LIBSSH2_VERSION: ${{ vars.LIBSSH2_VERSION }}
           TOKEN_READ: ${{ secrets.TOKEN_READ }}
           ARCHS: "x86_64"
 
       - name: Set up environment
         run: |
-          VERSION=`cat /tmp/curl_version.txt`
+          VERSION=`cat curl_version.txt`
           echo "VERSION=$VERSION" >> $GITHUB_ENV
-
-      - name: List compiled files
-        run: |
-          ls -l release bin
-          echo
-          file bin/curl*
-          echo
-          otool -L bin/curl*
-          echo
-          sha256sum bin/curl*
 
       - name: Upload Release Asset
         uses: softprops/action-gh-release@v1
