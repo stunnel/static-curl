@@ -38,7 +38,7 @@ jobs:
           echo "libssh2 version: ${LIBSSH2_VERSION}"
           echo "test env: ${TEST_ENV}"
           echo "test secret: ${TEST_SECRET}"
-          echo "Home: ${HOME}, ${{ env.HOME }}"
+          echo "Home: ${HOME}"
 
       - name: Checkout
         uses: actions/checkout@v3
@@ -78,13 +78,15 @@ jobs:
 
       - name: Set up environment
         run: |
+          ls -l "${HOME}"
           VERSION=`cat "${HOME}/curl_version.txt" 2>/dev/null || cat /tmp/curl_version.txt`
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "VERSION=${VERSION}" >> $GITHUB_ENV
+          echo "RELEASE_HOME=${HOME}" >> $GITHUB_ENV
 
       - name: Upload Release Asset
         uses: softprops/action-gh-release@v1
         if: github.ref == 'refs/heads/main'
         with:
-          files: ${HOME}/release/curl-*.tar.xz
+          files: ${{ env.RELEASE_HOME }}/release/curl-*.tar.xz
           tag_name: ${{ env.VERSION }}
           token: ${{ secrets.GITHUB_TOKEN }}
