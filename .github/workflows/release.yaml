@@ -6,6 +6,7 @@ on:
 
 jobs:
   release:
+    name: release (${{ github.ref_name }})
     runs-on: ubuntu-latest
 
     steps:
