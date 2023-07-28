@@ -65,7 +65,7 @@ arch_variants() {
 }
 
 url_from_github() {
-    local browser_download_urls browser_download_url url repo version tag_name tags auth_header
+    local browser_download_urls browser_download_url url repo version tag_name tags auth_header status_code
     repo=$1
     version=$2
 
@@ -76,21 +76,22 @@ url_from_github() {
 
         # get token from github settings
         set +o xtrace
+        auth_header=""
         if [ -n "${TOKEN_READ}" ]; then
             auth_header="token ${TOKEN_READ}"
-        else
-            auth_header=""
         fi
+
         status_code=$(curl "https://api.github.com/repos/${repo}/releases" \
             -w "%{http_code}" \
             -o "github-${repo#*/}.json" \
             -H "Authorization: ${auth_header}" \
             -s -L --compressed)
+
         auth_header=""
         set -o xtrace
 
         if [ "${status_code}" -ne 200 ]; then
-            echo "Failed to download ${repo} releases from GitHub."
+            echo "ERROR. Failed to download ${repo} releases from GitHub, status code: ${status_code}"
             cat "github-${repo#*/}.json"
             exit 1
         fi

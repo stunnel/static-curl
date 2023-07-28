@@ -163,13 +163,36 @@ arch_variants() {
 }
 
 url_from_github() {
-    local browser_download_urls browser_download_url url repo version tag_name tags
+    local browser_download_urls browser_download_url url repo version tag_name tags auth_header status_code
     repo=$1
     version=$2
 
     if [ ! -f "github-${repo#*/}.json" ]; then
         # GitHub API has a limit of 60 requests per hour, cache the results.
-        curl -s "https://api.github.com/repos/${repo}/releases" -o "github-${repo#*/}.json"
+        echo "Downloading ${repo} releases from GitHub ..."
+        echo "URL: https://api.github.com/repos/${repo}/releases"
+
+        # get token from github settings
+        set +o xtrace
+        auth_header=""
+        if [ -n "${TOKEN_READ}" ]; then
+            auth_header="token ${TOKEN_READ}"
+        fi
+
+        status_code=$(curl "https://api.github.com/repos/${repo}/releases" \
+            -w "%{http_code}" \
+            -o "github-${repo#*/}.json" \
+            -H "Authorization: ${auth_header}" \
+            -s -L --compressed)
+
+        auth_header=""
+        set -o xtrace
+
+        if [ "${status_code}" -ne 200 ]; then
+            echo "ERROR. Failed to download ${repo} releases from GitHub, status code: ${status_code}"
+            cat "github-${repo#*/}.json"
+            exit 1
+        fi
     fi
 
     if [ -z "${version}" ]; then
@@ -200,7 +223,7 @@ url_from_github() {
         url=$(printf "%s" "${browser_download_url}" | head -1 | awk '{print $2}' | sed 's/"//g')
     fi
 
-    echo "${url}"
+    export URL="${url}"
 }
 
 download_and_extract() {
@@ -243,7 +266,8 @@ compile_zlib() {
     local url
     change_dir;
 
-    url=$(url_from_github madler/zlib "${ZLIB_VERSION}")
+    url_from_github madler/zlib "${ZLIB_VERSION}"
+    url="${URL}"
     download_and_extract "${url}"
 
     ./configure --prefix="${PREFIX}" --static;
@@ -289,7 +313,8 @@ compile_quictls() {
     local url
     change_dir;
 
-    url=$(url_from_github quictls/openssl "${QUICTLS_VERSION}")
+    url_from_github quictls/openssl "${QUICTLS_VERSION}"
+    url="${URL}"
     download_and_extract "${url}"
 
     ./Configure \
@@ -313,7 +338,8 @@ compile_libssh2() {
     local url host_config
     change_dir;
 
-    url=$(url_from_github libssh2/libssh2 "${LIBSSH2_VERSION}")
+    url_from_github libssh2/libssh2 "${LIBSSH2_VERSION}"
+    url="${URL}"
     download_and_extract "${url}"
 
     autoreconf -fi
@@ -336,7 +362,8 @@ compile_nghttp2() {
     local url host_config
     change_dir;
 
-    url=$(url_from_github nghttp2/nghttp2 "${NGHTTP2_VERSION}")
+    url_from_github nghttp2/nghttp2 "${NGHTTP2_VERSION}"
+    url="${URL}"
     download_and_extract "${url}"
 
     autoreconf -i --force
@@ -357,7 +384,8 @@ compile_ngtcp2() {
     local url host_config
     change_dir;
 
-    url=$(url_from_github ngtcp2/ngtcp2 "${NGTCP2_VERSION}")
+    url_from_github ngtcp2/ngtcp2 "${NGTCP2_VERSION}"
+    url="${URL}"
     download_and_extract "${url}"
 
     autoreconf -i --force
@@ -379,7 +407,8 @@ compile_nghttp3() {
     local url host_config
     change_dir;
 
-    url=$(url_from_github ngtcp2/nghttp3 "${NGHTTP3_VERSION}")
+    url_from_github ngtcp2/nghttp3 "${NGHTTP3_VERSION}"
+    url="${URL}"
     download_and_extract "${url}"
 
     autoreconf -i --force
@@ -399,7 +428,8 @@ compile_brotli() {
     local url
     change_dir;
 
-    url=$(url_from_github google/brotli "${BROTLI_VERSION}")
+    url_from_github google/brotli "${BROTLI_VERSION}"
+    url="${URL}"
     download_and_extract "${url}"
 
     mkdir -p out
@@ -422,7 +452,8 @@ compile_zstd() {
     local url
     change_dir;
 
-    url=$(url_from_github facebook/zstd "${ZSTD_VERSION}")
+    url_from_github facebook/zstd "${ZSTD_VERSION}"
+    url="${URL}"
     download_and_extract "${url}"
 
     PKG_CONFIG="pkg-config --static --with-path=${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig" \
@@ -478,7 +509,8 @@ compile_curl() {
     local url
     change_dir;
 
-    url=$(url_from_github curl/curl "${CURL_VERSION}")
+    url_from_github curl/curl "${CURL_VERSION}"
+    url="${URL}"
     download_and_extract "${url}"
     [ -z "${CURL_VERSION}" ] && CURL_VERSION=$(echo "${SOURCE_DIR}" | cut -d'-' -f 2)
 

@@ -6,6 +6,7 @@ on:
 
 jobs:
   release-macOS:
+    name: release-macOS (${{ github.ref_name }})
     runs-on: macos-latest
 
     steps:
