@@ -57,7 +57,7 @@ jobs:
           BROTLI_VERSION: ${{ vars.BROTLI_VERSION }}
           ZSTD_VERSION: ${{ vars.ZSTD_VERSION }}
           LIBSSH2_VERSION: ${{ vars.LIBSSH2_VERSION }}
-          TOKEN_READ: ${{ secrets.TOKEN_READ }}
+          TOKEN_READ: ${{ secrets.GITHUB_TOKEN }}
           ARCHS: "x86_64"
         run: |
           ARCHS="${ARCHS}"
