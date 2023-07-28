@@ -421,6 +421,7 @@ tar_curl() {
     src/curl -V || true
 
     echo "${CURL_VERSION}" > "${HOME}/curl_version.txt"
+    ln -s "${HOME}/curl_version.txt" /tmp/curl_version.txt
     cp -f src/curl "${HOME}/release/curl"
     ln "${HOME}/release/curl" "${HOME}/bin/curl-${arch}"
     tar -Jcf "${HOME}/release/curl-macos-${arch}-${CURL_VERSION}.tar.xz" -C "${HOME}/release" curl;
