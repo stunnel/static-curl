@@ -66,6 +66,7 @@ install_package() {
     apk add \
         build-base clang automake cmake autoconf libtool binutils linux-headers \
         curl wget git jq xz grep sed groff gnupg perl \
+        ca-certificates ca-certificates-bundle \
         cunit-dev \
         zlib-static zlib-dev \
         libunistring-static libunistring-dev \
@@ -432,29 +433,22 @@ compile_zstd() {
 }
 
 curl_config() {
-    local host_config unsupported_arch enable_libidn2 enable_libssh2
-    host_config=""
-    enable_libidn2="--with-libidn2"
+    local unsupported_arch enable_libssh2
     enable_libssh2="--with-libssh2"
-
-    if [ "${CROSS}" -eq 1 ]; then
-        host_config="--host=${ARCH}-pc-linux-musl"
-    fi
 
     unsupported_arch="powerpc mipsel mips"
     if echo "$unsupported_arch" | grep -q "\\b${ARCH}\\b"; then
-        # enable_libidn2="--without-libidn2"
         enable_libssh2=""
     fi
 
     PKG_CONFIG="pkg-config --static" \
         ./configure \
-            "${host_config}" \
+            --host="${ARCH}-pc-linux-musl" \
             --prefix="${PREFIX}" \
             --disable-shared --enable-static \
             --with-openssl --with-brotli --with-zstd \
             --with-nghttp2 --with-nghttp3 --with-ngtcp2 \
-            "${enable_libidn2}" "${enable_libssh2}" \
+            --with-libidn2 "${enable_libssh2}" \
             --enable-hsts --enable-mime --enable-cookies \
             --enable-http-auth --enable-manual \
             --enable-proxy --enable-file --enable-http \
@@ -463,14 +457,17 @@ curl_config() {
             --enable-gopher --enable-mqtt \
             --enable-doh --enable-dateparse --enable-verbose \
             --enable-alt-svc --enable-websockets \
-            --enable-ipv6 --enable-unix-sockets \
+            --enable-ipv6 --enable-unix-sockets --enable-socketpair \
             --enable-headers-api --enable-versioned-symbols \
             --enable-threaded-resolver --enable-optimize --enable-pthreads \
             --enable-warnings --enable-werror \
             --enable-curldebug --enable-dict --enable-netrc \
             --enable-crypto-auth --enable-tls-srp --enable-dnsshuffle \
-            --enable-get-easy-options \
-            --disable-ldap "${ENABLE_DEBUG}";
+            --enable-get-easy-options --enable-progress-meter \
+            --with-ca-bundle=/etc/ssl/certs/ca-certificates.crt \
+            --with-ca-path=/etc/ssl/certs \
+            --with-ca-fallback \
+            --disable-ldap --disable-ldaps "${ENABLE_DEBUG}";
 }
 
 compile_curl() {

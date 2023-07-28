@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # To compile locally, clone the Git repository, navigate to the repository directory,
 # and then execute the following command:
@@ -46,7 +46,7 @@ init_env() {
 
 install_package() {
     brew install automake autoconf libtool binutils pkg-config coreutils cmake make llvm \
-         curl wget git jq xz ripgrep gnu-sed groff gnupg pcre2 cunit;
+         curl wget git jq xz ripgrep gnu-sed groff gnupg pcre2 cunit ca-certificates;
     # brew uninstall --ignore-dependencies openssl@1.1 openssl@3;
 }
 
@@ -289,11 +289,6 @@ compile_ngtcp2() {
         ./configure --prefix="${PREFIX}" --enable-static --with-openssl="${PREFIX}" \
             --with-libnghttp3="${PREFIX}" --enable-lib-only --enable-shared=no;
 
-#    PKG_CONFIG="pkg-config --static" \
-#        ./configure --prefix="${PREFIX}" --enable-static --with-openssl="${PREFIX}" \
-#            --with-libnghttp3="${PREFIX}" --enable-lib-only --enable-shared=no \
-#            LDFLAGS="-Wl,-rpath,${PREFIX}/lib,-L/opt/local/lib" CPPFLAGS="-I${PREFIX}/include -I/opt/local/include"
-
     gmake -j "${CPU_CORES}";
     gmake install;
     cp -a crypto/includes/ngtcp2/ngtcp2_crypto_quictls.h crypto/includes/ngtcp2/ngtcp2_crypto.h \
@@ -356,8 +351,6 @@ compile_zstd() {
 }
 
 curl_config() {
-    # --with-path=${PREFIX}/lib/pkgconfig
-    # --with-path=${PKG_CONFIG_PATH}
     PKG_CONFIG="pkg-config --static" \
         ./configure \
             --prefix="${PREFIX}" \
@@ -373,19 +366,20 @@ curl_config() {
             --enable-gopher --enable-mqtt \
             --enable-doh --enable-dateparse --enable-verbose \
             --enable-alt-svc --enable-websockets \
-            --enable-ipv6 --enable-unix-sockets \
+            --enable-ipv6 --enable-unix-sockets --enable-socketpair \
             --enable-headers-api --enable-versioned-symbols \
             --enable-threaded-resolver --enable-optimize --enable-pthreads \
             --enable-warnings --enable-werror \
             --enable-curldebug --enable-dict --enable-netrc \
             --enable-crypto-auth --enable-tls-srp --enable-dnsshuffle \
-            --enable-get-easy-options \
+            --enable-get-easy-options --enable-progress-meter \
+            --with-ca-bundle=/etc/ssl/cert.pem \
+            --with-ca-path=/etc/ssl/certs \
+            --with-ca-fallback \
             --disable-ldap --disable-ldaps --disable-rtsp \
             --disable-rtmp --disable-rtmps \
             CFLAGS="-I${PREFIX}/include" \
             CPPFLAGS="-I${PREFIX}/include";
-#            CFLAGS="-I${CPATH} -I${PREFIX}/include" \
-#            CPPFLAGS="-I${CPATH} -I${PREFIX}/include";
 }
 
 compile_curl() {
@@ -393,6 +387,7 @@ compile_curl() {
     local url
     change_dir;
 
+    # move the dylib
     mkdir -p "${PREFIX}/lib/dylib"
     mv "${PREFIX}/lib/"*.dylib "${PREFIX}/lib/dylib/"
 
