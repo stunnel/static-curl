@@ -60,7 +60,7 @@ jobs:
           ZSTD_VERSION: ${{ vars.ZSTD_VERSION }}
           LIBSSH2_VERSION: ${{ vars.LIBSSH2_VERSION }}
           TOKEN_READ: ${{ secrets.GITHUB_TOKEN }}
-          ARCHS: "x86_64"
+          ARCHS: "x86_64 arm64"
         run: |
           ARCHS="${ARCHS}"
           CURL_VERSION=${CURL_VERSION}

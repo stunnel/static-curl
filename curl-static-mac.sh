@@ -2,7 +2,7 @@
 
 # To compile locally, clone the Git repository, navigate to the repository directory,
 # and then execute the following command:
-# ARCH=aarch64 CURL_VERSION=8.1.2 QUICTLS_VERSION=3.0.9 NGTCP2_VERSION=0.15.0 bash curl-static-mac.sh
+# ARCHS="x86_64 arm64" CURL_VERSION=8.2.1 QUICTLS_VERSION=3.0.9 NGTCP2_VERSION=0.17.0 bash curl-static-mac.sh
 
 # There might be some breaking changes in ngtcp2, so it's important to ensure
 # that its version is compatible with the current version of cURL.
@@ -54,13 +54,18 @@ arch_variants() {
     echo "Setting up the ARCH and OpenSSL arch ..."
     [ -z "${ARCH}" ] && ARCH="$(uname -m)"
     case "${ARCH}" in
-        x86_64)         export arch="amd64" ;;
-        aarch64|arm64)  export arch="arm64" ;;
-    esac
-
-    case "${ARCH}" in
-        x86_64)         OPENSSL_ARCH="darwin64-x86_64" ;;
-        aarch64|arm64)  OPENSSL_ARCH="darwin64-aarch64" ;;
+        x86_64)   export arch="amd64"
+                  export ARCHFLAGS="-arch x86_64"
+                  export OPENSSL_ARCH="darwin64-x86_64"
+                  export HOST="x86_64-apple-darwin"
+                  ;;
+        arm64)    export arch="arm64"
+                  export ARCHFLAGS="-arch arm64"
+                  export OPENSSL_ARCH="darwin64-arm64"
+                  export HOST="aarch64-apple-darwin"
+                  export CC="/usr/local/opt/llvm/bin/clang -target arm64-apple-macos11"
+                  export CXX="/usr/local/opt/llvm/bin/clang++ -target arm64-apple-macos11"
+                        ;;
     esac
 }
 
@@ -191,7 +196,7 @@ compile_libunistring() {
     download_and_extract "${url}"
 
     LDFLAGS="${LDFLAGS}" \
-    ./configure --prefix="${PREFIX}" --disable-shared;
+    ./configure --host="${HOST}" --prefix="${PREFIX}" --disable-shared;
     gmake -j "${CPU_CORES}";
     gmake install;
 }
@@ -207,6 +212,7 @@ compile_libidn2() {
 
     PKG_CONFIG="pkg-config --static" LDFLAGS="${LDFLAGS}" \
     ./configure \
+        --host="${HOST}" \
         --with-libunistring-prefix="${PREFIX}" \
         --prefix="${PREFIX}" \
         --disable-shared;
@@ -253,7 +259,7 @@ compile_libssh2() {
 
     PKG_CONFIG="pkg-config --static" \
         LDFLAGS="-L${PREFIX}/lib ${LDFLAGS}" CFLAGS="-O3" \
-        ./configure --prefix="${PREFIX}" --enable-static --enable-shared=no \
+        ./configure --host="${HOST}" --prefix="${PREFIX}" --enable-static --enable-shared=no \
             --with-crypto=openssl --with-libssl-prefix="${PREFIX}";
     gmake -j "${CPU_CORES}";
     gmake install;
@@ -270,7 +276,7 @@ compile_nghttp2() {
 
     autoreconf -i --force
     PKG_CONFIG="pkg-config --static" LDFLAGS="${LDFLAGS}" \
-        ./configure --prefix="${PREFIX}" --enable-static --enable-http3 \
+        ./configure --host="${HOST}" --prefix="${PREFIX}" --enable-static --enable-http3 \
             --enable-lib-only --enable-shared=no;
     gmake -j "${CPU_CORES}";
     gmake install;
@@ -287,7 +293,7 @@ compile_ngtcp2() {
 
     autoreconf -i --force
     PKG_CONFIG="pkg-config --static" LDFLAGS="${LDFLAGS}" \
-        ./configure --prefix="${PREFIX}" --enable-static --with-openssl="${PREFIX}" \
+        ./configure --host="${HOST}" --prefix="${PREFIX}" --enable-static --with-openssl="${PREFIX}" \
             --with-libnghttp3="${PREFIX}" --enable-lib-only --enable-shared=no;
 
     gmake -j "${CPU_CORES}";
@@ -307,7 +313,7 @@ compile_nghttp3() {
 
     autoreconf -i --force
     MAKE=gmake PKG_CONFIG="pkg-config --static" LDFLAGS="${LDFLAGS}" \
-        ./configure --prefix="${PREFIX}" --enable-static --enable-shared=no \
+        ./configure --host="${HOST}" --prefix="${PREFIX}" --enable-static --enable-shared=no \
         --enable-lib-only --disable-dependency-tracking;
     gmake -j "${CPU_CORES}";
     gmake install;
@@ -352,8 +358,10 @@ compile_zstd() {
 }
 
 curl_config() {
+    echo "Configuring curl ..."
     PKG_CONFIG="pkg-config --static" \
         ./configure \
+            --host="${ARCH}-apple-darwin" \
             --prefix="${PREFIX}" \
             --disable-shared --enable-static \
             --with-openssl --with-brotli --with-zstd \
@@ -417,7 +425,7 @@ tar_curl() {
     src/curl -V || true
 
     echo "${CURL_VERSION}" > "${HOME}/curl_version.txt"
-    ln -s "${HOME}/curl_version.txt" /tmp/curl_version.txt
+    ln -sf "${HOME}/curl_version.txt" /tmp/curl_version.txt
     cp -f src/curl "${HOME}/release/curl"
     ln "${HOME}/release/curl" "${HOME}/bin/curl-${arch}"
     tar -Jcf "${HOME}/release/curl-macos-${arch}-${CURL_VERSION}.tar.xz" -C "${HOME}/release" curl;
@@ -448,7 +456,7 @@ main() {
     install_package;            # Install dependencies
     set -o errexit -o xtrace;
 
-    [ -z "${ARCHS}" ] && ARCHS="x86_64"
+    [ -z "${ARCHS}" ] && ARCHS=$(uname -m)
     echo "Compiling for all ARCHs: ${ARCHS}"
     for arch_temp in ${ARCHS}; do
         # Set the ARCH, PREFIX and PKG_CONFIG_PATH env variables
