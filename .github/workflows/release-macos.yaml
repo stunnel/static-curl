@@ -77,7 +77,7 @@ jobs:
 
       - name: Set up environment
         run: |
-          VERSION=`cat version.txt`
+          VERSION=`cat /tmp/curl_version.txt`
           echo "VERSION=$VERSION" >> $GITHUB_ENV
 
       - name: List compiled files

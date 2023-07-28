@@ -2,7 +2,7 @@
 
 # To compile locally, clone the Git repository, navigate to the repository directory,
 # and then execute the following command:
-# ARCH=aarch64 CURL_VERSION=8.1.2 QUICTLS_VERSION=3.0.9 NGTCP2_VERSION=0.15.0 sh curl-static-mac.sh
+# ARCH=aarch64 CURL_VERSION=8.1.2 QUICTLS_VERSION=3.0.9 NGTCP2_VERSION=0.15.0 bash curl-static-mac.sh
 
 # There might be some breaking changes in ngtcp2, so it's important to ensure
 # that its version is compatible with the current version of cURL.
@@ -10,11 +10,10 @@
 
 init_env() {
     local number
-    export DIR="${HOME}/curl"
-    export PREFIX="${DIR}"
-    export RELEASE_DIR="${DIR}"
+    export DIR="${DIR:-${HOME}/build}"
+    export PREFIX="${DIR}/curl"
+    export RELEASE_DIR="${RELEASE_DIR:-${DIR}}"
     export CC=/usr/local/opt/llvm/bin/clang CXX=/usr/local/opt/llvm/bin/clang++
-    # export CC=clang CXX=clang++
     number=$(sysctl -n hw.ncpu 2>/dev/null)
     export CPU_CORES=${number:-1}
 
@@ -414,9 +413,12 @@ tar_curl() {
 
     strip src/curl
     ls -l src/curl
+    file src/curl
+    otool -L src/curl
     src/curl -V || true
 
-    echo "${CURL_VERSION}" > "${RELEASE_DIR}/version.txt"
+    echo "${CURL_VERSION}" > "${RELEASE_DIR}/curl_version.txt"
+    ln -s "${RELEASE_DIR}/curl_version.txt" /tmp/curl_version.txt
     cp -f src/curl "${RELEASE_DIR}/release/curl"
     ln "${RELEASE_DIR}/release/curl" "${RELEASE_DIR}/bin/curl-${arch}"
     tar -Jcf "${RELEASE_DIR}/release/curl-macos-${arch}-${CURL_VERSION}.tar.xz" -C "${RELEASE_DIR}/release" curl;
