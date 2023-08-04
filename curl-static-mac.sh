@@ -432,6 +432,27 @@ tar_curl() {
     rm -f "${HOME}/release/curl";
 }
 
+create_checksum() {
+    cd "${HOME}"
+    local output_sha256 markdown_table
+
+    echo "Creating checksum..."
+    output_sha256=$(sha256sum bin/curl-* | sed 's#bin/curl-#curl\t#g')
+    markdown_table=$(printf "%s" "${output_sha256}" |
+        awk 'BEGIN {printf("| %s | %s  | %s |\n", $2-macos, $3, $1)}')
+
+    releases=$(curl -s https://api.github.com/repos/stunnel/static-curl/releases)
+    printf "%s" "${releases}" | \
+        jq -r --arg CURL_VERSION "${CURL_VERSION}" '.[] | select(.tag_name == $CURL_VERSION) | .body' > \
+        release/release.md
+    sed -i ':n;/^\n*$/{$! N;$d;bn}' release/release.md
+
+    cat >> release/release.md<<EOF
+${markdown_table}
+
+EOF
+}
+
 compile() {
     arch_variants;
 
