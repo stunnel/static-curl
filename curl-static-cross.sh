@@ -448,9 +448,9 @@ compile_brotli() {
 
     # make install;
     cd "${PREFIX}/lib/"
-    [ -f libbrotlidec-static.a ] && ln -f libbrotlidec-static.a libbrotlidec.a
-    [ -f libbrotlienc-static.a ] && ln -f libbrotlienc-static.a libbrotlienc.a
-    [ -f libbrotlicommon-static.a ] && ln -f libbrotlicommon-static.a libbrotlicommon.a
+    if [ -f libbrotlidec-static.a ] && [ ! -f libbrotlidec.a ]; then ln -f libbrotlidec-static.a libbrotlidec.a; fi
+    if [ -f libbrotlienc-static.a ] && [ ! -f libbrotlienc.a ]; then ln -f libbrotlienc-static.a libbrotlienc.a; fi
+    if [ -f libbrotlicommon-static.a ] && [ ! -f libbrotlicommon.a ]; then ln -f libbrotlicommon-static.a libbrotlicommon.a; fi
 }
 
 compile_zstd() {
