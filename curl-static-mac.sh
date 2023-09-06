@@ -65,7 +65,7 @@ arch_variants() {
                   export HOST="aarch64-apple-darwin"
                   export CC="/usr/local/opt/llvm/bin/clang -target arm64-apple-macos11"
                   export CXX="/usr/local/opt/llvm/bin/clang++ -target arm64-apple-macos11"
-                        ;;
+                  ;;
     esac
 }
 
