@@ -2,7 +2,7 @@
 
 # To compile locally, install Docker, clone the Git repository, navigate to the repository directory,
 # and then execute the following command:
-# ARCH=aarch64 CURL_VERSION=8.1.2 QUICTLS_VERSION=3.0.9 NGTCP2_VERSION=0.15.0 sh curl-static-cross.sh
+# ARCH=aarch64 CURL_VERSION=8.2.1 QUICTLS_VERSION=3.1.2 NGTCP2_VERSION="" sh curl-static-cross.sh
 # script will create a container and compile curl.
 
 # or compile or cross-compile in docker, run:
@@ -11,13 +11,13 @@
 #     -e RELEASE_DIR=/mnt \
 #     -e ARCH=aarch64 \
 #     -e ARCHS="x86_64 aarch64 armv7l i686 riscv64 s390x" \
-#     -e ENABLE_DEBUG=1 \
-#     -e CURL_VERSION=8.1.2 \
-#     -e QUICTLS_VERSION=3.0.9 \
-#     -e NGTCP2_VERSION=0.15.0 \
-#     -e NGHTTP3_VERSION=0.12.0 \
-#     -e NGHTTP2_VERSION=1.54.0 \
-#     -e ZLIB_VERSION=1.2.13 \
+#     -e ENABLE_DEBUG=0 \
+#     -e CURL_VERSION=8.2.1 \
+#     -e QUICTLS_VERSION=3.1.2 \
+#     -e NGTCP2_VERSION="" \
+#     -e NGHTTP3_VERSION="" \
+#     -e NGHTTP2_VERSION="" \
+#     -e ZLIB_VERSION="" \
 #     -e LIBUNISTRING_VERSION=1.1 \
 #     -e LIBIDN2_VERSION=2.3.4 \
 #     alpine:latest sh curl-static-cross.sh
@@ -221,7 +221,12 @@ url_from_github() {
             [ -n "$browser_download_url" ] && break
         done
 
-        url=$(printf "%s" "${browser_download_url}" | head -1 | awk '{print $2}' | sed 's/"//g')
+        url=$(printf "%s" "${browser_download_url}" | head -1 | awk '{print $2}' | sed 's/"//g' || true)
+    fi
+
+    if [ -z "${url}" ]; then
+        tag_name=$(echo "${tags}" | jq -r '.tag_name')
+        url="https://github.com/${repo}/archive/refs/tags/${tag_name}.tar.gz"
     fi
 
     export URL="${url}"
@@ -437,15 +442,15 @@ compile_brotli() {
     cd out/
 
     PKG_CONFIG="pkg-config --static --with-path=${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig" \
-        cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="${PREFIX}" ..;
+        cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="${PREFIX}" -DBUILD_SHARED_LIBS=OFF ..;
     PKG_CONFIG="pkg-config --static --with-path=${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig" \
         cmake --build . --config Release --target install;
 
-    make install;
+    # make install;
     cd "${PREFIX}/lib/"
-    ln -f libbrotlidec-static.a libbrotlidec.a
-    ln -f libbrotlienc-static.a libbrotlienc.a
-    ln -f libbrotlicommon-static.a libbrotlicommon.a
+    [ -f libbrotlidec-static.a ] && ln -f libbrotlidec-static.a libbrotlidec.a
+    [ -f libbrotlienc-static.a ] && ln -f libbrotlienc-static.a libbrotlienc.a
+    [ -f libbrotlicommon-static.a ] && ln -f libbrotlicommon-static.a libbrotlicommon.a
 }
 
 compile_zstd() {
