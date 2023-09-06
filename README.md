@@ -29,22 +29,28 @@ The binary is built with GitHub Actions.
 
 ## Compile
 
-This script uses `qbt-musl-cross-make` for cross-compilation, supporting the following architectures:
+This script utilizes `qbt-musl-cross-make` for cross-compilation on Linux, providing support for the following architectures:
 
-- x86_64
-- aarch64
-- armv7l
-- i686
-- riscv64
-- s390x
-- mips64
-- mips64el
-- mips
-- mipsel
-- powerpc64le
-- powerpc
+- Linux
+  - x86_64
+  - aarch64
+  - armv7l
+  - i686
+  - riscv64
+  - s390x
+  - mips64
+  - mips64el
+  - mips
+  - mipsel
+  - powerpc64le
+  - powerpc
+- macOS
+  - x86_64
+  - aarch64
 
 ### How to compile
+
+#### Linux
 
 - To compile locally, install Docker, clone the Git repository, navigate to the repository directory, and then execute the following command:  
 `sh curl-static-cross.sh`  
@@ -67,6 +73,28 @@ script will create a container and compile the host architecture cURL only.
       alpine:latest sh curl-static-cross.sh
   ```
   **There might be some breaking changes in `ngtcp2`, so it's important to ensure that its version is compatible with the current version of cURL.**
+
+#### macOS
+
+Run the following command to compile:
+
+```shell
+ARCHS="x86_64 arm64" \
+    CURL_VERSION=${CURL_VERSION} \
+    QUICTLS_VERSION=${QUICTLS_VERSION} \
+    NGTCP2_VERSION=${NGTCP2_VERSION} \
+    NGHTTP3_VERSION=${NGHTTP3_VERSION} \
+    NGHTTP2_VERSION=${NGHTTP2_VERSION} \
+    LIBIDN2_VERSION=${LIBIDN2_VERSION} \
+    LIBUNISTRING_VERSION=${LIBUNISTRING_VERSION} \
+    ZLIB_VERSION=${ZLIB_VERSION} \
+    BROTLI_VERSION=${BROTLI_VERSION} \
+    ZSTD_VERSION=${ZSTD_VERSION} \
+    LIBSSH2_VERSION=${LIBSSH2_VERSION} \
+    bash curl-static-mac.sh
+```
+
+#### Environment Variables
 
 Supported Environment Variables list:  
 For all `VERSION` variables, leaving them blank will automatically fetch the latest version.

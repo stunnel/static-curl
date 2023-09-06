@@ -542,7 +542,7 @@ create_release_note() {
     features=$(grep Features "${1}/config.log" | cut -d":" -f2 | sed -e 's/^[[:space:]]*//')
 
     cat > release/release.md<<EOF
-# Static cURL ${CURL_VERSION}
+# Static cURL ${CURL_VERSION} with HTTP3
 
 ## Components
 
