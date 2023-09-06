@@ -2,7 +2,7 @@
 
 # To compile locally, clone the Git repository, navigate to the repository directory,
 # and then execute the following command:
-# ARCHS="x86_64 arm64" CURL_VERSION=8.2.1 QUICTLS_VERSION=3.0.9 NGTCP2_VERSION=0.17.0 bash curl-static-mac.sh
+# ARCHS="x86_64 arm64" CURL_VERSION=8.2.1 QUICTLS_VERSION=3.1.2 NGTCP2_VERSION="" bash curl-static-mac.sh
 
 # There might be some breaking changes in ngtcp2, so it's important to ensure
 # that its version is compatible with the current version of cURL.
@@ -130,7 +130,13 @@ url_from_github() {
             [ -n "$browser_download_url" ] && break
         done
 
-        url=$(printf "%s" "${browser_download_url}" | head -1 | awk '{print $2}' | sed 's/"//g')
+        url=$(printf "%s" "${browser_download_url}" | head -1 | awk '{print $2}' | sed 's/"//g' || true)
+    fi
+
+    if [ -z "${url}" ]; then
+        tag_name=$(echo "${tags}" | jq -r '.tag_name' ||
+                   echo "${tags}" | rg '"tag_name"' | sed 's/"tag_name": "\([^"]*\)",/\1/' | awk '{gsub(/^[ \t]+|[ \t]+$/, ""); print}')
+        url="https://github.com/${repo}/archive/refs/tags/${tag_name}.tar.gz"
     fi
 
     export URL="${url}"
@@ -332,15 +338,15 @@ compile_brotli() {
     cd out/
 
     PKG_CONFIG="pkg-config --static" LDFLAGS="${LDFLAGS}" \
-        cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="${PREFIX}" ..;
+        cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="${PREFIX}" -DBUILD_SHARED_LIBS=OFF ..;
     PKG_CONFIG="pkg-config --static" LDFLAGS="${LDFLAGS}" \
         cmake --build . --config Release --target install;
 
-    gmake install;
+    # gmake install;
     cd "${PREFIX}/lib/"
-    ln -f libbrotlidec-static.a libbrotlidec.a
-    ln -f libbrotlienc-static.a libbrotlienc.a
-    ln -f libbrotlicommon-static.a libbrotlicommon.a
+    if [ -f libbrotlidec-static.a ] && [ ! -f libbrotlidec.a ]; then ln -f libbrotlidec-static.a libbrotlidec.a; fi
+    if [ -f libbrotlienc-static.a ] && [ ! -f libbrotlienc.a ]; then ln -f libbrotlienc-static.a libbrotlienc.a; fi
+    if [ -f libbrotlicommon-static.a ] && [ ! -f libbrotlicommon.a ]; then ln -f libbrotlicommon-static.a libbrotlicommon.a; fi
 }
 
 compile_zstd() {
