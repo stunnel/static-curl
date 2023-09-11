@@ -2,7 +2,9 @@
 
 # To compile locally, install Docker, clone the Git repository, navigate to the repository directory,
 # and then execute the following command:
-# ARCH=aarch64 CURL_VERSION=8.2.1 QUICTLS_VERSION=3.1.2 NGTCP2_VERSION="" sh curl-static-cross.sh
+# ARCH=aarch64 CURL_VERSION=8.2.1 QUICTLS_VERSION=3.1.2 NGTCP2_VERSION=0.18.0 \
+#     ZLIB_VERSION=1.3 CONTAINER_IMAGE=debian:latest \
+#     sh curl-static-cross.sh
 # script will create a container and compile curl.
 
 # or compile or cross-compile in docker, run:
@@ -20,6 +22,10 @@
 #     -e ZLIB_VERSION="1.3" \
 #     -e LIBUNISTRING_VERSION=1.1 \
 #     -e LIBIDN2_VERSION=2.3.4 \
+#     -e BROTLI_VERSION=1.1.0 \
+#     -e ZSTD_VERSION=1.5.5 \
+#     -e LIBSSH2_VERSION=1.11.0 \
+#     -e CONTAINER_IMAGE=debian:latest \
 #     alpine:latest sh curl-static-cross.sh
 # Supported architectures: x86_64, aarch64, armv7l, i686, riscv64, s390x,
 #                          mips64, mips64el, mips, mipsel, powerpc64le, powerpc
@@ -654,7 +660,7 @@ main() {
         cd "$(dirname "$0")";
         base_name=$(basename "$0")
         current_time=$(date "+%Y%m%d-%H%M")
-        container_image="alpine:latest"   # or debian:latest
+        container_image=${CONTAINER_IMAGE:-alpine:latest}  # or debian:latest
         [ -z "${ARCH}" ] && ARCH=$(uname -m)
         container_name="build-curl-${ARCH}-${current_time}"
         RELEASE_DIR=${RELEASE_DIR:-/mnt}

@@ -23,8 +23,6 @@ jobs:
           BROTLI_VERSION: ${{ vars.BROTLI_VERSION }}
           ZSTD_VERSION: ${{ vars.ZSTD_VERSION }}
           LIBSSH2_VERSION: ${{ vars.LIBSSH2_VERSION }}
-          TEST_ENV: ${{ vars.TEST_ENV }}
-          TEST_SECRET: ${{ secrets.TEST_SECRET }}
         run: |
           echo "cURL version: ${CURL_VERSION}"
           echo "QuicTLS version: ${QUICTLS_VERSION}"
@@ -37,8 +35,6 @@ jobs:
           echo "brotli version: ${BROTLI_VERSION}"
           echo "zstd version: ${ZSTD_VERSION}"
           echo "libssh2 version: ${LIBSSH2_VERSION}"
-          echo "test env: ${TEST_ENV}"
-          echo "test secret: ${TEST_SECRET}"
           echo "Home: ${HOME}"
 
       - name: Checkout

@@ -23,6 +23,7 @@ jobs:
           BROTLI_VERSION: ${{ vars.BROTLI_VERSION }}
           ZSTD_VERSION: ${{ vars.ZSTD_VERSION }}
           LIBSSH2_VERSION: ${{ vars.LIBSSH2_VERSION }}
+          CONTAINER_IMAGE: ${{ vars.CONTAINER_IMAGE }}
         run: |
           echo "cURL version: ${CURL_VERSION}"
           echo "QuicTLS version: ${QUICTLS_VERSION}"
@@ -35,6 +36,7 @@ jobs:
           echo "brotli version: ${BROTLI_VERSION}"
           echo "zstd version: ${ZSTD_VERSION}"
           echo "libssh2 version: ${LIBSSH2_VERSION}"
+          echo "Container image: ${CONTAINER_IMAGE}"
           echo "Home: ${HOME}"
 
       - name: Checkout
@@ -55,6 +57,7 @@ jobs:
           BROTLI_VERSION: ${{ vars.BROTLI_VERSION }}
           ZSTD_VERSION: ${{ vars.ZSTD_VERSION }}
           LIBSSH2_VERSION: ${{ vars.LIBSSH2_VERSION }}
+          CONTAINER_IMAGE: ${{ vars.CONTAINER_IMAGE }}
           TOKEN_READ: ${{ secrets.GITHUB_TOKEN }}
           ARCH: "all"
           ARCHS: "x86_64 aarch64 armv7l i686 riscv64 s390x mips64 mips64el mips mipsel powerpc64le powerpc"
@@ -72,6 +75,7 @@ jobs:
           BROTLI_VERSION=${BROTLI_VERSION}
           ZSTD_VERSION=${ZSTD_VERSION}
           LIBSSH2_VERSION=${LIBSSH2_VERSION}
+          CONTAINER_IMAGE=${CONTAINER_IMAGE}
           TOKEN_READ=${TOKEN_READ}
           sh curl-static-cross.sh
 
