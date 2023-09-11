@@ -14,10 +14,10 @@
 #     -e ENABLE_DEBUG=0 \
 #     -e CURL_VERSION=8.2.1 \
 #     -e QUICTLS_VERSION=3.1.2 \
-#     -e NGTCP2_VERSION="" \
+#     -e NGTCP2_VERSION="0.18.0" \
 #     -e NGHTTP3_VERSION="" \
 #     -e NGHTTP2_VERSION="" \
-#     -e ZLIB_VERSION="" \
+#     -e ZLIB_VERSION="1.3" \
 #     -e LIBUNISTRING_VERSION=1.1 \
 #     -e LIBIDN2_VERSION=2.3.4 \
 #     alpine:latest sh curl-static-cross.sh
@@ -29,9 +29,9 @@
 
 
 init_env() {
-    export DIR=${DIR:-/data}
-    export PREFIX="${DIR}/curl"
-    export RELEASE_DIR=${RELEASE_DIR:-/mnt}
+    export DIR=${DIR:-/data};
+    export PREFIX="${DIR}/curl";
+    export RELEASE_DIR=${RELEASE_DIR:-/mnt};
 
     case "${ENABLE_DEBUG}" in
         true|1|yes|on|y|Y)
@@ -57,10 +57,13 @@ init_env() {
     echo "zstd version: ${ZSTD_VERSION}"
     echo "libssh2 version: ${LIBSSH2_VERSION}"
 
-    export PKG_CONFIG_PATH="${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig"
+    export PKG_CONFIG_PATH="${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig";
+
+    . /etc/os-release;
+    dist=${ID};
 }
 
-install_package() {
+install_packages_alpine() {
     apk update;
     apk upgrade;
     apk add \
@@ -71,7 +74,32 @@ install_package() {
         zlib-static zlib-dev \
         libunistring-static libunistring-dev \
         libidn2-static libidn2-dev \
-        zstd-static zstd-dev
+        zstd-static zstd-dev;
+}
+
+install_packages_debian() {
+    export DEBIAN_FRONTEND=noninteractive;
+    apt-get update -y > /dev/null;
+    apt-get install -y apt-utils > /dev/null;
+    apt-get upgrade -y > /dev/null;
+    apt-get install -y clang automake cmake autoconf libtool binutils pkg-config;
+    apt-get install -y curl wget git jq xz-utils grep sed groff gnupg;
+    apt-get install -y libcunit1-dev libgpg-error-dev;
+        # perl libcunit1-dev zlib1g-dev libunistring-dev libgpg-error-dev \
+        # libidn2-dev libzstd-dev libssh2-1-dev;
+        # "linux-headers-${arch}"
+}
+
+install_packages() {
+    case "${dist}" in
+        debian|ubuntu|devuan)
+            install_packages_debian ;;
+        alpine)
+            install_packages_alpine ;;
+        *)
+            echo "Unsupported distribution: ${dist}";
+            exit 1 ;;
+    esac
 }
 
 install_cross_compile() {
@@ -100,6 +128,19 @@ install_cross_compile() {
            CXX=${DIR}/${SOURCE_DIR}/bin/${SOURCE_DIR}-c++ \
            STRIP=${DIR}/${SOURCE_DIR}/bin/${SOURCE_DIR}-strip \
            PATH=${DIR}/${SOURCE_DIR}/bin:$PATH
+}
+
+install_qemu() {
+    local qemu_arch
+    qemu_arch=$1
+    echo "Installing QEMU ${qemu_arch} ..."
+
+    case "${dist}" in
+        debian|ubuntu|devuan)
+            apt-get install -y qemu-user-static qemu-user-binfmt ;;
+        alpine)
+            apk add "qemu-${qemu_arch}" ;;
+    esac
 }
 
 arch_variants() {
@@ -152,8 +193,7 @@ arch_variants() {
         # If the architecture is not the same as the host, need to cross compile
         echo "Cross compiling for ${ARCH} ..."
         export CROSS=1
-        echo "Installing QEMU ..."
-        apk add "qemu-${qemu_arch}";
+        install_qemu "${qemu_arch}";
         install_cross_compile;
     else
         # If the architecture is the same as the host, no need to cross compile
@@ -209,10 +249,10 @@ url_from_github() {
                or (.name | contains(\"${version}\")))" "github-${repo#*/}.json")
     fi
 
-    browser_download_urls=$(echo "${tags}" | jq -r '.assets[]' | grep browser_download_url || true)
+    browser_download_urls=$(printf "%s" "${tags}" | jq -r '.assets[]' | grep browser_download_url || true)
 
     if [ -z "${browser_download_urls}" ]; then
-        tag_name=$(echo "${tags}" | jq -r '.tag_name')
+        tag_name=$(printf "%s" "${tags}" | jq -r '.tag_name')
         url="https://github.com/${repo}/archive/refs/tags/${tag_name}.tar.gz"
     else
         suffixes="tar.xz tar.gz tar.bz2 tgz"
@@ -225,7 +265,7 @@ url_from_github() {
     fi
 
     if [ -z "${url}" ]; then
-        tag_name=$(echo "${tags}" | jq -r '.tag_name')
+        tag_name=$(printf "%s" "${tags}" | jq -r '.tag_name')
         url="https://github.com/${repo}/archive/refs/tags/${tag_name}.tar.gz"
     fi
 
@@ -290,7 +330,7 @@ compile_libunistring() {
     url="https://mirrors.kernel.org/gnu/libunistring/libunistring-${LIBUNISTRING_VERSION}.tar.xz"
     download_and_extract "${url}"
 
-    ./configure --host "${ARCH}-linux-musl" --prefix="${PREFIX}" --disable-shared;
+    ./configure --host "${ARCH}-linux-gnu" --prefix="${PREFIX}" --disable-shared;
     make -j "$(nproc)";
     make install;
 }
@@ -306,10 +346,10 @@ compile_libidn2() {
 
     PKG_CONFIG="pkg-config --static --with-path=${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig" \
     ./configure \
-        --host "${ARCH}-linux-musl" \
+        --host "${ARCH}-linux-gnu" \
         --with-libunistring-prefix="${PREFIX}" \
         --prefix="${PREFIX}" \
-        --disable-shared
+        --disable-shared;
     make -j "$(nproc)";
     make install;
 }
@@ -351,14 +391,14 @@ compile_libssh2() {
     autoreconf -fi
 
     if [ "${CROSS}" -eq 1 ]; then
-        host_config="--host=${ARCH}-pc-linux-musl"
+        host_config="--host=${ARCH}-pc-linux-gnu"
     else
         host_config=""
     fi
     PKG_CONFIG="pkg-config --static --with-path=${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig" \
         LDFLAGS="-L${PREFIX}/lib -L${PREFIX}/lib64" CFLAGS="-O3" \
         ./configure "${host_config}" --prefix="${PREFIX}" --enable-static --enable-shared=no \
-            --with-crypto=openssl --with-libssl-prefix="${PREFIX}"
+            --with-crypto=openssl --with-libssl-prefix="${PREFIX}";
     make -j "$(nproc)";
     make install;
 }
@@ -374,7 +414,7 @@ compile_nghttp2() {
 
     autoreconf -i --force
     if [ "${CROSS}" -eq 1 ]; then
-        host_config="--host=${ARCH}-pc-linux-musl"
+        host_config="--host=${ARCH}-pc-linux-gnu"
     else
         host_config=""
     fi
@@ -396,7 +436,7 @@ compile_ngtcp2() {
 
     autoreconf -i --force
     if [ "${CROSS}" -eq 1 ]; then
-        host_config="--host=${ARCH}-pc-linux-musl"
+        host_config="--host=${ARCH}-pc-linux-gnu"
     else
         host_config=""
     fi
@@ -419,7 +459,7 @@ compile_nghttp3() {
 
     autoreconf -i --force
     if [ "${CROSS}" -eq 1 ]; then
-        host_config="--host=${ARCH}-pc-linux-musl"
+        host_config="--host=${ARCH}-pc-linux-gnu"
     else
         host_config=""
     fi
@@ -465,7 +505,7 @@ compile_zstd() {
     PKG_CONFIG="pkg-config --static --with-path=${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig" \
         make -j "$(nproc)" PREFIX="${PREFIX}";
     make install;
-    cp -f lib/libzstd.a "${PREFIX}/lib/libzstd.a";
+    if [ ! -f "${PREFIX}/lib/libzstd.a" ]; then cp -f lib/libzstd.a "${PREFIX}/lib/libzstd.a"; fi
 }
 
 curl_config() {
@@ -479,9 +519,9 @@ curl_config() {
 
     PKG_CONFIG="pkg-config --static" \
         ./configure \
-            --host="${ARCH}-pc-linux-musl" \
+            --host="${ARCH}-pc-linux-gnu" \
             --prefix="${PREFIX}" \
-            --disable-shared --enable-static \
+            --enable-static --disable-shared \
             --with-openssl --with-brotli --with-zstd \
             --with-nghttp2 --with-nghttp3 --with-ngtcp2 \
             --with-libidn2 "${enable_libssh2}" \
@@ -585,14 +625,10 @@ compile() {
     local unsupported_arch
     arch_variants;
 
-    if [ "${CROSS}" -eq 1 ]; then
-        # need to compile zlib and zstd for cross compile
-        compile_zlib;
-        compile_zstd;
-        compile_libunistring;
-        compile_libidn2;
-    fi
-
+    compile_zlib;
+    compile_zstd;
+    compile_libunistring;
+    compile_libidn2;
     compile_quictls;
 
     unsupported_arch="powerpc mipsel mips"
@@ -614,9 +650,11 @@ main() {
     # If not in docker, run the script in docker and exit
     if [ ! -f /.dockerenv ]; then
         echo "Not running in docker, starting a docker container to build cURL."
+        local container_image
         cd "$(dirname "$0")";
         base_name=$(basename "$0")
         current_time=$(date "+%Y%m%d-%H%M")
+        container_image="alpine:latest"   # or debian:latest
         [ -z "${ARCH}" ] && ARCH=$(uname -m)
         container_name="build-curl-${ARCH}-${current_time}"
         RELEASE_DIR=${RELEASE_DIR:-/mnt}
@@ -645,20 +683,14 @@ main() {
             -e LIBSSH2_VERSION="${LIBSSH2_VERSION}" \
             -e LIBUNISTRING_VERSION="${LIBUNISTRING_VERSION}" \
             -e LIBIDN2_VERSION="${LIBIDN2_VERSION}" \
-            alpine:latest sh "${RELEASE_DIR}/${base_name}" 2>&1 | tee -a "${container_name}.log"
+            "${container_image}" sh "${RELEASE_DIR}/${base_name}" 2>&1 | tee -a "${container_name}.log"
 
         # Exit script after docker finishes
         exit;
     fi
 
-    # Check if the script is running in Alpine
-    if [ ! -f /etc/alpine-release ]; then
-        echo "This script only works on Alpine Linux."
-        exit 1;
-    fi
-
     init_env;                   # Initialize the build env
-    install_package;            # Install dependencies
+    install_packages;            # Install dependencies
     set -o errexit -o xtrace;
 
     # if ${ARCH} = "all", then compile all the ARCHS
