@@ -143,7 +143,7 @@ install_qemu() {
 
     case "${dist}" in
         debian|ubuntu|devuan)
-            apt-get install -y qemu-user-static qemu-user-binfmt ;;
+            apt-get install -y qemu-user-static ;;
         alpine)
             apk add "qemu-${qemu_arch}" ;;
     esac
