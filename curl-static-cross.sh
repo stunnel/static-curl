@@ -258,7 +258,7 @@ url_from_github() {
     browser_download_urls=$(printf "%s" "${tags}" | jq -r '.assets[]' | grep browser_download_url || true)
 
     if [ -z "${browser_download_urls}" ]; then
-        tag_name=$(printf "%s" "${tags}" | jq -r '.tag_name')
+        tag_name=$(printf "%s" "${tags}" | jq -r '.tag_name' | head -1)
         url="https://github.com/${repo}/archive/refs/tags/${tag_name}.tar.gz"
     else
         suffixes="tar.xz tar.gz tar.bz2 tgz"
