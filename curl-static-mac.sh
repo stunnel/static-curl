@@ -435,6 +435,7 @@ tar_curl() {
     ln -sf "${HOME}/curl_version.txt" /tmp/curl_version.txt
     cp -f src/curl "${HOME}/release/curl"
     ln "${HOME}/release/curl" "${HOME}/bin/curl-${arch}"
+    create_checksum
     tar -Jcf "${HOME}/release/curl-macos-${arch}-${CURL_VERSION}.tar.xz" -C "${HOME}/release" curl;
     rm -f "${HOME}/release/curl";
 }
@@ -448,11 +449,10 @@ create_checksum() {
     markdown_table=$(printf "%s" "${output_sha256}" |
         awk 'BEGIN {printf("| %s | %s  | %s |\n", $2-macos, $3, $1)}')
 
-    releases=$(curl -s https://api.github.com/repos/stunnel/static-curl/releases)
-    printf "%s" "${releases}" | \
-        jq -r --arg CURL_VERSION "${CURL_VERSION}" '.[] | select(.tag_name == $CURL_VERSION) | .body' > \
-        release/release.md
-    sed -i ':n;/^\n*$/{$! N;$d;bn}' release/release.md
+    curl -s https://api.github.com/repos/stunnel/static-curl/releases -o releases.json
+    jq -r --arg CURL_VERSION "${CURL_VERSION}" '.[] | select(.tag_name == $CURL_VERSION) | .body' \
+        releases.json > release/release.md
+    gsed -i ':n;/^\n*$/{$! N;$d;bn}' release/release.md
 
     cat >> release/release.md<<EOF
 ${markdown_table}
