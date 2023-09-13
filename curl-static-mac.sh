@@ -447,7 +447,7 @@ create_checksum() {
     echo "Creating checksum..."
     output_sha256=$(sha256sum bin/curl-* | sed 's#bin/curl-#curl\t#g')
     markdown_table=$(printf "%s" "${output_sha256}" |
-        awk 'BEGIN {printf("| %s | %s  | %s |\n", $2-macos, $3, $1)}')
+        awk '{printf("| %s-macos | %s  | %s |\n", $2, $3, $1)}')
 
     curl -s https://api.github.com/repos/stunnel/static-curl/releases -o releases.json
     jq -r --arg CURL_VERSION "${CURL_VERSION}" '.[] | select(.tag_name == $CURL_VERSION) | .body' \
