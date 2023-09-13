@@ -2,7 +2,7 @@
 
 # To compile locally, install Docker, clone the Git repository, navigate to the repository directory,
 # and then execute the following command:
-# ARCH=aarch64 CURL_VERSION=8.2.1 QUICTLS_VERSION=3.1.2 NGTCP2_VERSION=0.18.0 \
+# ARCH=aarch64 CURL_VERSION=8.2.1 QUICTLS_VERSION=3.1.2 NGTCP2_VERSION="" \
 #     ZLIB_VERSION=1.3 CONTAINER_IMAGE=debian:latest \
 #     sh curl-static-cross.sh
 # script will create a container and compile curl.
@@ -16,15 +16,15 @@
 #     -e ENABLE_DEBUG=0 \
 #     -e CURL_VERSION=8.2.1 \
 #     -e QUICTLS_VERSION=3.1.2 \
-#     -e NGTCP2_VERSION="0.18.0" \
+#     -e NGTCP2_VERSION="" \
 #     -e NGHTTP3_VERSION="" \
 #     -e NGHTTP2_VERSION="" \
 #     -e ZLIB_VERSION="1.3" \
 #     -e LIBUNISTRING_VERSION=1.1 \
 #     -e LIBIDN2_VERSION=2.3.4 \
-#     -e BROTLI_VERSION=1.1.0 \
-#     -e ZSTD_VERSION=1.5.5 \
-#     -e LIBSSH2_VERSION=1.11.0 \
+#     -e BROTLI_VERSION=v1.1.0 \
+#     -e ZSTD_VERSION="" \
+#     -e LIBSSH2_VERSION="" \
 #     -e CONTAINER_IMAGE=debian:latest \
 #     alpine:latest sh curl-static-cross.sh
 # Supported architectures: x86_64, aarch64, armv7l, i686, riscv64, s390x,
@@ -271,7 +271,7 @@ url_from_github() {
     fi
 
     if [ -z "${url}" ]; then
-        tag_name=$(printf "%s" "${tags}" | jq -r '.tag_name')
+        tag_name=$(printf "%s" "${tags}" | jq -r '.tag_name' | head -1)
         url="https://github.com/${repo}/archive/refs/tags/${tag_name}.tar.gz"
     fi
 
