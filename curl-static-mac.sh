@@ -115,13 +115,13 @@ url_from_github() {
                or (.name | contains(\"${version}\")))" "github-${repo#*/}.json")
     fi
 
-    browser_download_urls=$(echo "${tags}" | jq -r '.assets[]' | rg browser_download_url ||
-              echo "${tags}" | rg browser_download_url || true)
+    browser_download_urls=$(printf "%s" "${tags}" | jq -r '.assets[]' | rg browser_download_url ||
+              printf "%s" "${tags}" | rg browser_download_url || true)
 
     if [ -z "${browser_download_urls}" ]; then
-        tag_name=$(echo "${tags}" | jq -r '.tag_name' ||
-                   echo "${tags}" | rg '"tag_name"' | sed 's/"tag_name": "\([^"]*\)",/\1/' | awk '{gsub(/^[ \t]+|[ \t]+$/, ""); print}')
-        # parse error sometimes: Invalid string: control characters from U+0000 through U+001F must be escaped at line 51, column 1
+        tag_name=$(printf "%s" "${tags}" | jq -r '.tag_name' | head -1 ||
+                   printf "%s" "${tags}" | rg '"tag_name"' | sed 's/"tag_name": "\([^"]*\)",/\1/' \
+                   | awk '{gsub(/^[ \t]+|[ \t]+$/, ""); print}' | head -1)
         url="https://github.com/${repo}/archive/refs/tags/${tag_name}.tar.gz"
     else
         suffixes="tar.xz tar.gz tar.bz2 tgz"
@@ -134,8 +134,9 @@ url_from_github() {
     fi
 
     if [ -z "${url}" ]; then
-        tag_name=$(echo "${tags}" | jq -r '.tag_name' ||
-                   echo "${tags}" | rg '"tag_name"' | sed 's/"tag_name": "\([^"]*\)",/\1/' | awk '{gsub(/^[ \t]+|[ \t]+$/, ""); print}')
+        tag_name=$(printf "%s" "${tags}" | jq -r '.tag_name' | head -1 ||
+                   printf "%s" "${tags}" | rg '"tag_name"' | sed 's/"tag_name": "\([^"]*\)",/\1/' \
+                   | awk '{gsub(/^[ \t]+|[ \t]+$/, ""); print}' | head -1)
         url="https://github.com/${repo}/archive/refs/tags/${tag_name}.tar.gz"
     fi
 
