@@ -44,10 +44,14 @@ init_env() {
     export PKG_CONFIG_PATH="${PREFIX}/lib/pkgconfig"
 }
 
-install_package() {
+install_packages() {
     brew install automake autoconf libtool binutils pkg-config coreutils cmake make llvm \
          curl wget git jq xz ripgrep gnu-sed groff gnupg pcre2 cunit ca-certificates;
-    # brew uninstall --ignore-dependencies openssl@1.1 openssl@3;
+
+    shopt -s expand_aliases;
+    alias grep=rg;
+    alias sed=gsed;
+    alias stat=gstat;
 }
 
 arch_variants() {
@@ -69,64 +73,99 @@ arch_variants() {
     esac
 }
 
-url_from_github() {
-    local browser_download_urls browser_download_url url repo version tag_name tags auth_header status_code
+_get_github() {
+    local repo release_file auth_header status_code size_of
     repo=$1
-    version=$2
+    release_file="github-${repo#*/}.json"
 
-    if [ ! -f "github-${repo#*/}.json" ]; then
-        # GitHub API has a limit of 60 requests per hour, cache the results.
-        echo "Downloading ${repo} releases from GitHub ..."
-        echo "URL: https://api.github.com/repos/${repo}/releases"
+    # GitHub API has a limit of 60 requests per hour, cache the results.
+    echo "Downloading ${repo} releases from GitHub ..."
+    echo "URL: https://api.github.com/repos/${repo}/releases"
 
-        # get token from github settings
+    # get token from github settings
+    auth_header=""
+    set +o xtrace
+    if [ -n "${TOKEN_READ}" ]; then
+        auth_header="token ${TOKEN_READ}"
+    fi
+
+    status_code=$(curl "https://api.github.com/repos/${repo}/releases" \
+        -w "%{http_code}" \
+        -o "${release_file}" \
+        -H "Authorization: ${auth_header}" \
+        -s -L --compressed)
+
+    set -o xtrace
+    size_of=$(stat -c "%s" "${release_file}")
+    if [ "${size_of}" -lt 200 ] || [ "${status_code}" -ne 200 ]; then
+        echo "The release of ${repo} is empty, download tags instead."
         set +o xtrace
-        auth_header=""
-        if [ -n "${TOKEN_READ}" ]; then
-            auth_header="token ${TOKEN_READ}"
-        fi
-
-        status_code=$(curl "https://api.github.com/repos/${repo}/releases" \
+        status_code=$(curl "https://api.github.com/repos/${repo}/tags" \
             -w "%{http_code}" \
-            -o "github-${repo#*/}.json" \
+            -o "${release_file}" \
             -H "Authorization: ${auth_header}" \
             -s -L --compressed)
-
-        auth_header=""
         set -o xtrace
+    fi
+    auth_header=""
 
-        if [ "${status_code}" -ne 200 ]; then
-            echo "ERROR. Failed to download ${repo} releases from GitHub, status code: ${status_code}"
-            cat "github-${repo#*/}.json"
-            exit 1
-        fi
+    if [ "${status_code}" -ne 200 ]; then
+        echo "ERROR. Failed to download ${repo} releases from GitHub, status code: ${status_code}"
+        cat "${release_file}"
+        exit 1
+    fi
+}
+
+_get_latest_tag() {
+    local release_file release_json
+    release_file=$1
+
+    # get the latest tag that are not draft and not pre-release
+    # release_json must contains only one tag
+    release_json=$(jq -r "[.[] | select ((.prerelease != true) and (.draft != true))][0]" "${release_file}")
+    if [ "${release_json}" = "null" ] || [ "${release_json}" = "" ]; then
+        # get the latest tag that are not draft
+        release_json=$(jq -r "[.[] | select (.draft != true)][0]" "${release_file}")
+    fi
+    if [ "${release_json}" = "null" ] || [ "${release_json}" = "" ]; then
+        # get the first tag
+        release_json=$(jq -r '.[0]' "${release_file}")
     fi
 
+    echo "${release_json}"
+}
+
+url_from_github() {
+    local browser_download_urls browser_download_url url repo version tag_name release_json release_file
+    repo=$1
+    version=$2
+    release_file="github-${repo#*/}.json"
+
+    if [ ! -f "${release_file}" ]; then
+        _get_github "${repo}"
+    fi
+
+    # release_json must contains only one tag
     if [ -z "${version}" ]; then
-        tags=$(jq -r '.[0]' "github-${repo#*/}.json")
+        release_json=$(_get_latest_tag "${release_file}")
     else
-        tags=$(jq -r ".[] | select((.tag_name == \"${version}\")
-               or (.tag_name | startswith(\"${version}\"))
-               or (.tag_name | endswith(\"${version}\"))
-               or (.tag_name | contains(\"${version}\"))
-               or (.name == \"${version}\")
-               or (.name | startswith(\"${version}\"))
-               or (.name | endswith(\"${version}\"))
-               or (.name | contains(\"${version}\")))" "github-${repo#*/}.json")
+        release_json=$(jq -r "map(select(.tag_name == \"${version}\")
+                          // select(.tag_name | startswith(\"${version}\"))
+                          // select(.tag_name | endswith(\"${version}\"))
+                          // select(.tag_name | contains(\"${version}\"))
+                          // select(.name == \"${version}\")
+                          // select(.name | startswith(\"${version}\"))
+                          // select(.name | endswith(\"${version}\"))
+                          // select(.name | contains(\"${version}\")))[0]" \
+                      "${release_file}")
     fi
 
-    browser_download_urls=$(printf "%s" "${tags}" | jq -r '.assets[]' | rg browser_download_url ||
-              printf "%s" "${tags}" | rg browser_download_url || true)
+    browser_download_urls=$(printf "%s" "${release_json}" | jq -r '.assets[]' 2>/dev/null | grep browser_download_url || true)
 
-    if [ -z "${browser_download_urls}" ]; then
-        tag_name=$(printf "%s" "${tags}" | jq -r '.tag_name' | head -1 ||
-                   printf "%s" "${tags}" | rg '"tag_name"' | sed 's/"tag_name": "\([^"]*\)",/\1/' \
-                   | awk '{gsub(/^[ \t]+|[ \t]+$/, ""); print}' | head -1)
-        url="https://github.com/${repo}/archive/refs/tags/${tag_name}.tar.gz"
-    else
+    if [ -n "${browser_download_urls}" ]; then
         suffixes="tar.xz tar.gz tar.bz2 tgz"
         for suffix in ${suffixes}; do
-            browser_download_url=$(printf "%s" "${browser_download_urls}" | rg "${suffix}" || true)
+            browser_download_url=$(printf "%s" "${browser_download_urls}" | grep "${suffix}" || true)
             [ -n "$browser_download_url" ] && break
         done
 
@@ -134,9 +173,12 @@ url_from_github() {
     fi
 
     if [ -z "${url}" ]; then
-        tag_name=$(printf "%s" "${tags}" | jq -r '.tag_name' | head -1 ||
-                   printf "%s" "${tags}" | rg '"tag_name"' | sed 's/"tag_name": "\([^"]*\)",/\1/' \
-                   | awk '{gsub(/^[ \t]+|[ \t]+$/, ""); print}' | head -1)
+        tag_name=$(printf "%s" "${release_json}" | jq -r '.tag_name // .name' | head -1)
+        # get from "Source Code" of releases
+        if [ "${tag_name}" = "null" ] || [ "${tag_name}" = "" ]; then
+            echo "ERROR. Failed to get the ${version} from ${repo} of GitHub"
+            exit 1
+        fi
         url="https://github.com/${repo}/archive/refs/tags/${tag_name}.tar.gz"
     fi
 
@@ -154,7 +196,7 @@ download_and_extract() {
         wget -c --no-verbose --content-disposition "${url}";
 
         FILENAME=$(curl -sIL "${url}" | sed -n -e 's/^Content-Disposition:.*filename=//ip' | \
-            tail -1 | sed 's/\r//g; s/\n//g; s/\"//g' | rg -oP '[\x20-\x7E]+' || true)
+            tail -1 | sed 's/\r//g; s/\n//g; s/\"//g' | grep -oP '[\x20-\x7E]+' || true)
         if [ "${FILENAME}" = "" ]; then
             FILENAME=${url##*/}
         fi
@@ -165,7 +207,7 @@ download_and_extract() {
     fi
 
     # If the file is a tarball, extract it
-    if echo "${FILENAME}" | rg -qP '.*\.(tar\.xz|tar\.gz|tar\.bz2|tgz)$'; then
+    if echo "${FILENAME}" | grep -qP '.*\.(tar\.xz|tar\.gz|tar\.bz2|tgz)$'; then
         SOURCE_DIR=$(echo "${FILENAME}" | sed -E "s/\.tar\.(xz|bz2|gz)//g" | sed 's/\.tgz//g')
         [ -d "${SOURCE_DIR}" ] && rm -rf "${SOURCE_DIR}"
         tar -xf "${FILENAME}"
@@ -435,7 +477,6 @@ tar_curl() {
     ln -sf "${HOME}/curl_version.txt" /tmp/curl_version.txt
     cp -f src/curl "${HOME}/release/curl"
     ln "${HOME}/release/curl" "${HOME}/bin/curl-${arch}"
-    create_checksum
     tar -Jcf "${HOME}/release/curl-macos-${arch}-${CURL_VERSION}.tar.xz" -C "${HOME}/release" curl;
     rm -f "${HOME}/release/curl";
 }
@@ -452,7 +493,7 @@ create_checksum() {
     curl -s https://api.github.com/repos/stunnel/static-curl/releases -o releases.json
     jq -r --arg CURL_VERSION "${CURL_VERSION}" '.[] | select(.tag_name == $CURL_VERSION) | .body' \
         releases.json > release/release.md
-    gsed -i ':n;/^\n*$/{$! N;$d;bn}' release/release.md
+    sed -i ':n;/^\n*$/{$! N;$d;bn}' release/release.md
 
     cat >> release/release.md<<EOF
 ${markdown_table}
@@ -480,8 +521,8 @@ compile() {
 main() {
     local arch_temp
 
-    init_env;                   # Initialize the build env
-    install_package;            # Install dependencies
+    init_env;                    # Initialize the build env
+    install_packages;            # Install dependencies
     set -o errexit -o xtrace;
 
     [ -z "${ARCHS}" ] && ARCHS=$(uname -m)
@@ -496,6 +537,8 @@ main() {
         echo "Prefix directory: ${PREFIX}"
         compile;
     done
+
+    create_checksum;
 }
 
 # If the first argument is not "--source-only" then run the script,
