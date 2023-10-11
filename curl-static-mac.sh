@@ -44,14 +44,14 @@ init_env() {
     export PKG_CONFIG_PATH="${PREFIX}/lib/pkgconfig"
 }
 
+shopt -s expand_aliases;
+alias grep=rg;
+alias sed=gsed;
+alias stat=gstat;
+
 install_packages() {
     brew install automake autoconf libtool binutils pkg-config coreutils cmake make llvm \
          curl wget git jq xz ripgrep gnu-sed groff gnupg pcre2 cunit ca-certificates;
-
-    shopt -s expand_aliases;
-    alias grep=rg;
-    alias sed=gsed;
-    alias stat=gstat;
 }
 
 arch_variants() {
