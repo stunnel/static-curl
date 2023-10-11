@@ -605,6 +605,7 @@ compile_curl() {
     download_and_extract "${url}"
     [ -z "${CURL_VERSION}" ] && CURL_VERSION=$(echo "${SOURCE_DIR}" | cut -d'-' -f 2)
 
+    if [ ! -f src/.checksrc ]; then echo "enable STDERR" > src/.checksrc; fi
     curl_config;
     make -j "$(nproc)" LDFLAGS="-L${PREFIX}/lib -L${PREFIX}/lib64 -static -all-static" CFLAGS="-O3";
     tar_curl;
