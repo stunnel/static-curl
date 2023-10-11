@@ -587,7 +587,7 @@ curl_config() {
             --enable-threaded-resolver --enable-optimize --enable-pthreads \
             --enable-warnings --enable-werror \
             --enable-curldebug --enable-dict --enable-netrc \
-            --enable-crypto-auth --enable-tls-srp --enable-dnsshuffle \
+            --enable-bearer-auth --enable-tls-srp --enable-dnsshuffle \
             --enable-get-easy-options --enable-progress-meter \
             --with-ca-bundle=/etc/ssl/certs/ca-certificates.crt \
             --with-ca-path=/etc/ssl/certs \
