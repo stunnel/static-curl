@@ -429,7 +429,7 @@ curl_config() {
             --enable-threaded-resolver --enable-optimize --enable-pthreads \
             --enable-warnings --enable-werror \
             --enable-curldebug --enable-dict --enable-netrc \
-            --enable-crypto-auth --enable-tls-srp --enable-dnsshuffle \
+            --enable-bearer-auth --enable-tls-srp --enable-dnsshuffle \
             --enable-get-easy-options --enable-progress-meter \
             --with-ca-bundle=/etc/ssl/cert.pem \
             --with-ca-path=/etc/ssl/certs \
@@ -454,6 +454,7 @@ compile_curl() {
     download_and_extract "${url}"
     [ -z "${CURL_VERSION}" ] && CURL_VERSION=$(echo "${SOURCE_DIR}" | cut -d'-' -f 2)
 
+    if [ ! -f src/.checksrc ]; then echo "enable STDERR" > src/.checksrc; fi
     curl_config;
     LDFLAGS="-L${PREFIX}/lib -static -all-static ${LDFLAGS}" \
         CFLAGS="-I${PREFIX}/include -I${PREFIX}/include/brotli" \
