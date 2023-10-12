@@ -115,7 +115,8 @@ install_cross_compile() {
 
     if [ ! -f "github-qbt-musl-cross-make.json" ]; then
         # GitHub API has a limit of 60 requests per hour, cache the results.
-        curl -s "https://api.github.com/repos/userdocs/qbt-musl-cross-make/releases" -o "github-qbt-musl-cross-make.json"
+        curl --retry 5 --retry-max-time 120 -s \
+            "https://api.github.com/repos/userdocs/qbt-musl-cross-make/releases" -o "github-qbt-musl-cross-make.json"
     fi
 
     browser_download_url=$(jq -r '.' "github-qbt-musl-cross-make.json" \
@@ -225,7 +226,7 @@ _get_github() {
         auth_header="token ${TOKEN_READ}"
     fi
 
-    status_code=$(curl "https://api.github.com/repos/${repo}/releases" \
+    status_code=$(curl --retry 5 --retry-max-time 120 "https://api.github.com/repos/${repo}/releases" \
         -w "%{http_code}" \
         -o "${release_file}" \
         -H "Authorization: ${auth_header}" \
@@ -236,7 +237,7 @@ _get_github() {
     if [ "${size_of}" -lt 200 ] || [ "${status_code}" -ne 200 ]; then
         echo "The release of ${repo} is empty, download tags instead."
         set +o xtrace
-        status_code=$(curl "https://api.github.com/repos/${repo}/tags" \
+        status_code=$(curl --retry 5 --retry-max-time 120 "https://api.github.com/repos/${repo}/tags" \
             -w "%{http_code}" \
             -o "${release_file}" \
             -H "Authorization: ${auth_header}" \
@@ -331,7 +332,8 @@ download_and_extract() {
     if [ ! -f "${FILENAME}" ]; then
         wget -c --no-verbose --content-disposition "${url}";
 
-        FILENAME=$(curl -sIL "${url}" | sed -n -e 's/^Content-Disposition:.*filename=//ip' | \
+        FILENAME=$(curl --retry 5 --retry-max-time 120 -sIL "${url}" | \
+            sed -n -e 's/^Content-Disposition:.*filename=//ip' | \
             tail -1 | sed 's/\r//g; s/\n//g; s/\"//g' | grep -oP '[\x20-\x7E]+' || true)
         if [ "${FILENAME}" = "" ]; then
             FILENAME=${url##*/}
