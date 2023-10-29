@@ -40,7 +40,7 @@ jobs:
           echo "Home: ${HOME}"
 
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 1
 
@@ -96,7 +96,9 @@ jobs:
         uses: softprops/action-gh-release@v1
         if: github.ref == 'refs/heads/main'
         with:
-          files: release/curl-static-*.tar.xz
+          files: |
+            release/curl-static-*.tar.xz
+            COPYING
           body_path: release/release.md
           tag_name: ${{ env.VERSION }}
           token: ${{ secrets.GITHUB_TOKEN }}

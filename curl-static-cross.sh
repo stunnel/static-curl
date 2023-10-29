@@ -2,7 +2,7 @@
 
 # To compile locally, install Docker, clone the Git repository, navigate to the repository directory,
 # and then execute the following command:
-# ARCH=aarch64 CURL_VERSION=8.2.1 QUICTLS_VERSION=3.1.2 NGTCP2_VERSION="" \
+# ARCH=aarch64 CURL_VERSION=8.4.0 QUICTLS_VERSION=3.1.4 NGTCP2_VERSION="" \
 #     ZLIB_VERSION=1.3 CONTAINER_IMAGE=debian:latest \
 #     sh curl-static-cross.sh
 # script will create a container and compile curl.
@@ -14,8 +14,8 @@
 #     -e ARCH=aarch64 \
 #     -e ARCHS="x86_64 aarch64 armv7l i686 riscv64 s390x" \
 #     -e ENABLE_DEBUG=0 \
-#     -e CURL_VERSION=8.2.1 \
-#     -e QUICTLS_VERSION=3.1.2 \
+#     -e CURL_VERSION=8.4.0 \
+#     -e QUICTLS_VERSION=3.1.4 \
 #     -e NGTCP2_VERSION="" \
 #     -e NGHTTP3_VERSION="" \
 #     -e NGHTTP2_VERSION="" \
@@ -622,6 +622,7 @@ tar_curl() {
 
     echo "${CURL_VERSION}" > "${RELEASE_DIR}/version.txt"
     cp -f src/curl "${RELEASE_DIR}/release/curl"
+    cp -f COPYING "${RELEASE_DIR}/release/"
     ln "${RELEASE_DIR}/release/curl" "${RELEASE_DIR}/bin/curl-${arch}"
     create_release_note "$(pwd)";
     tar -Jcf "${RELEASE_DIR}/release/curl-static-${arch}-${CURL_VERSION}.tar.xz" -C "${RELEASE_DIR}/release" curl;
