@@ -2,7 +2,7 @@
 
 # To compile locally, clone the Git repository, navigate to the repository directory,
 # and then execute the following command:
-# ARCHS="x86_64 arm64" CURL_VERSION=8.2.1 QUICTLS_VERSION=3.1.2 NGTCP2_VERSION="" bash curl-static-mac.sh
+# ARCHS="x86_64 arm64" CURL_VERSION=8.4.0 QUICTLS_VERSION=3.1.4 NGTCP2_VERSION="" bash curl-static-mac.sh
 
 # There might be some breaking changes in ngtcp2, so it's important to ensure
 # that its version is compatible with the current version of cURL.
