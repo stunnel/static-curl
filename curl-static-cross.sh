@@ -622,7 +622,6 @@ tar_curl() {
 
     echo "${CURL_VERSION}" > "${RELEASE_DIR}/version.txt"
     cp -f src/curl "${RELEASE_DIR}/release/curl"
-    cp -f COPYING "${RELEASE_DIR}/release/"
     ln "${RELEASE_DIR}/release/curl" "${RELEASE_DIR}/bin/curl-${arch}"
     create_release_note "$(pwd)";
     tar -Jcf "${RELEASE_DIR}/release/curl-static-${arch}-${CURL_VERSION}.tar.xz" -C "${RELEASE_DIR}/release" curl;
@@ -633,6 +632,9 @@ create_release_note() {
     cd "${RELEASE_DIR}"
     [ -f release/release.md ] && return
     local components protocols features
+
+    wget --tries=10 -O release/LICENSE.tar.xz \
+        https://github.com/stunnel/static-curl/releases/download/8.4.0/LICENSE.tar.xz
 
     echo "Creating release note..."
     components=$("bin/curl-${arch}" -V | head -n 1 | sed 's#OpenSSL/#quictls/#g' | sed 's/ /\n/g' | grep '/' | sed 's#^#- #g' || true)
@@ -653,7 +655,11 @@ ${protocols}
 ## Features
 
 ${features}
-EOF
+
+## License
+
+This binary includes various open-source software such as curl, openssl, zlib, brotli, zstd, libidn2, libssh2, nghttp2, ngtcp2, nghttp3. Their license information has been compiled and is included in the LICENSE.tar.xz file.
+
 }
 
 create_checksum() {

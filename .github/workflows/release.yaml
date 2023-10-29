@@ -98,7 +98,7 @@ jobs:
         with:
           files: |
             release/curl-static-*.tar.xz
-            COPYING
+            release/LICENSE.tar.xz
           body_path: release/release.md
           tag_name: ${{ env.VERSION }}
           token: ${{ secrets.GITHUB_TOKEN }}
