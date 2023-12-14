@@ -1,12 +1,12 @@
-name: release
+name: build-and-release
 
 on:
   # run it manually
   workflow_dispatch:
 
 jobs:
-  release:
-    name: release (${{ github.ref_name }})
+  build:
+    name: build (${{ github.ref_name }})
     runs-on: ubuntu-latest
 
     steps:
@@ -85,24 +85,184 @@ jobs:
 
       - name: Set up environment
         run: |
-          VERSION=`cat version.txt`
+          VERSION=`cat release/version.txt`
           echo "VERSION=$VERSION" >> $GITHUB_ENV
+
+      - name: Upload artifact (version)
+        uses: actions/upload-artifact@v3
+        with:
+          name: curl-version
+          path: release/version.txt
+          retention-days: 90
+          if-no-files-found: error
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: curl-binary-linux-${{ env.VERSION }}
+          path: release
+          retention-days: 90
+          if-no-files-found: error
+
+  build-macOS:
+    name: build-macOS (${{ github.ref_name }})
+    runs-on: macos-latest
+
+    steps:
+      - name: Use variables
+        env:
+          CURL_VERSION: ${{ vars.CURL_VERSION }}
+          QUICTLS_VERSION: ${{ vars.QUICTLS_VERSION }}
+          NGTCP2_VERSION: ${{ vars.NGTCP2_VERSION }}
+          NGHTTP3_VERSION: ${{ vars.NGHTTP3_VERSION }}
+          NGHTTP2_VERSION: ${{ vars.NGHTTP2_VERSION }}
+          LIBIDN2_VERSION: ${{ vars.LIBIDN2_VERSION }}
+          LIBUNISTRING_VERSION: ${{ vars.LIBUNISTRING_VERSION }}
+          ZLIB_VERSION: ${{ vars.ZLIB_VERSION }}
+          BROTLI_VERSION: ${{ vars.BROTLI_VERSION }}
+          ZSTD_VERSION: ${{ vars.ZSTD_VERSION }}
+          LIBSSH2_VERSION: ${{ vars.LIBSSH2_VERSION }}
+          ARES_VERSION: ${{ vars.ARES_VERSION }}
+        run: |
+          echo "cURL version: ${CURL_VERSION}"
+          echo "QuicTLS version: ${QUICTLS_VERSION}"
+          echo "ngtcp2 version: ${NGTCP2_VERSION}"
+          echo "nghttp3 version: ${NGHTTP3_VERSION}"
+          echo "nghttp2 version: ${NGHTTP2_VERSION}"
+          echo "libidn2 version: ${LIBIDN2_VERSION}"
+          echo "libunistring version: ${LIBUNISTRING_VERSION}"
+          echo "zlib version: ${ZLIB_VERSION}"
+          echo "brotli version: ${BROTLI_VERSION}"
+          echo "zstd version: ${ZSTD_VERSION}"
+          echo "libssh2 version: ${LIBSSH2_VERSION}"
+          echo "c-ares version: ${ARES_VERSION}"
+          echo "Home: ${HOME}"
+          echo "MACOS_RELEASE_DIR=${HOME}" >> $GITHUB_ENV
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Build Static cURL on macOS
+        env:
+          CURL_VERSION: ${{ vars.CURL_VERSION }}
+          QUICTLS_VERSION: ${{ vars.QUICTLS_VERSION }}
+          NGTCP2_VERSION: ${{ vars.NGTCP2_VERSION }}
+          NGHTTP3_VERSION: ${{ vars.NGHTTP3_VERSION }}
+          NGHTTP2_VERSION: ${{ vars.NGHTTP2_VERSION }}
+          LIBIDN2_VERSION: ${{ vars.LIBIDN2_VERSION }}
+          LIBUNISTRING_VERSION: ${{ vars.LIBUNISTRING_VERSION }}
+          ZLIB_VERSION: ${{ vars.ZLIB_VERSION }}
+          BROTLI_VERSION: ${{ vars.BROTLI_VERSION }}
+          ZSTD_VERSION: ${{ vars.ZSTD_VERSION }}
+          LIBSSH2_VERSION: ${{ vars.LIBSSH2_VERSION }}
+          ARES_VERSION: ${{ vars.ARES_VERSION }}
+          TOKEN_READ: ${{ secrets.GITHUB_TOKEN }}
+          ARCHS: "x86_64 arm64"
+        run: |
+          ARCHS="${ARCHS}"
+          CURL_VERSION=${CURL_VERSION}
+          QUICTLS_VERSION=${QUICTLS_VERSION}
+          NGTCP2_VERSION=${NGTCP2_VERSION}
+          NGHTTP3_VERSION=${NGHTTP3_VERSION}
+          NGHTTP2_VERSION=${NGHTTP2_VERSION}
+          LIBIDN2_VERSION=${LIBIDN2_VERSION}
+          LIBUNISTRING_VERSION=${LIBUNISTRING_VERSION}
+          ZLIB_VERSION=${ZLIB_VERSION}
+          BROTLI_VERSION=${BROTLI_VERSION}
+          ZSTD_VERSION=${ZSTD_VERSION}
+          LIBSSH2_VERSION=${LIBSSH2_VERSION}
+          ARES_VERSION=${ARES_VERSION}
+          TOKEN_READ=${TOKEN_READ}
+          bash curl-static-mac.sh
+
+      - name: Set up environment
+        run: |
+          VERSION=`cat ${{ env.MACOS_RELEASE_DIR }}/version.txt`
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+
+      - name: Upload artifact (version)
+        uses: actions/upload-artifact@v3
+        with:
+          name: curl-version
+          path: ${{ env.MACOS_RELEASE_DIR }}/version.txt
+          retention-days: 90
+          if-no-files-found: error
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: curl-binary-macos-${{ env.VERSION }}
+          path: ${{ env.MACOS_RELEASE_DIR }}/release
+          retention-days: 90
+          if-no-files-found: error
+
+  release:
+    name: release curl (${{ github.ref_name }})
+    needs: [build, build-macOS]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Download artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: curl-version
+          path: curl-version
+
+      - name: Set up environment
+        run: |
+          VERSION=`cat  curl-version/version.txt`
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+
+      - name: Download artifact (linux)
+        uses: actions/download-artifact@v3
+        with:
+          name: curl-binary-linux-${{ env.VERSION }}
+          path: release
+
+      - name: Download artifact (macos)
+        uses: actions/download-artifact@v3
+        with:
+          name: curl-binary-macos-${{ env.VERSION }}
+          path: release
 
       - name: List compiled files
         run: |
-          ls -l release bin
+          ls -l release
           echo
-          file bin/curl*
+          file release/curl-*
           echo
-          sha256sum bin/curl*
+          cat release/version-info.txt
+          echo
+          sha256sum release/curl-*
+
+      - name: Compress and Create Release Note
+        run: bash release.sh
+
+      - name: List compressed files
+        run: ls -l release
 
       - name: Upload Release Asset
         uses: softprops/action-gh-release@v1
         if: github.ref == 'refs/heads/main'
         with:
           files: |
-            release/curl-static-*.tar.xz
+            release/curl-*.tar.xz
             release/LICENSE.tar.xz
           body_path: release/release.md
           tag_name: ${{ env.VERSION }}
           token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: curl-release-${{ env.VERSION }}
+          path: release
+          retention-days: 90
+          if-no-files-found: error
