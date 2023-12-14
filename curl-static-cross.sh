@@ -259,14 +259,14 @@ _get_latest_tag() {
 
     # get the latest tag that are not draft and not pre-release
     # release_json must contains only one tag
-    release_json=$(jq -r "[.[] | select ((.prerelease != true) and (.draft != true))][0]" "${release_file}")
+    release_json=$(jq -c -r "[.[] | select ((.prerelease != true) and (.draft != true))][0]" "${release_file}")
     if [ "${release_json}" = "null" ] || [ "${release_json}" = "" ]; then
         # get the latest tag that are not draft
-        release_json=$(jq -r "[.[] | select (.draft != true)][0]" "${release_file}")
+        release_json=$(jq -c -r "[.[] | select (.draft != true)][0]" "${release_file}")
     fi
     if [ "${release_json}" = "null" ] || [ "${release_json}" = "" ]; then
         # get the first tag
-        release_json=$(jq -r '.[0]' "${release_file}")
+        release_json=$(jq -c -r '.[0]' "${release_file}")
     fi
 
     echo "${release_json}"
@@ -286,7 +286,7 @@ url_from_github() {
     if [ -z "${version}" ]; then
         release_json=$(_get_latest_tag "${release_file}")
     else
-        release_json=$(jq -r "map(select(.tag_name == \"${version}\")
+        release_json=$(jq -c -r "map(select(.tag_name == \"${version}\")
                           // select(.tag_name | startswith(\"${version}\"))
                           // select(.tag_name | endswith(\"${version}\"))
                           // select(.tag_name | contains(\"${version}\"))
@@ -297,7 +297,7 @@ url_from_github() {
                       "${release_file}")
     fi
 
-    browser_download_urls=$(printf "%s" "${release_json}" | jq -r '.assets[]' 2>/dev/null | grep browser_download_url || true)
+    browser_download_urls=$(printf "%s" "${release_json}" | tr -d '\n' | tr -d '\000-\037' | jq -r '.assets[]' 2>/dev/null | grep browser_download_url || true)
 
     if [ -n "${browser_download_urls}" ]; then
         suffixes="tar.xz tar.gz tar.bz2 tgz"
@@ -310,7 +310,7 @@ url_from_github() {
     fi
 
     if [ -z "${url}" ]; then
-        tag_name=$(printf "%s" "${release_json}" | jq -r '.tag_name // .name' | head -1)
+        tag_name=$(printf "%s" "${release_json}" | tr -d '\n' | tr -d '\000-\037' | jq -r '.tag_name // .name' | head -1)
         # get from "Source Code" of releases
         if [ "${tag_name}" = "null" ] || [ "${tag_name}" = "" ]; then
             echo "ERROR. Failed to get the ${version} from ${repo} of GitHub"
