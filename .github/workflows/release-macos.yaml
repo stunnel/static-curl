@@ -23,6 +23,7 @@ jobs:
           BROTLI_VERSION: ${{ vars.BROTLI_VERSION }}
           ZSTD_VERSION: ${{ vars.ZSTD_VERSION }}
           LIBSSH2_VERSION: ${{ vars.LIBSSH2_VERSION }}
+          ARES_VERSION: ${{ vars.ARES_VERSION }}
         run: |
           echo "cURL version: ${CURL_VERSION}"
           echo "QuicTLS version: ${QUICTLS_VERSION}"
@@ -35,6 +36,7 @@ jobs:
           echo "brotli version: ${BROTLI_VERSION}"
           echo "zstd version: ${ZSTD_VERSION}"
           echo "libssh2 version: ${LIBSSH2_VERSION}"
+          echo "c-ares version: ${ARES_VERSION}"
           echo "Home: ${HOME}"
 
       - name: Checkout
@@ -55,6 +57,7 @@ jobs:
           BROTLI_VERSION: ${{ vars.BROTLI_VERSION }}
           ZSTD_VERSION: ${{ vars.ZSTD_VERSION }}
           LIBSSH2_VERSION: ${{ vars.LIBSSH2_VERSION }}
+          ARES_VERSION: ${{ vars.ARES_VERSION }}
           TOKEN_READ: ${{ secrets.GITHUB_TOKEN }}
           ARCHS: "x86_64 arm64"
         run: |
@@ -70,6 +73,7 @@ jobs:
           BROTLI_VERSION=${BROTLI_VERSION}
           ZSTD_VERSION=${ZSTD_VERSION}
           LIBSSH2_VERSION=${LIBSSH2_VERSION}
+          ARES_VERSION=${ARES_VERSION}
           TOKEN_READ=${TOKEN_READ}
           bash curl-static-mac.sh
 

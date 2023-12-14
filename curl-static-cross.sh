@@ -62,6 +62,7 @@ init_env() {
     echo "brotli version: ${BROTLI_VERSION}"
     echo "zstd version: ${ZSTD_VERSION}"
     echo "libssh2 version: ${LIBSSH2_VERSION}"
+    echo "c-ares version: ${ARES_VERSION}"
 
     export PKG_CONFIG_PATH="${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig";
 
@@ -405,6 +406,20 @@ compile_libidn2() {
     make install;
 }
 
+compile_ares() {
+    echo "Compiling c-ares ..."
+    local url
+    change_dir;
+
+    url_from_github c-ares/c-ares "${ARES_VERSION}"
+    url="${URL}"
+    download_and_extract "${url}"
+
+    ./configure --host="${CROSS_TARGET}" --prefix="${PREFIX}" --enable-static --disable-shared;
+    make -j "$(nproc)";
+    make install;
+}
+
 compile_quictls() {
     echo "Compiling quictls ..."
     local url
@@ -593,7 +608,7 @@ curl_config() {
             --enable-get-easy-options --enable-progress-meter \
             --with-ca-bundle=/etc/ssl/certs/ca-certificates.crt \
             --with-ca-path=/etc/ssl/certs \
-            --with-ca-fallback \
+            --with-ca-fallback --enable-ares \
             --disable-ldap --disable-ldaps "${ENABLE_DEBUG}";
 }
 
@@ -684,11 +699,12 @@ compile() {
     local unsupported_arch
     arch_variants;
 
+    compile_quictls;
     compile_zlib;
     compile_zstd;
     compile_libunistring;
     compile_libidn2;
-    compile_quictls;
+    compile_ares;
 
     unsupported_arch="powerpc mipsel mips"
     if ! echo "$unsupported_arch" | grep -q "\\b${ARCH}\\b"; then
