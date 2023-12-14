@@ -23,6 +23,7 @@ jobs:
           BROTLI_VERSION: ${{ vars.BROTLI_VERSION }}
           ZSTD_VERSION: ${{ vars.ZSTD_VERSION }}
           LIBSSH2_VERSION: ${{ vars.LIBSSH2_VERSION }}
+          ARES_VERSION: ${{ vars.ARES_VERSION }}
           CONTAINER_IMAGE: ${{ vars.CONTAINER_IMAGE }}
         run: |
           echo "cURL version: ${CURL_VERSION}"
@@ -36,6 +37,7 @@ jobs:
           echo "brotli version: ${BROTLI_VERSION}"
           echo "zstd version: ${ZSTD_VERSION}"
           echo "libssh2 version: ${LIBSSH2_VERSION}"
+          echo "c-ares version: ${ARES_VERSION}"
           echo "Container image: ${CONTAINER_IMAGE}"
           echo "Home: ${HOME}"
 
@@ -57,6 +59,7 @@ jobs:
           BROTLI_VERSION: ${{ vars.BROTLI_VERSION }}
           ZSTD_VERSION: ${{ vars.ZSTD_VERSION }}
           LIBSSH2_VERSION: ${{ vars.LIBSSH2_VERSION }}
+          ARES_VERSION: ${{ vars.ARES_VERSION }}
           CONTAINER_IMAGE: ${{ vars.CONTAINER_IMAGE }}
           TOKEN_READ: ${{ secrets.GITHUB_TOKEN }}
           ARCH: "all"
@@ -75,6 +78,7 @@ jobs:
           BROTLI_VERSION=${BROTLI_VERSION}
           ZSTD_VERSION=${ZSTD_VERSION}
           LIBSSH2_VERSION=${LIBSSH2_VERSION}
+          ARES_VERSION=${ARES_VERSION}
           CONTAINER_IMAGE=${CONTAINER_IMAGE}
           TOKEN_READ=${TOKEN_READ}
           sh curl-static-cross.sh

@@ -39,6 +39,7 @@ init_env() {
     echo "brotli version: ${BROTLI_VERSION}"
     echo "zstd version: ${ZSTD_VERSION}"
     echo "libssh2 version: ${LIBSSH2_VERSION}"
+    echo "c-ares version: ${ARES_VERSION}"
 
     export LDFLAGS="-framework CoreFoundation -framework SystemConfiguration"
     export PKG_CONFIG_PATH="${PREFIX}/lib/pkgconfig"
@@ -269,6 +270,20 @@ compile_libidn2() {
     gmake install;
 }
 
+compile_ares() {
+    echo "Compiling c-ares ..."
+    local url
+    change_dir;
+
+    url_from_github c-ares/c-ares "${ARES_VERSION}"
+    url="${URL}"
+    download_and_extract "${url}"
+
+    ./configure --host="${CROSS_TARGET}" --prefix="${PREFIX}" --enable-static --disable-shared;
+    gmake -j "$(nproc)";
+    gmake install;
+}
+
 compile_quictls() {
     echo "Compiling quictls ..."
     local url
@@ -433,7 +448,7 @@ curl_config() {
             --enable-get-easy-options --enable-progress-meter \
             --with-ca-bundle=/etc/ssl/cert.pem \
             --with-ca-path=/etc/ssl/certs \
-            --with-ca-fallback \
+            --with-ca-fallback --enable-ares \
             --disable-ldap --disable-ldaps --disable-rtsp \
             --disable-rtmp --disable-rtmps \
             CFLAGS="-I${PREFIX}/include" \
@@ -505,12 +520,13 @@ EOF
 compile() {
     arch_variants;
 
+    compile_quictls;
     compile_zlib;
     compile_zstd;
     compile_libunistring;
     compile_libidn2;
+    compile_ares;
 
-    compile_quictls;
     compile_libssh2;
     compile_nghttp3;
     compile_ngtcp2;
