@@ -16,6 +16,7 @@ Simply execute it to compile the most recent version.
 - [zstd](https://github.com/facebook/zstd)
 - [zlib](https://zlib.net)
 - [libidn2](https://github.com/libidn/libidn2)
+- [c-ares](https://c-ares.haxx.se)
 
 `curl -V`
 - Protocols: dict file ftp ftps gopher gophers http https imap imaps mqtt pop3 pop3s rtsp scp sftp smb smbs smtp smtps telnet tftp ws wss
@@ -70,9 +71,9 @@ script will create a container and compile the host architecture cURL only.
       -e ZLIB_VERSION="" \
       -e LIBUNISTRING_VERSION="" \
       -e LIBIDN2_VERSION="" \
+      -e ARES_VERSION="" \
       alpine:latest sh curl-static-cross.sh
   ```
-  **There might be some breaking changes in `ngtcp2`, so it's important to ensure that its version is compatible with the current version of cURL.**
 
 #### macOS
 
@@ -91,6 +92,7 @@ ARCHS="x86_64 arm64" \
     BROTLI_VERSION=${BROTLI_VERSION} \
     ZSTD_VERSION=${ZSTD_VERSION} \
     LIBSSH2_VERSION=${LIBSSH2_VERSION} \
+    ARES_VERSION=${ARES_VERSION} \
     bash curl-static-mac.sh
 ```
 
@@ -112,6 +114,7 @@ For all `VERSION` variables, leaving them blank will automatically fetch the lat
 - `ZLIB_VERSION`: The version of zlib.
 - `BROTLI_VERSION`: The version of brotli.
 - `ZSTD_VERSION`: The version of zstd.
+- `ARES_VERSION`: The version of c-ares.
 - `ENABLE_DEBUG`: Enable curl debug. Default is `false`, set to `true` or `yes` to enable it.
 
 The compiled files will be saved in the current `release` directory.
