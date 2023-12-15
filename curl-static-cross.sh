@@ -2,8 +2,8 @@
 
 # To compile locally, install Docker, clone the Git repository, navigate to the repository directory,
 # and then execute the following command:
-# ARCH=aarch64 CURL_VERSION=8.4.0 QUICTLS_VERSION=3.1.4 NGTCP2_VERSION="" \
-#     ZLIB_VERSION=1.3 CONTAINER_IMAGE=debian:latest \
+# ARCH=aarch64 CURL_VERSION=8.5.0 QUICTLS_VERSION=3.1.4 NGTCP2_VERSION="" \
+#     ZLIB_VERSION= CONTAINER_IMAGE=debian:latest \
 #     sh curl-static-cross.sh
 # script will create a container and compile curl.
 
@@ -11,27 +11,24 @@
 # docker run --network host --rm -v $(pwd):/mnt -w /mnt \
 #     --name "build-curl-$(date +%Y%m%d-%H%M)" \
 #     -e RELEASE_DIR=/mnt \
-#     -e ARCH=aarch64 \
+#     -e ARCH=all \
 #     -e ARCHS="x86_64 aarch64 armv7l i686 riscv64 s390x" \
 #     -e ENABLE_DEBUG=0 \
-#     -e CURL_VERSION=8.4.0 \
+#     -e CURL_VERSION=8.5.0 \
 #     -e QUICTLS_VERSION=3.1.4 \
 #     -e NGTCP2_VERSION="" \
 #     -e NGHTTP3_VERSION="" \
 #     -e NGHTTP2_VERSION="" \
-#     -e ZLIB_VERSION=1.3 \
+#     -e ZLIB_VERSION="" \
 #     -e LIBUNISTRING_VERSION=1.1 \
 #     -e LIBIDN2_VERSION=2.3.4 \
-#     -e BROTLI_VERSION=v1.1.0 \
+#     -e BROTLI_VERSION="" \
 #     -e ZSTD_VERSION="" \
 #     -e LIBSSH2_VERSION="" \
 #     -e CONTAINER_IMAGE=debian:latest \
-#     alpine:latest sh curl-static-cross.sh
+#     debian:latest sh curl-static-cross.sh
 # Supported architectures: x86_64, aarch64, armv7l, i686, riscv64, s390x,
 #                          mips64, mips64el, mips, mipsel, powerpc64le, powerpc
-
-# There might be some breaking changes in ngtcp2, so it's important to ensure
-# that its version is compatible with the current version of cURL.
 
 
 init_env() {
@@ -68,6 +65,8 @@ init_env() {
 
     . /etc/os-release;
     dist=${ID};
+
+    mkdir -p "${RELEASE_DIR}/release/"
 }
 
 install_packages_alpine() {
@@ -89,12 +88,16 @@ install_packages_debian() {
     apt-get update -y > /dev/null;
     apt-get install -y apt-utils > /dev/null;
     apt-get upgrade -y > /dev/null;
-    apt-get install -y clang automake cmake autoconf libtool binutils pkg-config;
-    apt-get install -y curl wget git jq xz-utils grep sed groff gnupg;
-    apt-get install -y libcunit1-dev libgpg-error-dev;
-        # perl libcunit1-dev zlib1g-dev libunistring-dev libgpg-error-dev \
-        # libidn2-dev libzstd-dev libssh2-1-dev;
-        # "linux-headers-${arch}"
+    apt-get install -y automake cmake autoconf libtool binutils pkg-config \
+        curl wget git jq xz-utils grep sed groff gnupg libcunit1-dev libgpg-error-dev;
+    available_clang=$(apt-cache search clang | grep -E '^clang-[0-9]+ ' | awk '{print $1}' | sort -V | tail -n 1)
+    if [ -n "${available_clang}" ]; then
+        apt-get install -y "${available_clang}";
+        clang_version=$(echo "${available_clang}" | cut -d- -f2);
+        export CLANG_VERSION="${clang_version}";
+    else
+        apt-get install -y clang;
+    fi
 }
 
 install_packages() {
@@ -145,7 +148,7 @@ install_qemu() {
 
     case "${dist}" in
         debian|ubuntu|devuan)
-            apt-get install -y qemu-user-static ;;
+            apt-get install -y qemu-user-static > /dev/null ;;
         alpine)
             apk add "qemu-${qemu_arch}" ;;
     esac
@@ -197,17 +200,20 @@ arch_variants() {
                         OPENSSL_ARCH="linux-ppc" ;;
     esac
 
+    export TARGET="${ARCH}-pc-linux-gnu"
     if [ "${ARCH}" != "$(uname -m)" ]; then
         # If the architecture is not the same as the host, need to cross compile
         echo "Cross compiling for ${ARCH} ..."
-        export CROSS=1
         install_qemu "${qemu_arch}";
         install_cross_compile;
     else
         # If the architecture is the same as the host, no need to cross compile
         echo "Compiling for ${ARCH} ..."
-        export CROSS=0
-        export CC=clang CXX=clang++ STRIP=strip
+        if [ -z "${CLANG_VERSION}" ]; then
+            export CC=clang CXX=clang++
+        else
+            export CC="clang-${CLANG_VERSION}" CXX="clang++-${CLANG_VERSION}"
+        fi
     fi
 }
 
@@ -371,6 +377,8 @@ compile_zlib() {
     ./configure --prefix="${PREFIX}" --static;
     make -j "$(nproc)";
     make install;
+
+    if [ ! -f "${RELEASE_DIR}/release/LICENSE-zlib" ]; then cp -p LICENSE "${RELEASE_DIR}/release/LICENSE-zlib" || true; fi
 }
 
 compile_libunistring() {
@@ -382,9 +390,11 @@ compile_libunistring() {
     url="https://mirrors.kernel.org/gnu/libunistring/libunistring-${LIBUNISTRING_VERSION}.tar.xz"
     download_and_extract "${url}"
 
-    ./configure --host "${ARCH}-linux-gnu" --prefix="${PREFIX}" --disable-shared;
+    ./configure --host "${TARGET}" --prefix="${PREFIX}" --disable-shared;
     make -j "$(nproc)";
     make install;
+
+    if [ ! -f "${RELEASE_DIR}/release/LICENSE-libunistring" ]; then cp -p COPYING "${RELEASE_DIR}/release/LICENSE-libunistring" || true; fi
 }
 
 compile_libidn2() {
@@ -398,12 +408,14 @@ compile_libidn2() {
 
     PKG_CONFIG="pkg-config --static --with-path=${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig" \
     ./configure \
-        --host "${ARCH}-linux-gnu" \
+        --host "${TARGET}" \
         --with-libunistring-prefix="${PREFIX}" \
         --prefix="${PREFIX}" \
         --disable-shared;
     make -j "$(nproc)";
     make install;
+
+    if [ ! -f "${RELEASE_DIR}/release/LICENSE-libidn2" ]; then cp -p COPYING "${RELEASE_DIR}/release/LICENSE-libidn2" || true; fi
 }
 
 compile_ares() {
@@ -415,9 +427,11 @@ compile_ares() {
     url="${URL}"
     download_and_extract "${url}"
 
-    ./configure --host="${CROSS_TARGET}" --prefix="${PREFIX}" --enable-static --disable-shared;
+    ./configure --host="${TARGET}" --prefix="${PREFIX}" --enable-static --disable-shared;
     make -j "$(nproc)";
     make install;
+
+    if [ ! -f "${RELEASE_DIR}/release/LICENSE-c-ares" ]; then cp -p LICENSE.md "${RELEASE_DIR}/release/LICENSE-c-ares" || true; fi
 }
 
 compile_quictls() {
@@ -443,11 +457,13 @@ compile_quictls() {
 
     make -j "$(nproc)";
     make install_sw;
+
+    if [ ! -f "${RELEASE_DIR}/release/LICENSE-openssl" ]; then cp -p LICENSE.txt "${RELEASE_DIR}/release/LICENSE-openssl" || true; fi
 }
 
 compile_libssh2() {
     echo "Compiling libssh2 ..."
-    local url host_config
+    local url
     change_dir;
 
     url_from_github libssh2/libssh2 "${LIBSSH2_VERSION}"
@@ -455,23 +471,19 @@ compile_libssh2() {
     download_and_extract "${url}"
 
     autoreconf -fi
-
-    if [ "${CROSS}" -eq 1 ]; then
-        host_config="--host=${ARCH}-pc-linux-gnu"
-    else
-        host_config=""
-    fi
     PKG_CONFIG="pkg-config --static --with-path=${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig" \
-        LDFLAGS="-L${PREFIX}/lib -L${PREFIX}/lib64" CFLAGS="-O3" \
-        ./configure "${host_config}" --prefix="${PREFIX}" --enable-static --enable-shared=no \
+        LDFLAGS="-L${PREFIX}/lib -L${PREFIX}/lib64" \
+        ./configure --host="${TARGET}" --prefix="${PREFIX}" --enable-static --enable-shared=no \
             --with-crypto=openssl --with-libssl-prefix="${PREFIX}";
     make -j "$(nproc)";
     make install;
+
+    if [ ! -f "${RELEASE_DIR}/release/LICENSE-libssh2" ]; then cp -p COPYING "${RELEASE_DIR}/release/LICENSE-libssh2" || true; fi
 }
 
 compile_nghttp2() {
     echo "Compiling nghttp2 ..."
-    local url host_config
+    local url
     change_dir;
 
     url_from_github nghttp2/nghttp2 "${NGHTTP2_VERSION}"
@@ -479,21 +491,18 @@ compile_nghttp2() {
     download_and_extract "${url}"
 
     autoreconf -i --force
-    if [ "${CROSS}" -eq 1 ]; then
-        host_config="--host=${ARCH}-pc-linux-gnu"
-    else
-        host_config=""
-    fi
     PKG_CONFIG="pkg-config --static --with-path=${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig" \
-        ./configure "${host_config}" --prefix="${PREFIX}" --enable-static --enable-http3 \
+        ./configure --host="${TARGET}" --prefix="${PREFIX}" --enable-static --enable-http3 \
             --enable-lib-only --enable-shared=no;
     make -j "$(nproc)";
     make install;
+
+    if [ ! -f "${RELEASE_DIR}/release/LICENSE-nghttp2" ]; then cp -p COPYING "${RELEASE_DIR}/release/LICENSE-nghttp2" || true; fi
 }
 
 compile_ngtcp2() {
     echo "Compiling ngtcp2 ..."
-    local url host_config
+    local url
     change_dir;
 
     url_from_github ngtcp2/ngtcp2 "${NGTCP2_VERSION}"
@@ -501,22 +510,19 @@ compile_ngtcp2() {
     download_and_extract "${url}"
 
     autoreconf -i --force
-    if [ "${CROSS}" -eq 1 ]; then
-        host_config="--host=${ARCH}-pc-linux-gnu"
-    else
-        host_config=""
-    fi
     PKG_CONFIG="pkg-config --static --with-path=${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig" \
-        ./configure "${host_config}" --prefix="${PREFIX}" --enable-static --with-openssl="${PREFIX}" \
+        ./configure --host="${TARGET}" --prefix="${PREFIX}" --enable-static --with-openssl="${PREFIX}" \
             --with-libnghttp3="${PREFIX}" --enable-lib-only --enable-shared=no;
 
     make -j "$(nproc)";
     make install;
+
+    if [ ! -f "${RELEASE_DIR}/release/LICENSE-ngtcp2" ]; then cp -p COPYING "${RELEASE_DIR}/release/LICENSE-ngtcp2" || true; fi
 }
 
 compile_nghttp3() {
     echo "Compiling nghttp3 ..."
-    local url host_config
+    local url
     change_dir;
 
     url_from_github ngtcp2/nghttp3 "${NGHTTP3_VERSION}"
@@ -524,15 +530,12 @@ compile_nghttp3() {
     download_and_extract "${url}"
 
     autoreconf -i --force
-    if [ "${CROSS}" -eq 1 ]; then
-        host_config="--host=${ARCH}-pc-linux-gnu"
-    else
-        host_config=""
-    fi
     PKG_CONFIG="pkg-config --static --with-path=${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig" \
-        ./configure "${host_config}" --prefix="${PREFIX}" --enable-static --enable-shared=no --enable-lib-only;
+        ./configure --host="${TARGET}" --prefix="${PREFIX}" --enable-static --enable-shared=no --enable-lib-only;
     make -j "$(nproc)";
     make install;
+
+    if [ ! -f "${RELEASE_DIR}/release/LICENSE-nghttp3" ]; then cp -p COPYING "${RELEASE_DIR}/release/LICENSE-nghttp3" || true; fi
 }
 
 compile_brotli() {
@@ -552,6 +555,7 @@ compile_brotli() {
     PKG_CONFIG="pkg-config --static --with-path=${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig" \
         cmake --build . --config Release --target install;
 
+    if [ ! -f "${RELEASE_DIR}/release/LICENSE-brotli" ]; then cp -p LICENSE "${RELEASE_DIR}/release/LICENSE-brotli" || true; fi
     # make install;
     cd "${PREFIX}/lib/"
     if [ -f libbrotlidec-static.a ] && [ ! -f libbrotlidec.a ]; then ln -f libbrotlidec-static.a libbrotlidec.a; fi
@@ -571,7 +575,9 @@ compile_zstd() {
     PKG_CONFIG="pkg-config --static --with-path=${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig" \
         make -j "$(nproc)" PREFIX="${PREFIX}";
     make install;
+
     if [ ! -f "${PREFIX}/lib/libzstd.a" ]; then cp -f lib/libzstd.a "${PREFIX}/lib/libzstd.a"; fi
+    if [ ! -f "${RELEASE_DIR}/release/LICENSE-zstd" ]; then cp -p LICENSE "${RELEASE_DIR}/release/LICENSE-zstd" || true; fi
 }
 
 curl_config() {
@@ -585,7 +591,7 @@ curl_config() {
 
     PKG_CONFIG="pkg-config --static" \
         ./configure \
-            --host="${ARCH}-pc-linux-gnu" \
+            --host="${TARGET}" \
             --prefix="${PREFIX}" \
             --enable-static --disable-shared \
             --with-openssl --with-brotli --with-zstd \
@@ -624,75 +630,24 @@ compile_curl() {
 
     if [ ! -f src/.checksrc ]; then echo "enable STDERR" > src/.checksrc; fi
     curl_config;
-    make -j "$(nproc)" LDFLAGS="-L${PREFIX}/lib -L${PREFIX}/lib64 -static -all-static" CFLAGS="-O3";
-    tar_curl;
+    make -j "$(nproc)" LDFLAGS="-L${PREFIX}/lib -L${PREFIX}/lib64 -static -all-static -Wl,-s" CFLAGS="-O3";
+
+    if [ ! -f "${RELEASE_DIR}/release/LICENSE-curl" ]; then cp -p COPYING "${RELEASE_DIR}/release/LICENSE-curl" || true; fi
+    install_curl;
 }
 
-tar_curl() {
-    mkdir -p "${RELEASE_DIR}/release/" "${RELEASE_DIR}/bin/"
+install_curl() {
+    mkdir -p "${RELEASE_DIR}/release/"
 
-    "${STRIP}" src/curl
     ls -l src/curl
-    src/curl -V || true
+    cp -pf src/curl "${RELEASE_DIR}/release/curl-linux-${arch}"
 
-    echo "${CURL_VERSION}" > "${RELEASE_DIR}/version.txt"
-    cp -f src/curl "${RELEASE_DIR}/release/curl"
-    ln "${RELEASE_DIR}/release/curl" "${RELEASE_DIR}/bin/curl-${arch}"
-    create_release_note "$(pwd)";
-    tar -Jcf "${RELEASE_DIR}/release/curl-static-${arch}-${CURL_VERSION}.tar.xz" -C "${RELEASE_DIR}/release" curl;
-    rm -f "${RELEASE_DIR}/release/curl";
-}
-
-create_release_note() {
-    cd "${RELEASE_DIR}"
-    [ -f release/release.md ] && return
-    local components protocols features
-
-    wget --tries=10 -O release/LICENSE.tar.xz \
-        https://github.com/stunnel/static-curl/releases/download/8.4.0/LICENSE.tar.xz
-
-    echo "Creating release note..."
-    components=$("bin/curl-${arch}" -V | head -n 1 | sed 's#OpenSSL/#quictls/#g' | sed 's/ /\n/g' | grep '/' | sed 's#^#- #g' || true)
-    protocols=$(grep Protocols "${1}/config.log" | cut -d":" -f2 | sed -e 's/^[[:space:]]*//')
-    features=$(grep Features "${1}/config.log" | cut -d":" -f2 | sed -e 's/^[[:space:]]*//')
-
-    cat > release/release.md<<EOF
-# Static cURL ${CURL_VERSION} with HTTP3
-
-## Components
-
-${components}
-
-## Protocols
-
-${protocols}
-
-## Features
-
-${features}
-
-## License
-
-This binary includes various open-source software such as curl, openssl, zlib, brotli, zstd, libidn2, libssh2, nghttp2, ngtcp2, nghttp3. Their license information has been compiled and is included in the LICENSE.tar.xz file.
-EOF
-}
-
-create_checksum() {
-    cd "${RELEASE_DIR}"
-    local output_sha256 markdown_table
-
-    echo "Creating checksum..."
-    output_sha256=$(sha256sum bin/curl-* | sed 's#bin/curl-#curl\t#g')
-    markdown_table=$(printf "%s" "${output_sha256}" |
-        awk 'BEGIN {print "| File |  Arch  | SHA256 |\n|------|--------|--------|"} {printf("| %s | %s  | %s |\n", $2, $3, $1)}')
-
-    cat >> release/release.md<<EOF
-
-## Checksums
-
-${markdown_table}
-
-EOF
+    if [ ! -f "${RELEASE_DIR}/release/version.txt" ]; then
+        echo "${CURL_VERSION}" > "${RELEASE_DIR}/release/version.txt"
+    fi
+    if [ ! -f "${RELEASE_DIR}/release/version-info.txt" ]; then
+        src/curl -V >> "${RELEASE_DIR}/release/version-info.txt"
+    fi
 }
 
 compile() {
@@ -729,7 +684,7 @@ main() {
         cd "$(dirname "$0")";
         base_name=$(basename "$0")
         current_time=$(date "+%Y%m%d-%H%M")
-        container_image=${CONTAINER_IMAGE:-alpine:latest}  # or debian:latest
+        container_image=${CONTAINER_IMAGE:-debian:latest}  # or alpine:latest
         [ -z "${ARCH}" ] && ARCH=$(uname -m)
         container_name="build-curl-${ARCH}-${current_time}"
         RELEASE_DIR=${RELEASE_DIR:-/mnt}
@@ -742,7 +697,7 @@ main() {
         docker run --rm \
             --name "${container_name}" \
             --network host \
-            -v "$(pwd):${RELEASE_DIR}" -w /mnt \
+            -v "$(pwd):${RELEASE_DIR}" -w "${RELEASE_DIR}" \
             -e RELEASE_DIR="${RELEASE_DIR}" \
             -e ARCH="${ARCH}" \
             -e ARCHS="${ARCHS}" \
@@ -791,8 +746,6 @@ main() {
         # else compile for the specified ARCH
         compile;
     fi
-
-    create_checksum;
 }
 
 # If the first argument is not "--source-only" then run the script,

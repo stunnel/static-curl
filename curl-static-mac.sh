@@ -2,10 +2,7 @@
 
 # To compile locally, clone the Git repository, navigate to the repository directory,
 # and then execute the following command:
-# ARCHS="x86_64 arm64" CURL_VERSION=8.4.0 QUICTLS_VERSION=3.1.4 NGTCP2_VERSION="" bash curl-static-mac.sh
-
-# There might be some breaking changes in ngtcp2, so it's important to ensure
-# that its version is compatible with the current version of cURL.
+# ARCHS="x86_64 arm64" CURL_VERSION=8.5.0 QUICTLS_VERSION=3.1.4 NGTCP2_VERSION="" bash curl-static-mac.sh
 
 
 init_env() {
@@ -62,12 +59,12 @@ arch_variants() {
         x86_64)   export arch="amd64"
                   export ARCHFLAGS="-arch x86_64"
                   export OPENSSL_ARCH="darwin64-x86_64"
-                  export HOST="x86_64-apple-darwin"
+                  export TARGET="x86_64-apple-darwin"
                   ;;
         arm64)    export arch="arm64"
                   export ARCHFLAGS="-arch arm64"
                   export OPENSSL_ARCH="darwin64-arm64"
-                  export HOST="aarch64-apple-darwin"
+                  export TARGET="aarch64-apple-darwin"
                   export CC="/usr/local/opt/llvm/bin/clang -target arm64-apple-macos11"
                   export CXX="/usr/local/opt/llvm/bin/clang++ -target arm64-apple-macos11"
                   ;;
@@ -246,7 +243,7 @@ compile_libunistring() {
     download_and_extract "${url}"
 
     LDFLAGS="${LDFLAGS}" \
-    ./configure --host="${HOST}" --prefix="${PREFIX}" --disable-shared;
+    ./configure --host="${TARGET}" --prefix="${PREFIX}" --disable-shared;
     gmake -j "${CPU_CORES}";
     gmake install;
 }
@@ -262,7 +259,7 @@ compile_libidn2() {
 
     PKG_CONFIG="pkg-config --static" LDFLAGS="${LDFLAGS}" \
     ./configure \
-        --host="${HOST}" \
+        --host="${TARGET}" \
         --with-libunistring-prefix="${PREFIX}" \
         --prefix="${PREFIX}" \
         --disable-shared;
@@ -279,7 +276,7 @@ compile_ares() {
     url="${URL}"
     download_and_extract "${url}"
 
-    ./configure --host="${CROSS_TARGET}" --prefix="${PREFIX}" --enable-static --disable-shared;
+    ./configure --host="${TARGET}" --prefix="${PREFIX}" --enable-static --disable-shared;
     gmake -j "$(nproc)";
     gmake install;
 }
@@ -323,7 +320,7 @@ compile_libssh2() {
 
     PKG_CONFIG="pkg-config --static" \
         LDFLAGS="-L${PREFIX}/lib ${LDFLAGS}" CFLAGS="-O3" \
-        ./configure --host="${HOST}" --prefix="${PREFIX}" --enable-static --enable-shared=no \
+        ./configure --host="${TARGET}" --prefix="${PREFIX}" --enable-static --enable-shared=no \
             --with-crypto=openssl --with-libssl-prefix="${PREFIX}";
     gmake -j "${CPU_CORES}";
     gmake install;
@@ -340,7 +337,7 @@ compile_nghttp2() {
 
     autoreconf -i --force
     PKG_CONFIG="pkg-config --static" LDFLAGS="${LDFLAGS}" \
-        ./configure --host="${HOST}" --prefix="${PREFIX}" --enable-static --enable-http3 \
+        ./configure --host="${TARGET}" --prefix="${PREFIX}" --enable-static --enable-http3 \
             --enable-lib-only --enable-shared=no;
     gmake -j "${CPU_CORES}";
     gmake install;
@@ -357,7 +354,7 @@ compile_ngtcp2() {
 
     autoreconf -i --force
     PKG_CONFIG="pkg-config --static" LDFLAGS="${LDFLAGS}" \
-        ./configure --host="${HOST}" --prefix="${PREFIX}" --enable-static --with-openssl="${PREFIX}" \
+        ./configure --host="${TARGET}" --prefix="${PREFIX}" --enable-static --with-openssl="${PREFIX}" \
             --with-libnghttp3="${PREFIX}" --enable-lib-only --enable-shared=no;
 
     gmake -j "${CPU_CORES}";
@@ -377,7 +374,7 @@ compile_nghttp3() {
 
     autoreconf -i --force
     MAKE=gmake PKG_CONFIG="pkg-config --static" LDFLAGS="${LDFLAGS}" \
-        ./configure --host="${HOST}" --prefix="${PREFIX}" --enable-static --enable-shared=no \
+        ./configure --host="${TARGET}" --prefix="${PREFIX}" --enable-static --enable-shared=no \
         --enable-lib-only --disable-dependency-tracking;
     gmake -j "${CPU_CORES}";
     gmake install;
@@ -471,50 +468,28 @@ compile_curl() {
 
     if [ ! -f src/.checksrc ]; then echo "enable STDERR" > src/.checksrc; fi
     curl_config;
-    LDFLAGS="-L${PREFIX}/lib -static -all-static ${LDFLAGS}" \
+    LDFLAGS="-L${PREFIX}/lib -static -all-static -Wl,-s ${LDFLAGS}" \
         CFLAGS="-I${PREFIX}/include -I${PREFIX}/include/brotli" \
         CPPFLAGS="-I${PREFIX}/include -I${PREFIX}/include/brotli" \
         gmake -j "${CPU_CORES}";
 
-    tar_curl;
+    install_curl;
 }
 
-tar_curl() {
-    mkdir -p "${HOME}/release/" "${HOME}/bin/"
+install_curl() {
+    mkdir -p "${HOME}/release/"
 
-    strip src/curl
     ls -l src/curl
     file src/curl
     otool -L src/curl
     sha256sum src/curl
     src/curl -V || true
 
-    echo "${CURL_VERSION}" > "${HOME}/curl_version.txt"
-    ln -sf "${HOME}/curl_version.txt" /tmp/curl_version.txt
-    cp -f src/curl "${HOME}/release/curl"
-    ln "${HOME}/release/curl" "${HOME}/bin/curl-${arch}"
-    tar -Jcf "${HOME}/release/curl-macos-${arch}-${CURL_VERSION}.tar.xz" -C "${HOME}/release" curl;
-    rm -f "${HOME}/release/curl";
-}
+    cp -f src/curl "${HOME}/release/curl-macos-${arch}"
 
-create_checksum() {
-    cd "${HOME}"
-    local output_sha256 markdown_table
-
-    echo "Creating checksum..."
-    output_sha256=$(sha256sum bin/curl-* | sed 's#bin/curl-#curl\t#g')
-    markdown_table=$(printf "%s" "${output_sha256}" |
-        awk '{printf("| %s-macos | %s  | %s |\n", $2, $3, $1)}')
-
-    curl --retry 5 --retry-max-time 120 -s https://api.github.com/repos/stunnel/static-curl/releases -o releases.json
-    jq -r --arg CURL_VERSION "${CURL_VERSION}" '.[] | select(.tag_name == $CURL_VERSION) | .body' \
-        releases.json > release/release.md
-    sed -i ':n;/^\n*$/{$! N;$d;bn}' release/release.md
-
-    cat >> release/release.md<<EOF
-${markdown_table}
-
-EOF
+    if [ ! -f "${HOME}/version.txt" ]; then
+        echo "${CURL_VERSION}" > "${HOME}/version.txt"
+    fi
 }
 
 compile() {
@@ -554,8 +529,6 @@ main() {
         echo "Prefix directory: ${PREFIX}"
         compile;
     done
-
-    create_checksum;
 }
 
 # If the first argument is not "--source-only" then run the script,
