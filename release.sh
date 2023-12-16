@@ -51,12 +51,13 @@ EOF
 
 tar_curl() {
     cd "${RELEASE_DIR}/release" || exit
+    chmod +x curl-*;
     for file in curl-*; do
-        mv "${file}" curl
-        XZ_OPT=-9 tar -Jcf "${file}-${CURL_VERSION}.tar.xz" curl && rm -f curl
+        mv "${file}" curl;
+        XZ_OPT=-9 tar -Jcf "${file}-${CURL_VERSION}.tar.xz" curl && rm -f curl;
     done
 
-    XZ_OPT=-9 tar -Jcf LICENSE.tar.xz LICENSE-* && rm -f LICENSE-*
+    XZ_OPT=-9 tar -Jcf LICENSE.tar.xz LICENSE-* && rm -f LICENSE-*;
 }
 
 init_env;
