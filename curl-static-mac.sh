@@ -9,7 +9,6 @@ init_env() {
     local number
     export DIR="${DIR:-${HOME}/build}"
     export PREFIX="${DIR}/curl"
-    export CC=/usr/local/opt/llvm/bin/clang CXX=/usr/local/opt/llvm/bin/clang++
     number=$(sysctl -n hw.ncpu 2>/dev/null)
     export CPU_CORES=${number:-1}
 
@@ -24,7 +23,6 @@ init_env() {
     echo "Prefix directory: ${PREFIX}"
     echo "Release directory: ${HOME}"
     echo "Architecture: ${ARCH}"
-    echo "Compiler: ${CC} ${CXX}"
     echo "cURL version: ${CURL_VERSION}"
     echo "QuicTLS version: ${QUICTLS_VERSION}"
     echo "ngtcp2 version: ${NGTCP2_VERSION}"
@@ -52,21 +50,37 @@ install_packages() {
          curl wget git jq xz ripgrep gnu-sed groff gnupg pcre2 cunit ca-certificates;
 }
 
+_clang_path() {
+    # find the path of clang
+    clang_path=$(which /usr/local/opt/llvm/bin/clang || which /opt/homebrew/opt/llvm/bin/clang \
+        which /Library/Developer/CommandLineTools/usr/bin/clang || which clang || true)
+    clang_pp_path=$(which /usr/local/opt/llvm/bin/clang++ || which /opt/homebrew/opt/llvm/bin/clang++ \
+        which /Library/Developer/CommandLineTools/usr/bin/clang++ || which clang++ || true)
+
+    if [ -z "${clang_path}" ] || [ -z "${clang_pp_path}" ]; then
+        echo "clang not found"
+        exit 1
+    fi
+}
+
 arch_variants() {
     echo "Setting up the ARCH and OpenSSL arch ..."
+    _clang_path;
     [ -z "${ARCH}" ] && ARCH="$(uname -m)"
     case "${ARCH}" in
         x86_64)   export arch="amd64"
                   export ARCHFLAGS="-arch x86_64"
                   export OPENSSL_ARCH="darwin64-x86_64"
                   export TARGET="x86_64-apple-darwin"
+                  export CC="${clang_path} -target x86_64-apple-macos11"
+                  export CXX="${clang_pp_path} -target x86_64-apple-macos11"
                   ;;
         arm64)    export arch="arm64"
                   export ARCHFLAGS="-arch arm64"
                   export OPENSSL_ARCH="darwin64-arm64"
                   export TARGET="aarch64-apple-darwin"
-                  export CC="/usr/local/opt/llvm/bin/clang -target arm64-apple-macos11"
-                  export CXX="/usr/local/opt/llvm/bin/clang++ -target arm64-apple-macos11"
+                  export CC="${clang_path} -target arm64-apple-macos11"
+                  export CXX="${clang_pp_path} -target arm64-apple-macos11"
                   ;;
     esac
 }
