@@ -22,6 +22,7 @@
 #     -e ZLIB_VERSION="" \
 #     -e LIBUNISTRING_VERSION=1.1 \
 #     -e LIBIDN2_VERSION=2.3.4 \
+#     -e LIBPSL_VERSION="" \
 #     -e BROTLI_VERSION="" \
 #     -e ZSTD_VERSION="" \
 #     -e LIBSSH2_VERSION="" \
@@ -56,6 +57,7 @@ init_env() {
     echo "zlib version: ${ZLIB_VERSION}"
     echo "libunistring version: ${LIBUNISTRING_VERSION}"
     echo "libidn2 version: ${LIBIDN2_VERSION}"
+    echo "libpsl version: ${LIBPSL_VERSION}"
     echo "brotli version: ${BROTLI_VERSION}"
     echo "zstd version: ${ZSTD_VERSION}"
     echo "libssh2 version: ${LIBSSH2_VERSION}"
@@ -74,12 +76,13 @@ install_packages_alpine() {
     apk upgrade;
     apk add \
         build-base clang automake cmake autoconf libtool binutils linux-headers \
-        curl wget git jq xz grep sed groff gnupg perl \
+        curl wget git jq xz grep sed groff gnupg perl python3 \
         ca-certificates ca-certificates-bundle \
         cunit-dev \
         zlib-static zlib-dev \
         libunistring-static libunistring-dev \
         libidn2-static libidn2-dev \
+        libpsl-static libpsl-dev \
         zstd-static zstd-dev;
 }
 
@@ -390,7 +393,7 @@ compile_libunistring() {
     url="https://mirrors.kernel.org/gnu/libunistring/libunistring-${LIBUNISTRING_VERSION}.tar.xz"
     download_and_extract "${url}"
 
-    ./configure --host "${TARGET}" --prefix="${PREFIX}" --disable-shared;
+    ./configure --host "${TARGET}" --prefix="${PREFIX}" --disable-rpath --disable-shared;
     make -j "$(nproc)";
     make install;
 
@@ -416,6 +419,26 @@ compile_libidn2() {
     make install;
 
     if [ ! -f "${RELEASE_DIR}/release/LICENSE-libidn2" ]; then cp -p COPYING "${RELEASE_DIR}/release/LICENSE-libidn2" || true; fi
+}
+
+compile_libpsl() {
+    echo "Compiling libpsl ..."
+    local url
+    change_dir;
+
+    url_from_github rockdaboot/libpsl "${LIBPSL_VERSION}"
+    url="${URL}"
+    download_and_extract "${url}"
+
+    PKG_CONFIG="pkg-config --static --with-path=${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig" \
+      LDFLAGS="-L${PREFIX}/lib -L${PREFIX}/lib64 -Wl,--no-as-needed" \
+      ./configure --host="${TARGET}" --prefix="${PREFIX}" \
+        --enable-static --enable-shared=no --enable-builtin --disable-runtime;
+
+    make -j "$(nproc)" LDFLAGS="-L${PREFIX}/lib -L${PREFIX}/lib64 -static -all-static -Wl,-s" CFLAGS="-O3";
+    make install;
+
+    if [ ! -f "${RELEASE_DIR}/release/LICENSE-libpsl" ]; then cp -p LICENSE "${RELEASE_DIR}/release/LICENSE-libpsl" || true; fi
 }
 
 compile_ares() {
@@ -659,6 +682,7 @@ compile() {
     compile_zstd;
     compile_libunistring;
     compile_libidn2;
+    compile_libpsl;
     compile_ares;
 
     unsupported_arch="powerpc mipsel mips"

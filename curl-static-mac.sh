@@ -31,6 +31,7 @@ init_env() {
     echo "zlib version: ${ZLIB_VERSION}"
     echo "libunistring version: ${LIBUNISTRING_VERSION}"
     echo "libidn2 version: ${LIBIDN2_VERSION}"
+    echo "libpsl version: ${LIBPSL_VERSION}"
     echo "brotli version: ${BROTLI_VERSION}"
     echo "zstd version: ${ZSTD_VERSION}"
     echo "libssh2 version: ${LIBSSH2_VERSION}"
@@ -257,7 +258,7 @@ compile_libunistring() {
     download_and_extract "${url}"
 
     LDFLAGS="${LDFLAGS}" \
-    ./configure --host="${TARGET}" --prefix="${PREFIX}" --disable-shared;
+    ./configure --host="${TARGET}" --prefix="${PREFIX}" --disable-rpath --disable-shared;
     gmake -j "${CPU_CORES}";
     gmake install;
 }
@@ -277,6 +278,23 @@ compile_libidn2() {
         --with-libunistring-prefix="${PREFIX}" \
         --prefix="${PREFIX}" \
         --disable-shared;
+    gmake -j "${CPU_CORES}";
+    gmake install;
+}
+
+compile_libpsl() {
+    echo "Compiling libpsl ..."
+    local url
+    change_dir;
+
+    url_from_github rockdaboot/libpsl "${LIBPSL_VERSION}"
+    url="${URL}"
+    download_and_extract "${url}"
+
+    PKG_CONFIG="pkg-config --static --with-path=${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig" \
+      LDFLAGS="-L${PREFIX}/lib -L${PREFIX}/lib64" \
+      ./configure --host="${TARGET}" --prefix="${PREFIX}" \
+        --enable-static --enable-shared=no --enable-builtin --disable-runtime;
     gmake -j "${CPU_CORES}";
     gmake install;
 }
@@ -514,6 +532,7 @@ compile() {
     compile_zstd;
     compile_libunistring;
     compile_libidn2;
+    compile_libpsl;
     compile_ares;
 
     compile_libssh2;
