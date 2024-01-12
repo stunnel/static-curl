@@ -17,10 +17,11 @@ Simply execute it to compile the most recent version.
 - [zlib](https://zlib.net)
 - [libidn2](https://github.com/libidn/libidn2)
 - [c-ares](https://c-ares.haxx.se)
+- [libpsl](https://rockdaboot.github.io/libpsl/)
 
 `curl -V`
 - Protocols: dict file ftp ftps gopher gophers http https imap imaps mqtt pop3 pop3s rtsp scp sftp smb smbs smtp smtps telnet tftp ws wss
-- Features: alt-svc AsynchDNS brotli Debug HSTS HTTP2 HTTP3 HTTPS-proxy IDN IPv6 Largefile libz NTLM NTLM_WB SSL threadsafe TLS-SRP TrackMemory UnixSockets zstd
+- Features: alt-svc AsynchDNS brotli HSTS HTTP2 HTTP3 HTTPS-proxy IDN IPv6 Largefile libz NTLM PSL SSL threadsafe TLS-SRP TrackMemory UnixSockets zstd
 
 ## Usage
 
@@ -71,8 +72,9 @@ script will create a container and compile the host architecture cURL only.
       -e ZLIB_VERSION="" \
       -e LIBUNISTRING_VERSION="" \
       -e LIBIDN2_VERSION="" \
+      -e LIBPSL_VERSION="" \
       -e ARES_VERSION="" \
-      alpine:latest sh curl-static-cross.sh
+      debian:latest sh curl-static-cross.sh
   ```
 
 #### macOS
@@ -92,6 +94,7 @@ ARCHS="x86_64 arm64" \
     BROTLI_VERSION=${BROTLI_VERSION} \
     ZSTD_VERSION=${ZSTD_VERSION} \
     LIBSSH2_VERSION=${LIBSSH2_VERSION} \
+    LIBPSL_VERSION=${LIBPSL_VERSION} \
     ARES_VERSION=${ARES_VERSION} \
     bash curl-static-mac.sh
 ```
@@ -110,6 +113,7 @@ For all `VERSION` variables, leaving them blank will automatically fetch the lat
 - `NGHTTP2_VERSION`: The version of nghttp2.
 - `LIBUNISTRING_VERSION`: The version of libunistring.
 - `LIBIDN2_VERSION`: The version of libidn2.
+- `LIBPSL_VERSION`: The version of libpsl.
 - `LIBSSH2_VERSION`: The version of libssh2.
 - `ZLIB_VERSION`: The version of zlib.
 - `BROTLI_VERSION`: The version of brotli.
