@@ -13,7 +13,9 @@ jobs:
       - name: Use variables
         env:
           CURL_VERSION: ${{ vars.CURL_VERSION }}
+          TLS_LIB: ${{ vars.TLS_LIB }}
           QUICTLS_VERSION: ${{ vars.QUICTLS_VERSION }}
+          OPENSSL_VERSION: ${{ vars.OPENSSL_VERSION }}
           NGTCP2_VERSION: ${{ vars.NGTCP2_VERSION }}
           NGHTTP3_VERSION: ${{ vars.NGHTTP3_VERSION }}
           NGHTTP2_VERSION: ${{ vars.NGHTTP2_VERSION }}
@@ -27,7 +29,9 @@ jobs:
           CONTAINER_IMAGE: ${{ vars.CONTAINER_IMAGE }}
         run: |
           echo "cURL version: ${CURL_VERSION}"
+          echo "TLS library: ${TLS_LIB}"
           echo "QuicTLS version: ${QUICTLS_VERSION}"
+          echo "OpenSSL version: ${OPENSSL_VERSION}"
           echo "ngtcp2 version: ${NGTCP2_VERSION}"
           echo "nghttp3 version: ${NGHTTP3_VERSION}"
           echo "nghttp2 version: ${NGHTTP2_VERSION}"
@@ -49,7 +53,9 @@ jobs:
       - name: Cross Build Static cURL
         env:
           CURL_VERSION: ${{ vars.CURL_VERSION }}
+          TLS_LIB: ${{ vars.TLS_LIB }}
           QUICTLS_VERSION: ${{ vars.QUICTLS_VERSION }}
+          OPENSSL_VERSION: ${{ vars.OPENSSL_VERSION }}
           NGTCP2_VERSION: ${{ vars.NGTCP2_VERSION }}
           NGHTTP3_VERSION: ${{ vars.NGHTTP3_VERSION }}
           NGHTTP2_VERSION: ${{ vars.NGHTTP2_VERSION }}
@@ -68,7 +74,9 @@ jobs:
           ARCH="${ARCH}"
           ARCHS="${ARCHS}"
           CURL_VERSION=${CURL_VERSION}
+          TLS_LIB=${TLS_LIB}
           QUICTLS_VERSION=${QUICTLS_VERSION}
+          OPENSSL_VERSION=${OPENSSL_VERSION}
           NGTCP2_VERSION=${NGTCP2_VERSION}
           NGHTTP3_VERSION=${NGHTTP3_VERSION}
           NGHTTP2_VERSION=${NGHTTP2_VERSION}
@@ -112,7 +120,9 @@ jobs:
       - name: Use variables
         env:
           CURL_VERSION: ${{ vars.CURL_VERSION }}
+          TLS_LIB: ${{ vars.TLS_LIB }}
           QUICTLS_VERSION: ${{ vars.QUICTLS_VERSION }}
+          OPENSSL_VERSION: ${{ vars.OPENSSL_VERSION }}
           NGTCP2_VERSION: ${{ vars.NGTCP2_VERSION }}
           NGHTTP3_VERSION: ${{ vars.NGHTTP3_VERSION }}
           NGHTTP2_VERSION: ${{ vars.NGHTTP2_VERSION }}
@@ -125,7 +135,9 @@ jobs:
           ARES_VERSION: ${{ vars.ARES_VERSION }}
         run: |
           echo "cURL version: ${CURL_VERSION}"
+          echo "TLS library: ${TLS_LIB}"
           echo "QuicTLS version: ${QUICTLS_VERSION}"
+          echo "OpenSSL version: ${OPENSSL_VERSION}"
           echo "ngtcp2 version: ${NGTCP2_VERSION}"
           echo "nghttp3 version: ${NGHTTP3_VERSION}"
           echo "nghttp2 version: ${NGHTTP2_VERSION}"
@@ -147,7 +159,9 @@ jobs:
       - name: Build Static cURL on macOS
         env:
           CURL_VERSION: ${{ vars.CURL_VERSION }}
+          TLS_LIB: ${{ vars.TLS_LIB }}
           QUICTLS_VERSION: ${{ vars.QUICTLS_VERSION }}
+          OPENSSL_VERSION: ${{ vars.OPENSSL_VERSION }}
           NGTCP2_VERSION: ${{ vars.NGTCP2_VERSION }}
           NGHTTP3_VERSION: ${{ vars.NGHTTP3_VERSION }}
           NGHTTP2_VERSION: ${{ vars.NGHTTP2_VERSION }}
@@ -163,7 +177,9 @@ jobs:
         run: |
           ARCHS="${ARCHS}"
           CURL_VERSION=${CURL_VERSION}
+          TLS_LIB=${TLS_LIB}
           QUICTLS_VERSION=${QUICTLS_VERSION}
+          OPENSSL_VERSION=${OPENSSL_VERSION}
           NGTCP2_VERSION=${NGTCP2_VERSION}
           NGHTTP3_VERSION=${NGHTTP3_VERSION}
           NGHTTP2_VERSION=${NGHTTP2_VERSION}
@@ -243,7 +259,11 @@ jobs:
           sha256sum release/curl-*
 
       - name: Compress and Create Release Note
-        run: bash release.sh
+        env:
+          TLS_LIB: ${{ vars.TLS_LIB }}
+        run: |
+          TLS_LIB=${TLS_LIB}
+          bash release.sh
 
       - name: List compressed files
         run: ls -l release
