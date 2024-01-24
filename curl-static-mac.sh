@@ -56,9 +56,9 @@ install_packages() {
 _clang_path() {
     # find the path of clang
     clang_path=$(which /usr/local/opt/llvm/bin/clang || which /opt/homebrew/opt/llvm/bin/clang \
-        which /Library/Developer/CommandLineTools/usr/bin/clang || which clang || true)
+        || which /Library/Developer/CommandLineTools/usr/bin/clang || which clang || true)
     clang_pp_path=$(which /usr/local/opt/llvm/bin/clang++ || which /opt/homebrew/opt/llvm/bin/clang++ \
-        which /Library/Developer/CommandLineTools/usr/bin/clang++ || which clang++ || true)
+        || which /Library/Developer/CommandLineTools/usr/bin/clang++ || which clang++ || true)
 
     if [ -z "${clang_path}" ] || [ -z "${clang_pp_path}" ]; then
         echo "clang not found"
