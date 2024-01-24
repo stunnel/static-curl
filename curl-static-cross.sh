@@ -2,7 +2,7 @@
 
 # To compile locally, install Docker, clone the Git repository, navigate to the repository directory,
 # and then execute the following command:
-# ARCH=aarch64 CURL_VERSION=8.5.0 QUICTLS_VERSION=3.1.4 NGTCP2_VERSION="" \
+# ARCH=aarch64 CURL_VERSION=8.5.0 TLS_LIB=quictls QUICTLS_VERSION=3.1.4 \
 #     ZLIB_VERSION= CONTAINER_IMAGE=debian:latest \
 #     sh curl-static-cross.sh
 # script will create a container and compile curl.
@@ -15,7 +15,9 @@
 #     -e ARCHS="x86_64 aarch64 armv7l i686 riscv64 s390x" \
 #     -e ENABLE_DEBUG=0 \
 #     -e CURL_VERSION=8.5.0 \
+#     -e TLS_LIB=quictls \
 #     -e QUICTLS_VERSION=3.1.4 \
+#     -e OPENSSL_VERSION=3.2.0 \
 #     -e NGTCP2_VERSION="" \
 #     -e NGHTTP3_VERSION="" \
 #     -e NGHTTP2_VERSION="" \
@@ -50,7 +52,9 @@ init_env() {
     echo "Architecture: ${ARCH}"
     echo "Compiler: ${CC} ${CXX}"
     echo "cURL version: ${CURL_VERSION}"
+    echo "TLS Library: ${TLS_LIB}"
     echo "QuicTLS version: ${QUICTLS_VERSION}"
+    echo "OpenSSL version: ${OPENSSL_VERSION}"
     echo "ngtcp2 version: ${NGTCP2_VERSION}"
     echo "nghttp3 version: ${NGHTTP3_VERSION}"
     echo "nghttp2 version: ${NGHTTP2_VERSION}"
@@ -64,6 +68,7 @@ init_env() {
     echo "c-ares version: ${ARES_VERSION}"
 
     export PKG_CONFIG_PATH="${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig";
+    export libssh2_unsupported_arch="powerpc mipsel mips"
 
     . /etc/os-release;
     dist=${ID};
@@ -263,27 +268,34 @@ _get_github() {
     fi
 }
 
+_get_tag() {
+    # Function to get the latest tag based on given criteria
+    jq -c -r "[.[] | select(${2})][0]" "${1}" > /tmp/tmp_release.json;
+}
+
 _get_latest_tag() {
     local release_file release_json
     release_file=$1
 
-    # get the latest tag that are not draft and not pre-release
-    # release_json must contains only one tag
-    release_json=$(jq -c -r "[.[] | select ((.prerelease != true) and (.draft != true))][0]" "${release_file}")
-    if [ "${release_json}" = "null" ] || [ "${release_json}" = "" ]; then
-        # get the latest tag that are not draft
-        release_json=$(jq -c -r "[.[] | select (.draft != true)][0]" "${release_file}")
-    fi
-    if [ "${release_json}" = "null" ] || [ "${release_json}" = "" ]; then
-        # get the first tag
-        release_json=$(jq -c -r '.[0]' "${release_file}")
+    # Get the latest tag that is not a draft and not a pre-release
+    _get_tag "${release_file}" "(.prerelease != true) and (.draft != true)"
+
+    release_json=$(cat /tmp/tmp_release.json)
+
+    # If no tag found, get the latest tag that is not a draft
+    if [ "${release_json}" = "null" ] || [ -z "${release_json}" ]; then
+        _get_tag "${release_file}" ".draft != true"
+        release_json=$(cat /tmp/tmp_release.json)
     fi
 
-    echo "${release_json}"
+    # If still no tag found, get the first tag
+    if [ "${release_json}" = "null" ] || [ -z "${release_json}" ]; then
+        _get_tag "${release_file}" "."
+    fi
 }
 
 url_from_github() {
-    local browser_download_urls browser_download_url url repo version tag_name release_json release_file
+    local browser_download_urls browser_download_url url repo version tag_name release_file
     repo=$1
     version=$2
     release_file="github-${repo#*/}.json"
@@ -292,27 +304,26 @@ url_from_github() {
         _get_github "${repo}"
     fi
 
-    # release_json must contains only one tag
     if [ -z "${version}" ]; then
-        release_json=$(_get_latest_tag "${release_file}")
+        _get_latest_tag "${release_file}"
     else
-        release_json=$(jq -c -r "map(select(.tag_name == \"${version}\")
-                          // select(.tag_name | startswith(\"${version}\"))
-                          // select(.tag_name | endswith(\"${version}\"))
-                          // select(.tag_name | contains(\"${version}\"))
-                          // select(.name == \"${version}\")
-                          // select(.name | startswith(\"${version}\"))
-                          // select(.name | endswith(\"${version}\"))
-                          // select(.name | contains(\"${version}\")))[0]" \
-                      "${release_file}")
+        jq -c -r "map(select(.tag_name == \"${version}\")
+                  // select(.tag_name | startswith(\"${version}\"))
+                  // select(.tag_name | endswith(\"${version}\"))
+                  // select(.tag_name | contains(\"${version}\"))
+                  // select(.name == \"${version}\")
+                  // select(.name | startswith(\"${version}\"))
+                  // select(.name | endswith(\"${version}\"))
+                  // select(.name | contains(\"${version}\")))[0]" \
+            "${release_file}" > /tmp/tmp_release.json
     fi
 
-    browser_download_urls=$(printf "%s" "${release_json}" | tr -d '\n' | tr -d '\000-\037' | jq -r '.assets[]' 2>/dev/null | grep browser_download_url || true)
+    browser_download_urls=$(jq -r '.assets[]' /tmp/tmp_release.json | grep browser_download_url || true)
 
     if [ -n "${browser_download_urls}" ]; then
         suffixes="tar.xz tar.gz tar.bz2 tgz"
         for suffix in ${suffixes}; do
-            browser_download_url=$(printf "%s" "${browser_download_urls}" | grep "${suffix}" || true)
+            browser_download_url=$(printf "%s" "${browser_download_urls}" | grep "${suffix}\"" || true)
             [ -n "$browser_download_url" ] && break
         done
 
@@ -320,7 +331,7 @@ url_from_github() {
     fi
 
     if [ -z "${url}" ]; then
-        tag_name=$(printf "%s" "${release_json}" | tr -d '\n' | tr -d '\000-\037' | jq -r '.tag_name // .name' | head -1)
+        tag_name=$(jq -r '.tag_name // .name' /tmp/tmp_release.json | head -1)
         # get from "Source Code" of releases
         if [ "${tag_name}" = "null" ] || [ "${tag_name}" = "" ]; then
             echo "ERROR. Failed to get the ${version} from ${repo} of GitHub"
@@ -329,6 +340,7 @@ url_from_github() {
         url="https://github.com/${repo}/archive/refs/tags/${tag_name}.tar.gz"
     fi
 
+    rm -f /tmp/tmp_release.json;
     export URL="${url}"
 }
 
@@ -356,7 +368,8 @@ download_and_extract() {
 
     # If the file is a tarball, extract it
     if expr "${FILENAME}" : '.*\.\(tar\.xz\|tar\.gz\|tar\.bz2\|tgz\)$' > /dev/null; then
-        SOURCE_DIR=$(echo "${FILENAME}" | sed -E "s/\.tar\.(xz|bz2|gz)//g" | sed 's/\.tgz//g')
+        # SOURCE_DIR=$(echo "${FILENAME}" | sed -E "s/\.tar\.(xz|bz2|gz)//g" | sed 's/\.tgz//g')
+        SOURCE_DIR=$(tar -tf "${FILENAME}" | head -n 1 | cut -d'/' -f1)
         [ -d "${SOURCE_DIR}" ] && rm -rf "${SOURCE_DIR}"
         tar -axf "${FILENAME}"
         cd "${SOURCE_DIR}"
@@ -457,12 +470,17 @@ compile_ares() {
     if [ ! -f "${RELEASE_DIR}/release/LICENSE-c-ares" ]; then cp -p LICENSE.md "${RELEASE_DIR}/release/LICENSE-c-ares" || true; fi
 }
 
-compile_quictls() {
-    echo "Compiling quictls ..."
+compile_tls() {
+    echo "Compiling ${TLS_LIB} ..."
     local url
     change_dir;
 
-    url_from_github quictls/openssl "${QUICTLS_VERSION}"
+    if [ "${TLS_LIB}" = "openssl" ]; then
+        url_from_github openssl/openssl "${OPENSSL_VERSION}"
+    else
+        url_from_github quictls/openssl "${QUICTLS_VERSION}"
+    fi
+
     url="${URL}"
     download_and_extract "${url}"
 
@@ -485,7 +503,12 @@ compile_quictls() {
 }
 
 compile_libssh2() {
+    if echo "${libssh2_unsupported_arch}" | grep -q "\\b${ARCH}\\b"; then
+        # TODO: libssh2 is failing to compile on powerpc, mipsel and mips, need to fix it
+        return
+    fi
     echo "Compiling libssh2 ..."
+
     local url
     change_dir;
 
@@ -524,7 +547,11 @@ compile_nghttp2() {
 }
 
 compile_ngtcp2() {
+    if [ "${TLS_LIB}" = "openssl" ]; then
+        return
+    fi
     echo "Compiling ngtcp2 ..."
+
     local url
     change_dir;
 
@@ -604,12 +631,24 @@ compile_zstd() {
 }
 
 curl_config() {
-    local unsupported_arch enable_libssh2
-    enable_libssh2="--with-libssh2"
+    echo "Configuring curl ..."
+    local enable_libssh2 with_openssl_quic
 
-    unsupported_arch="powerpc mipsel mips"
-    if echo "$unsupported_arch" | grep -q "\\b${ARCH}\\b"; then
+    enable_libssh2="--with-libssh2"
+    if echo "${libssh2_unsupported_arch}" | grep -q "\\b${ARCH}\\b"; then
         enable_libssh2=""
+    fi
+
+    # --with-openssl-quic and --with-ngtcp2 are mutually exclusive
+    with_openssl_quic=""
+    if [ "${TLS_LIB}" = "openssl" ]; then
+        with_openssl_quic="--with-openssl-quic"
+    else
+        with_openssl_quic="--with-ngtcp2"
+    fi
+
+    if [ ! -f configure ]; then
+        autoreconf -fi;
     fi
 
     PKG_CONFIG="pkg-config --static" \
@@ -617,8 +656,8 @@ curl_config() {
             --host="${TARGET}" \
             --prefix="${PREFIX}" \
             --enable-static --disable-shared \
-            --with-openssl --with-brotli --with-zstd \
-            --with-nghttp2 --with-nghttp3 --with-ngtcp2 \
+            --with-openssl "${with_openssl_quic}" --with-brotli --with-zstd \
+            --with-nghttp2 --with-nghttp3 \
             --with-libidn2 "${enable_libssh2}" \
             --enable-hsts --enable-mime --enable-cookies \
             --enable-http-auth --enable-manual \
@@ -646,10 +685,18 @@ compile_curl() {
     local url
     change_dir;
 
-    url_from_github curl/curl "${CURL_VERSION}"
-    url="${URL}"
-    download_and_extract "${url}"
-    [ -z "${CURL_VERSION}" ] && CURL_VERSION=$(echo "${SOURCE_DIR}" | cut -d'-' -f 2)
+    if [ "${CURL_VERSION}" = "dev" ]; then
+        if [ ! -d "curl-dev" ]; then
+            git clone --depth 1 https://github.com/curl/curl.git curl-dev;
+        fi
+        cd curl-dev;
+        make clean || true;
+    else
+        url_from_github curl/curl "${CURL_VERSION}";
+        url="${URL}";
+        download_and_extract "${url}";
+        [ -z "${CURL_VERSION}" ] && CURL_VERSION=$(echo "${SOURCE_DIR}" | cut -d'-' -f 2);
+    fi
 
     if [ ! -f src/.checksrc ]; then echo "enable STDERR" > src/.checksrc; fi
     curl_config;
@@ -674,23 +721,16 @@ install_curl() {
 }
 
 compile() {
-    local unsupported_arch
     arch_variants;
 
-    compile_quictls;
+    compile_tls;
     compile_zlib;
     compile_zstd;
     compile_libunistring;
     compile_libidn2;
     compile_libpsl;
     compile_ares;
-
-    unsupported_arch="powerpc mipsel mips"
-    if ! echo "$unsupported_arch" | grep -q "\\b${ARCH}\\b"; then
-        # TODO: libssh2 is failing to compile on powerpc, mipsel and mips, need to fix it
-        compile_libssh2;
-    fi
-
+    compile_libssh2;
     compile_nghttp3;
     compile_ngtcp2;
     compile_nghttp2;
@@ -727,7 +767,9 @@ main() {
             -e ARCHS="${ARCHS}" \
             -e ENABLE_DEBUG="${ENABLE_DEBUG}" \
             -e CURL_VERSION="${CURL_VERSION}" \
+            -e TLS_LIB="${TLS_LIB}" \
             -e QUICTLS_VERSION="${QUICTLS_VERSION}" \
+            -e OPENSSL_VERSION="${OPENSSL_VERSION}" \
             -e NGTCP2_VERSION="${NGTCP2_VERSION}" \
             -e NGHTTP3_VERSION="${NGHTTP3_VERSION}" \
             -e NGHTTP2_VERSION="${NGHTTP2_VERSION}" \

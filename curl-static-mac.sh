@@ -2,7 +2,7 @@
 
 # To compile locally, clone the Git repository, navigate to the repository directory,
 # and then execute the following command:
-# ARCHS="x86_64 arm64" CURL_VERSION=8.5.0 QUICTLS_VERSION=3.1.4 NGTCP2_VERSION="" bash curl-static-mac.sh
+# ARCHS="x86_64 arm64" CURL_VERSION=8.5.0 TLS_LIB=quictls QUICTLS_VERSION=3.1.4 bash curl-static-mac.sh
 
 
 init_env() {
@@ -24,7 +24,9 @@ init_env() {
     echo "Release directory: ${HOME}"
     echo "Architecture: ${ARCH}"
     echo "cURL version: ${CURL_VERSION}"
+    echo "TLS Library: ${TLS_LIB}"
     echo "QuicTLS version: ${QUICTLS_VERSION}"
+    echo "OpenSSL version: ${OPENSSL_VERSION}"
     echo "ngtcp2 version: ${NGTCP2_VERSION}"
     echo "nghttp3 version: ${NGHTTP3_VERSION}"
     echo "nghttp2 version: ${NGHTTP2_VERSION}"
@@ -129,27 +131,34 @@ _get_github() {
     fi
 }
 
+_get_tag() {
+    # Function to get the latest tag based on given criteria
+    jq -c -r "[.[] | select(${2})][0]" "${1}" > /tmp/tmp_release.json;
+}
+
 _get_latest_tag() {
     local release_file release_json
     release_file=$1
 
-    # get the latest tag that are not draft and not pre-release
-    # release_json must contains only one tag
-    release_json=$(jq -c -r "[.[] | select ((.prerelease != true) and (.draft != true))][0]" "${release_file}")
-    if [ "${release_json}" = "null" ] || [ "${release_json}" = "" ]; then
-        # get the latest tag that are not draft
-        release_json=$(jq -c -r "[.[] | select (.draft != true)][0]" "${release_file}")
-    fi
-    if [ "${release_json}" = "null" ] || [ "${release_json}" = "" ]; then
-        # get the first tag
-        release_json=$(jq -c -r '.[0]' "${release_file}")
+    # Get the latest tag that is not a draft and not a pre-release
+    _get_tag "${release_file}" "(.prerelease != true) and (.draft != true)"
+
+    release_json=$(cat /tmp/tmp_release.json)
+
+    # If no tag found, get the latest tag that is not a draft
+    if [ "${release_json}" = "null" ] || [ -z "${release_json}" ]; then
+        _get_tag "${release_file}" ".draft != true"
+        release_json=$(cat /tmp/tmp_release.json)
     fi
 
-    echo "${release_json}"
+    # If still no tag found, get the first tag
+    if [ "${release_json}" = "null" ] || [ -z "${release_json}" ]; then
+        _get_tag "${release_file}" "."
+    fi
 }
 
 url_from_github() {
-    local browser_download_urls browser_download_url url repo version tag_name release_json release_file
+    local browser_download_urls browser_download_url url repo version tag_name release_file
     repo=$1
     version=$2
     release_file="github-${repo#*/}.json"
@@ -158,27 +167,26 @@ url_from_github() {
         _get_github "${repo}"
     fi
 
-    # release_json must contains only one tag
     if [ -z "${version}" ]; then
-        release_json=$(_get_latest_tag "${release_file}")
+        _get_latest_tag "${release_file}"
     else
-        release_json=$(jq -c -r "map(select(.tag_name == \"${version}\")
-                          // select(.tag_name | startswith(\"${version}\"))
-                          // select(.tag_name | endswith(\"${version}\"))
-                          // select(.tag_name | contains(\"${version}\"))
-                          // select(.name == \"${version}\")
-                          // select(.name | startswith(\"${version}\"))
-                          // select(.name | endswith(\"${version}\"))
-                          // select(.name | contains(\"${version}\")))[0]" \
-                      "${release_file}")
+        jq -c -r "map(select(.tag_name == \"${version}\")
+                  // select(.tag_name | startswith(\"${version}\"))
+                  // select(.tag_name | endswith(\"${version}\"))
+                  // select(.tag_name | contains(\"${version}\"))
+                  // select(.name == \"${version}\")
+                  // select(.name | startswith(\"${version}\"))
+                  // select(.name | endswith(\"${version}\"))
+                  // select(.name | contains(\"${version}\")))[0]" \
+            "${release_file}" > /tmp/tmp_release.json
     fi
 
-    browser_download_urls=$(printf "%s" "${release_json}" | tr -d '\n' | tr -d '\000-\037' | jq -r '.assets[]' 2>/dev/null | grep browser_download_url || true)
+    browser_download_urls=$(jq -r '.assets[]' /tmp/tmp_release.json | grep browser_download_url || true)
 
     if [ -n "${browser_download_urls}" ]; then
         suffixes="tar.xz tar.gz tar.bz2 tgz"
         for suffix in ${suffixes}; do
-            browser_download_url=$(printf "%s" "${browser_download_urls}" | grep "${suffix}" || true)
+            browser_download_url=$(printf "%s" "${browser_download_urls}" | grep "${suffix}\"" || true)
             [ -n "$browser_download_url" ] && break
         done
 
@@ -186,7 +194,7 @@ url_from_github() {
     fi
 
     if [ -z "${url}" ]; then
-        tag_name=$(printf "%s" "${release_json}" | tr -d '\n' | tr -d '\000-\037' | jq -r '.tag_name // .name' | head -1)
+        tag_name=$(jq -r '.tag_name // .name' /tmp/tmp_release.json | head -1)
         # get from "Source Code" of releases
         if [ "${tag_name}" = "null" ] || [ "${tag_name}" = "" ]; then
             echo "ERROR. Failed to get the ${version} from ${repo} of GitHub"
@@ -195,6 +203,7 @@ url_from_github() {
         url="https://github.com/${repo}/archive/refs/tags/${tag_name}.tar.gz"
     fi
 
+    rm -f /tmp/tmp_release.json;
     export URL="${url}"
 }
 
@@ -221,7 +230,8 @@ download_and_extract() {
 
     # If the file is a tarball, extract it
     if echo "${FILENAME}" | grep -qP '.*\.(tar\.xz|tar\.gz|tar\.bz2|tgz)$'; then
-        SOURCE_DIR=$(echo "${FILENAME}" | sed -E "s/\.tar\.(xz|bz2|gz)//g" | sed 's/\.tgz//g')
+        # SOURCE_DIR=$(echo "${FILENAME}" | sed -E "s/\.tar\.(xz|bz2|gz)//g" | sed 's/\.tgz//g')
+        SOURCE_DIR=$(tar -tf "${FILENAME}" | head -n 1 | cut -d'/' -f1)
         [ -d "${SOURCE_DIR}" ] && rm -rf "${SOURCE_DIR}"
         tar -xf "${FILENAME}"
         cd "${SOURCE_DIR}"
@@ -313,12 +323,17 @@ compile_ares() {
     gmake install;
 }
 
-compile_quictls() {
-    echo "Compiling quictls ..."
+compile_tls() {
+    echo "Compiling ${TLS_LIB} ..."
     local url
     change_dir;
 
-    url_from_github quictls/openssl "${QUICTLS_VERSION}"
+    if [ "${TLS_LIB}" = "openssl" ]; then
+        url_from_github openssl/openssl "${OPENSSL_VERSION}"
+    else
+        url_from_github quictls/openssl "${QUICTLS_VERSION}"
+    fi
+
     url="${URL}"
     download_and_extract "${url}"
 
@@ -377,6 +392,9 @@ compile_nghttp2() {
 
 compile_ngtcp2() {
     echo "Compiling ngtcp2 ..."
+    if [ "${TLS_LIB}" = "openssl" ]; then
+        return
+    fi
     local url
     change_dir;
 
@@ -452,13 +470,27 @@ compile_zstd() {
 
 curl_config() {
     echo "Configuring curl ..."
+    local with_openssl_quic
+
+    # --with-openssl-quic and --with-ngtcp2 are mutually exclusive
+    with_openssl_quic=""
+    if [ "${TLS_LIB}" = "openssl" ]; then
+        with_openssl_quic="--with-openssl-quic"
+    else
+        with_openssl_quic="--with-ngtcp2"
+    fi
+
+    if [ ! -f configure ]; then
+        autoreconf -fi;
+    fi
+
     PKG_CONFIG="pkg-config --static" \
         ./configure \
             --host="${ARCH}-apple-darwin" \
             --prefix="${PREFIX}" \
             --disable-shared --enable-static \
-            --with-openssl --with-brotli --with-zstd \
-            --with-nghttp2 --with-nghttp3 --with-ngtcp2 \
+            --with-openssl "${with_openssl_quic}" --with-brotli --with-zstd \
+            --with-nghttp2 --with-nghttp3 \
             --with-libidn2 --with-libssh2 \
             --enable-hsts --enable-mime --enable-cookies \
             --enable-http-auth --enable-manual \
@@ -479,7 +511,7 @@ curl_config() {
             --with-ca-path=/etc/ssl/certs \
             --with-ca-fallback --enable-ares \
             --disable-ldap --disable-ldaps --disable-rtsp \
-            --disable-rtmp --disable-rtmps \
+            --disable-rtmp --disable-rtmps "${ENABLE_DEBUG}" \
             CFLAGS="-I${PREFIX}/include" \
             CPPFLAGS="-I${PREFIX}/include";
 }
@@ -493,10 +525,18 @@ compile_curl() {
     mkdir -p "${PREFIX}/lib/dylib"
     mv "${PREFIX}/lib/"*.dylib "${PREFIX}/lib/dylib/"
 
-    url_from_github curl/curl "${CURL_VERSION}"
-    url="${URL}"
-    download_and_extract "${url}"
-    [ -z "${CURL_VERSION}" ] && CURL_VERSION=$(echo "${SOURCE_DIR}" | cut -d'-' -f 2)
+    if [ "${CURL_VERSION}" = "dev" ]; then
+        if [ ! -d "curl-dev" ]; then
+            git clone --depth 1 https://github.com/curl/curl.git curl-dev;
+        fi
+        cd curl-dev;
+        make clean || true;
+    else
+        url_from_github curl/curl "${CURL_VERSION}";
+        url="${URL}";
+        download_and_extract "${url}";
+        [ -z "${CURL_VERSION}" ] && CURL_VERSION=$(echo "${SOURCE_DIR}" | cut -d'-' -f 2);
+    fi
 
     if [ ! -f src/.checksrc ]; then echo "enable STDERR" > src/.checksrc; fi
     curl_config;
@@ -527,14 +567,13 @@ install_curl() {
 compile() {
     arch_variants;
 
-    compile_quictls;
+    compile_tls;
     compile_zlib;
     compile_zstd;
     compile_libunistring;
     compile_libidn2;
     compile_libpsl;
     compile_ares;
-
     compile_libssh2;
     compile_nghttp3;
     compile_ngtcp2;
