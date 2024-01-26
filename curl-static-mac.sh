@@ -443,7 +443,8 @@ compile_brotli() {
     cd out/
 
     PKG_CONFIG="pkg-config --static" LDFLAGS="${LDFLAGS}" \
-        cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="${PREFIX}" -DBUILD_SHARED_LIBS=OFF ..;
+        cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="${PREFIX}" -DBUILD_SHARED_LIBS=OFF \
+        -DCMAKE_OSX_ARCHITECTURES:STRING="${ARCH}" ..;
     PKG_CONFIG="pkg-config --static" LDFLAGS="${LDFLAGS}" \
         cmake --build . --config Release --target install;
 
