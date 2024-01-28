@@ -38,19 +38,21 @@ init_env() {
     export DIR=${DIR:-/data};
     export PREFIX="${DIR}/curl";
     export RELEASE_DIR=${RELEASE_DIR:-/mnt};
+    export ARCH_HOST=$(uname -m)
 
     case "${ENABLE_DEBUG}" in
         true|1|yes|on|y|Y)
-            export ENABLE_DEBUG="--enable-debug" ;;
+            ENABLE_DEBUG="--enable-debug" ;;
         *)
-            export ENABLE_DEBUG="" ;;
+            ENABLE_DEBUG="" ;;
     esac
 
     echo "Source directory: ${DIR}"
     echo "Prefix directory: ${PREFIX}"
     echo "Release directory: ${RELEASE_DIR}"
+    echo "Host Architecture: ${ARCH_HOST}"
     echo "Architecture: ${ARCH}"
-    echo "Compiler: ${CC} ${CXX}"
+    echo "Architecture list: ${ARCHS}"
     echo "cURL version: ${CURL_VERSION}"
     echo "TLS Library: ${TLS_LIB}"
     echo "QuicTLS version: ${QUICTLS_VERSION}"
@@ -69,9 +71,7 @@ init_env() {
 
     export PKG_CONFIG_PATH="${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig";
 
-    . /etc/os-release;
-    dist=${ID};
-
+    . /etc/os-release;  # get the ID variable
     mkdir -p "${RELEASE_DIR}/release/"
 }
 
@@ -100,27 +100,26 @@ install_packages_debian() {
     available_clang=$(apt-cache search clang | grep -E '^clang-[0-9]+ ' | awk '{print $1}' | sort -V | tail -n 1)
     if [ -n "${available_clang}" ]; then
         apt-get install -y "${available_clang}";
-        clang_version=$(echo "${available_clang}" | cut -d- -f2);
-        export CLANG_VERSION="${clang_version}";
+        CLANG_VERSION=$(echo "${available_clang}" | cut -d- -f2);
     else
         apt-get install -y clang;
     fi
 }
 
 install_packages() {
-    case "${dist}" in
+    case "${ID}" in
         debian|ubuntu|devuan)
             install_packages_debian ;;
         alpine)
             install_packages_alpine ;;
         *)
-            echo "Unsupported distribution: ${dist}";
+            echo "Unsupported distribution: ${ID}";
             exit 1 ;;
     esac
 }
 
 install_cross_compile() {
-    echo "Installing cross compile tools..."
+    echo "Installing cross compile toolchain, Arch: ${ARCH}" | tee "${RELEASE_DIR}/running"
     change_dir;
     local url
 
@@ -148,12 +147,48 @@ install_cross_compile() {
            PATH=${DIR}/${SOURCE_DIR}/bin:$PATH
 }
 
-install_qemu() {
-    local qemu_arch
-    qemu_arch=$1
-    echo "Installing QEMU ${qemu_arch} ..."
+install_cross_compile_debian() {
+    echo "Installing cross compile toolchain, Arch: ${ARCH}" | tee "${RELEASE_DIR}/running"
+    local arch_compiler c_lib arch_name
+    arch_compiler=${ARCH}
+    c_lib=gnu
+    arch_name=${ARCH}
 
-    case "${dist}" in
+    case "${ARCH}" in
+        armv7l)
+            arch_compiler=arm
+            c_lib=gnueabihf
+            arch_name=arm
+            ;;
+        mips64|mips64el)
+            c_lib=gnuabi64
+            ;;
+        x86_64)
+            arch_name=x86-64
+            ;;
+    esac
+
+    apt install -y "gcc-${arch_name}-linux-${c_lib}" \
+                   "g++-${arch_name}-linux-${c_lib}" \
+                   "binutils-${arch_name}-linux-${c_lib}";
+
+    if [ -z "${CLANG_VERSION}" ]; then
+        export CC="clang -target ${arch_compiler}-linux-${c_lib} --ld-path=/usr/bin/${arch_compiler}-linux-${c_lib}-ld" \
+               CXX="clang++ -target ${arch_compiler}-linux-${c_lib} --ld-path=/usr/bin/${arch_compiler}-linux-${c_lib}-ld"
+    else
+        export CC="clang-${CLANG_VERSION} -target ${arch_compiler}-linux-${c_lib} --ld-path=/usr/bin/${arch_compiler}-linux-${c_lib}-ld" \
+               CXX="clang++-${CLANG_VERSION} -target ${arch_compiler}-linux-${c_lib} --ld-path=/usr/bin/${arch_compiler}-linux-${c_lib}-ld"
+    fi
+
+    export LD="/usr/bin/${arch_compiler}-linux-${c_lib}-ld" \
+           STRIP="/usr/bin/${arch_compiler}-linux-${c_lib}-strip";
+}
+
+install_qemu() {
+    local qemu_arch=$1
+    echo "Installing QEMU ${qemu_arch}, Arch: ${ARCH}" | tee "${RELEASE_DIR}/running"
+
+    case "${ID}" in
         debian|ubuntu|devuan)
             apt-get install -y qemu-user-static > /dev/null ;;
         alpine)
@@ -162,32 +197,40 @@ install_qemu() {
 }
 
 arch_variants() {
+    echo "Setting up the ARCH and OpenSSL arch, Arch: ${ARCH}"
     local qemu_arch
 
-    echo "Setting up the ARCH and OpenSSL arch ..."
-    [ -z "${ARCH}" ] && ARCH="$(uname -m)"
+    [ -z "${ARCH}" ] && ARCH="${ARCH_HOST}"
     case "${ARCH}" in
-        x86_64)  export arch="amd64" ;;
-        aarch64) export arch="arm64" ;;
-        armv7l)  export arch="armv7" ;;
-        i686)    export arch="i686" ;;
-        *)       export arch="${ARCH}" ;;
+        x86_64)     arch="amd64" ;;
+        aarch64)    arch="arm64" ;;
+        armv7l)     arch="armv7" ;;
+        i686)       arch="i686" ;;
+        *)          arch="${ARCH}" ;;
     esac
 
-    export EC_NISTP_64_GCC_128=""
-    export OPENSSL_ARCH=""
+    EC_NISTP_64_GCC_128=""
+    OPENSSL_ARCH=""
 
     case "${ARCH}" in
         x86_64)         qemu_arch="x86_64"
                         EC_NISTP_64_GCC_128="enable-ec_nistp_64_gcc_128"
-                        OPENSSL_ARCH="linux-x86_64" ;;
+                        if [ "${ID}" = "alpine" ] && [ "${ARCH}" != "${ARCH_HOST}" ]; then
+                            OPENSSL_ARCH="linux-x86_64";
+                        else
+                            OPENSSL_ARCH="linux-x86_64-clang";
+                        fi ;;
         aarch64)        qemu_arch="aarch64"
                         EC_NISTP_64_GCC_128="enable-ec_nistp_64_gcc_128"
                         OPENSSL_ARCH="linux-aarch64" ;;
-        armv7l|armv6)   qemu_arch="arm"
+        armv7l)         qemu_arch="arm"
                         OPENSSL_ARCH="linux-armv4" ;;
         i686)           qemu_arch="i386"
-                        OPENSSL_ARCH="linux-x86" ;;
+                        if [ "${ID}" = "alpine" ] && [ "${ARCH}" != "${ARCH_HOST}" ]; then
+                            OPENSSL_ARCH="linux-x86";
+                        else
+                            OPENSSL_ARCH="linux-x86-clang";
+                        fi ;;
         riscv64)        qemu_arch="riscv64"
                         EC_NISTP_64_GCC_128="enable-ec_nistp_64_gcc_128"
                         OPENSSL_ARCH="linux64-riscv64" ;;
@@ -207,15 +250,24 @@ arch_variants() {
                         OPENSSL_ARCH="linux-ppc" ;;
     esac
 
-    export TARGET="${ARCH}-pc-linux-gnu"
-    if [ "${ARCH}" != "$(uname -m)" ]; then
+    unset LD STRIP LDFLAGS
+    TARGET="${ARCH}-pc-linux-gnu"
+    export LDFLAGS="-L${PREFIX}/lib -L${PREFIX}/lib64 -Wl,--no-as-needed"
+    if [ "${ARCH}" != "${ARCH_HOST}" ]; then
         # If the architecture is not the same as the host, need to cross compile
-        echo "Cross compiling for ${ARCH} ..."
         install_qemu "${qemu_arch}";
-        install_cross_compile;
+
+        if [ "${ARCH}" = "mips" ] || [ "${ID}" = "alpine" ]; then
+            # Cross-compilation failed with atomic using clang in MIPS.
+            # Alpine does not have a GCC cross-compile toolchain.
+            # Therefore, musl-cross-make is used for compilation.
+            install_cross_compile;
+        else
+            # Uses Clang for default cross-compilation
+            install_cross_compile_debian;
+        fi
     else
         # If the architecture is the same as the host, no need to cross compile
-        echo "Compiling for ${ARCH} ..."
         if [ -z "${CLANG_VERSION}" ]; then
             export CC=clang CXX=clang++
         else
@@ -230,7 +282,7 @@ _get_github() {
     release_file="github-${repo#*/}.json"
 
     # GitHub API has a limit of 60 requests per hour, cache the results.
-    echo "Downloading ${repo} releases from GitHub ..."
+    echo "Downloading ${repo} releases from GitHub"
     echo "URL: https://api.github.com/repos/${repo}/releases"
 
     # get token from github settings
@@ -340,11 +392,11 @@ url_from_github() {
     fi
 
     rm -f /tmp/tmp_release.json;
-    export URL="${url}"
+    URL="${url}"
 }
 
 download_and_extract() {
-    echo "Downloading $1 ..."
+    echo "Downloading $1"
     local url
 
     url="$1"
@@ -360,9 +412,9 @@ download_and_extract() {
             FILENAME=${url##*/}
         fi
 
-        echo "Downloaded ${FILENAME} ..."
+        echo "Downloaded ${FILENAME}"
     else
-        echo "Already downloaded ${FILENAME} ..."
+        echo "Already downloaded ${FILENAME}"
     fi
 
     # If the file is a tarball, extract it
@@ -381,7 +433,7 @@ change_dir() {
 }
 
 compile_zlib() {
-    echo "Compiling zlib ..."
+    echo "Compiling zlib, Arch: ${ARCH}" | tee "${RELEASE_DIR}/running"
     local url
     change_dir;
 
@@ -397,7 +449,7 @@ compile_zlib() {
 }
 
 compile_libunistring() {
-    echo "Compiling libunistring ..."
+    echo "Compiling libunistring, Arch: ${ARCH}" | tee "${RELEASE_DIR}/running"
     local url
     change_dir;
 
@@ -413,7 +465,7 @@ compile_libunistring() {
 }
 
 compile_libidn2() {
-    echo "Compiling libidn2 ..."
+    echo "Compiling libidn2, Arch: ${ARCH}" | tee "${RELEASE_DIR}/running"
     local url
     change_dir;
 
@@ -434,7 +486,7 @@ compile_libidn2() {
 }
 
 compile_libpsl() {
-    echo "Compiling libpsl ..."
+    echo "Compiling libpsl, Arch: ${ARCH}" | tee "${RELEASE_DIR}/running"
     local url
     change_dir;
 
@@ -443,18 +495,17 @@ compile_libpsl() {
     download_and_extract "${url}"
 
     PKG_CONFIG="pkg-config --static --with-path=${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig" \
-      LDFLAGS="-L${PREFIX}/lib -L${PREFIX}/lib64 -Wl,--no-as-needed" \
       ./configure --host="${TARGET}" --prefix="${PREFIX}" \
         --enable-static --enable-shared=no --enable-builtin --disable-runtime;
 
-    make -j "$(nproc)" LDFLAGS="-L${PREFIX}/lib -L${PREFIX}/lib64 -static -all-static -Wl,-s" CFLAGS="-O3";
+    make -j "$(nproc)" LDFLAGS="-static -all-static -Wl,-s ${LDFLAGS}" CFLAGS="-O3";
     make install;
 
     if [ ! -f "${RELEASE_DIR}/release/LICENSE-libpsl" ]; then cp -p LICENSE "${RELEASE_DIR}/release/LICENSE-libpsl" || true; fi
 }
 
 compile_ares() {
-    echo "Compiling c-ares ..."
+    echo "Compiling c-ares, Arch: ${ARCH}" | tee "${RELEASE_DIR}/running"
     local url
     change_dir;
 
@@ -470,7 +521,7 @@ compile_ares() {
 }
 
 compile_tls() {
-    echo "Compiling ${TLS_LIB} ..."
+    echo "Compiling ${TLS_LIB}, Arch: ${ARCH}" | tee "${RELEASE_DIR}/running"
     local url
     change_dir;
 
@@ -502,7 +553,7 @@ compile_tls() {
 }
 
 compile_libssh2() {
-    echo "Compiling libssh2 ..."
+    echo "Compiling libssh2, Arch: ${ARCH}" | tee "${RELEASE_DIR}/running"
 
     local url
     change_dir;
@@ -524,7 +575,7 @@ compile_libssh2() {
 }
 
 compile_nghttp2() {
-    echo "Compiling nghttp2 ..."
+    echo "Compiling nghttp2, Arch: ${ARCH}" | tee "${RELEASE_DIR}/running"
     local url
     change_dir;
 
@@ -546,7 +597,7 @@ compile_ngtcp2() {
     if [ "${TLS_LIB}" = "openssl" ]; then
         return
     fi
-    echo "Compiling ngtcp2 ..."
+    echo "Compiling ngtcp2, Arch: ${ARCH}" | tee "${RELEASE_DIR}/running"
 
     local url
     change_dir;
@@ -567,7 +618,7 @@ compile_ngtcp2() {
 }
 
 compile_nghttp3() {
-    echo "Compiling nghttp3 ..."
+    echo "Compiling nghttp3, Arch: ${ARCH}" | tee "${RELEASE_DIR}/running"
     local url
     change_dir;
 
@@ -585,7 +636,7 @@ compile_nghttp3() {
 }
 
 compile_brotli() {
-    echo "Compiling brotli ..."
+    echo "Compiling brotli, Arch: ${ARCH}" | tee "${RELEASE_DIR}/running"
     local url
     change_dir;
 
@@ -601,8 +652,7 @@ compile_brotli() {
     PKG_CONFIG="pkg-config --static --with-path=${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig" \
         cmake --build . --config Release --target install;
 
-    if [ ! -f "${RELEASE_DIR}/release/LICENSE-brotli" ]; then cp -p LICENSE "${RELEASE_DIR}/release/LICENSE-brotli" || true; fi
-    # make install;
+    if [ ! -f "${RELEASE_DIR}/release/LICENSE-brotli" ]; then cp -p ../LICENSE "${RELEASE_DIR}/release/LICENSE-brotli" || true; fi
     cd "${PREFIX}/lib/"
     if [ -f libbrotlidec-static.a ] && [ ! -f libbrotlidec.a ]; then ln -f libbrotlidec-static.a libbrotlidec.a; fi
     if [ -f libbrotlienc-static.a ] && [ ! -f libbrotlienc.a ]; then ln -f libbrotlienc-static.a libbrotlienc.a; fi
@@ -610,7 +660,7 @@ compile_brotli() {
 }
 
 compile_zstd() {
-    echo "Compiling zstd ..."
+    echo "Compiling zstd, Arch: ${ARCH}" | tee "${RELEASE_DIR}/running"
     local url
     change_dir;
 
@@ -627,7 +677,7 @@ compile_zstd() {
 }
 
 curl_config() {
-    echo "Configuring curl ..."
+    echo "Configuring curl, Arch: ${ARCH}" | tee "${RELEASE_DIR}/running"
     local with_openssl_quic
 
     # --with-openssl-quic and --with-ngtcp2 are mutually exclusive
@@ -672,7 +722,7 @@ curl_config() {
 }
 
 compile_curl() {
-    echo "Compiling cURL..."
+    echo "Compiling curl, Arch: ${ARCH}" | tee "${RELEASE_DIR}/running"
     local url
     change_dir;
 
@@ -686,12 +736,12 @@ compile_curl() {
         url_from_github curl/curl "${CURL_VERSION}";
         url="${URL}";
         download_and_extract "${url}";
+        if [ ! -f src/.checksrc ]; then echo "enable STDERR" > src/.checksrc; fi
         [ -z "${CURL_VERSION}" ] && CURL_VERSION=$(echo "${SOURCE_DIR}" | cut -d'-' -f 2);
     fi
 
-    if [ ! -f src/.checksrc ]; then echo "enable STDERR" > src/.checksrc; fi
     curl_config;
-    make -j "$(nproc)" LDFLAGS="-L${PREFIX}/lib -L${PREFIX}/lib64 -static -all-static -Wl,-s" CFLAGS="-O3";
+    make -j "$(nproc)" LDFLAGS="-static -all-static -Wl,-s ${LDFLAGS}" CFLAGS="-O3";
 
     if [ ! -f "${RELEASE_DIR}/release/LICENSE-curl" ]; then cp -p COPYING "${RELEASE_DIR}/release/LICENSE-curl" || true; fi
     install_curl;
@@ -711,7 +761,81 @@ install_curl() {
     fi
 }
 
+_arch_match() {
+    local arch_search="$1"
+    local arch_array="$2"
+
+    for element in ${arch_array}; do
+        if [ "${element}" = "${arch_search}" ]; then
+            return 0    # in the array
+        fi
+    done
+
+    return 1            # not in the array
+}
+
+_arch_valid() {
+    local  arch_x86_64="x86_64 aarch64 armv7l i686 riscv64 s390x mips64 mips64el powerpc64le mipsel mips powerpc"
+    local arch_aarch64="x86_64 aarch64 armv7l i686 riscv64 s390x mips64 mips64el powerpc64le mipsel"
+
+    if [ "${ARCH_HOST}" = "x86_64" ]; then
+        result=$(_arch_match "${ARCH}" "${arch_x86_64}")
+    elif [ "${ARCH_HOST}" = "aarch64" ] && [ "${ID}" = "debian" ]; then
+        result=$(_arch_match "${ARCH}" "${arch_aarch64}")
+    else
+        result=1
+    fi
+
+    return ${result}
+}
+
+_build_in_docker() {
+    echo "Not running in docker, starting a docker container to build cURL."
+    local container_image
+
+    cd "$(dirname "$0")";
+    base_name=$(basename "$0")
+    current_time=$(date "+%Y%m%d-%H%M")
+    container_image=${CONTAINER_IMAGE:-debian:latest}  # or alpine:latest
+
+    [ -z "${ARCH}" ] && ARCH=$(uname -m)
+    container_name="build-curl-${ARCH}-${current_time}"
+    RELEASE_DIR=${RELEASE_DIR:-/mnt}
+
+    # Run in docker,
+    #   delete the container after running,
+    #   mount the current directory into the container,
+    #   pass all the environment variables to the container,
+    #   log the output to a file.
+    docker run --rm \
+        --name "${container_name}" \
+        --network host \
+        -v "$(pwd):${RELEASE_DIR}" -w "${RELEASE_DIR}" \
+        -e RELEASE_DIR="${RELEASE_DIR}" \
+        -e ARCH="${ARCH}" \
+        -e ARCHS="${ARCHS}" \
+        -e ENABLE_DEBUG="${ENABLE_DEBUG}" \
+        -e CURL_VERSION="${CURL_VERSION}" \
+        -e TLS_LIB="${TLS_LIB}" \
+        -e QUICTLS_VERSION="${QUICTLS_VERSION}" \
+        -e OPENSSL_VERSION="${OPENSSL_VERSION}" \
+        -e NGTCP2_VERSION="${NGTCP2_VERSION}" \
+        -e NGHTTP3_VERSION="${NGHTTP3_VERSION}" \
+        -e NGHTTP2_VERSION="${NGHTTP2_VERSION}" \
+        -e ZLIB_VERSION="${ZLIB_VERSION}" \
+        -e ZSTD_VERSION="${ZSTD_VERSION}" \
+        -e BROTLI_VERSION="${BROTLI_VERSION}" \
+        -e LIBSSH2_VERSION="${LIBSSH2_VERSION}" \
+        -e LIBUNISTRING_VERSION="${LIBUNISTRING_VERSION}" \
+        -e LIBIDN2_VERSION="${LIBIDN2_VERSION}" \
+        "${container_image}" sh "${RELEASE_DIR}/${base_name}" 2>&1 | tee -a "${container_name}.log"
+
+    # Exit script after docker finishes
+    exit;
+}
+
 compile() {
+    echo "Compiling for ${ARCH}"
     arch_variants;
 
     compile_tls;
@@ -732,48 +856,14 @@ compile() {
 main() {
     local base_name current_time container_name arch_temp
 
+    if [ "${ARCH}" = "all" ] && [ "${ARCHS}" = "" ]; then
+        echo "Please set the ARCHS variable."
+        exit 1;
+    fi
+
     # If not in docker, run the script in docker and exit
     if [ ! -f /.dockerenv ]; then
-        echo "Not running in docker, starting a docker container to build cURL."
-        local container_image
-        cd "$(dirname "$0")";
-        base_name=$(basename "$0")
-        current_time=$(date "+%Y%m%d-%H%M")
-        container_image=${CONTAINER_IMAGE:-debian:latest}  # or alpine:latest
-        [ -z "${ARCH}" ] && ARCH=$(uname -m)
-        container_name="build-curl-${ARCH}-${current_time}"
-        RELEASE_DIR=${RELEASE_DIR:-/mnt}
-
-        # Run in docker,
-        #   delete the container after running,
-        #   mount the current directory into the container,
-        #   pass all the environment variables to the container,
-        #   log the output to a file.
-        docker run --rm \
-            --name "${container_name}" \
-            --network host \
-            -v "$(pwd):${RELEASE_DIR}" -w "${RELEASE_DIR}" \
-            -e RELEASE_DIR="${RELEASE_DIR}" \
-            -e ARCH="${ARCH}" \
-            -e ARCHS="${ARCHS}" \
-            -e ENABLE_DEBUG="${ENABLE_DEBUG}" \
-            -e CURL_VERSION="${CURL_VERSION}" \
-            -e TLS_LIB="${TLS_LIB}" \
-            -e QUICTLS_VERSION="${QUICTLS_VERSION}" \
-            -e OPENSSL_VERSION="${OPENSSL_VERSION}" \
-            -e NGTCP2_VERSION="${NGTCP2_VERSION}" \
-            -e NGHTTP3_VERSION="${NGHTTP3_VERSION}" \
-            -e NGHTTP2_VERSION="${NGHTTP2_VERSION}" \
-            -e ZLIB_VERSION="${ZLIB_VERSION}" \
-            -e ZSTD_VERSION="${ZSTD_VERSION}" \
-            -e BROTLI_VERSION="${BROTLI_VERSION}" \
-            -e LIBSSH2_VERSION="${LIBSSH2_VERSION}" \
-            -e LIBUNISTRING_VERSION="${LIBUNISTRING_VERSION}" \
-            -e LIBIDN2_VERSION="${LIBIDN2_VERSION}" \
-            "${container_image}" sh "${RELEASE_DIR}/${base_name}" 2>&1 | tee -a "${container_name}.log"
-
-        # Exit script after docker finishes
-        exit;
+        _build_in_docker;
     fi
 
     init_env;                    # Initialize the build env
@@ -781,26 +871,25 @@ main() {
     set -o errexit -o xtrace;
 
     # if ${ARCH} = "all", then compile all the ARCHS
-    if [ "${ARCH}" = "all" ] && [ "$(uname -m)" != "x86_64" ]; then
-        echo "Cross compiling is only supported on x86_64."
-        exit 1;
-    elif [ "${ARCH}" = "all" ] && [ "${ARCHS}" = "" ]; then
-        echo "Please set the ARCHS environment variable."
-        exit 1;
-    elif [ "${ARCH}" = "all" ]; then
+    if [ "${ARCH}" = "all" ]; then
         echo "Compiling for all ARCHs: ${ARCHS}"
+
         for arch_temp in ${ARCHS}; do
             # Set the ARCH, PREFIX and PKG_CONFIG_PATH env variables
             export ARCH=${arch_temp}
             export PREFIX="${DIR}/curl-${ARCH}"
             export PKG_CONFIG_PATH="${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig"
 
-            echo "Compiling for ${arch_temp}..."
             echo "Prefix directory: ${PREFIX}"
-            compile;
+
+            if _arch_valid; then
+                compile;
+            else
+                echo "Unsupported architecture ${ARCH} in ${ARCH_HOST}";
+            fi
         done
     else
-        # else compile for the specified ARCH
+        # else compile for the host ARCH
         compile;
     fi
 }
