@@ -564,7 +564,6 @@ compile_libssh2() {
 
     autoreconf -fi
     PKG_CONFIG="pkg-config --static --with-path=${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig" \
-        LDFLAGS="-L${PREFIX}/lib -L${PREFIX}/lib64" \
         ./configure --host="${TARGET}" --prefix="${PREFIX}" --enable-static --enable-shared=no \
             --with-crypto=openssl --with-libssl-prefix="${PREFIX}" \
             --disable-examples-build;
