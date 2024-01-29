@@ -68,7 +68,6 @@ init_env() {
     echo "c-ares version: ${ARES_VERSION}"
 
     export PKG_CONFIG_PATH="${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig";
-    export libssh2_unsupported_arch="powerpc mipsel mips"
 
     . /etc/os-release;
     dist=${ID};
@@ -503,10 +502,6 @@ compile_tls() {
 }
 
 compile_libssh2() {
-    if echo "${libssh2_unsupported_arch}" | grep -q "\\b${ARCH}\\b"; then
-        # TODO: libssh2 is failing to compile on powerpc, mipsel and mips, need to fix it
-        return
-    fi
     echo "Compiling libssh2 ..."
 
     local url
@@ -520,7 +515,8 @@ compile_libssh2() {
     PKG_CONFIG="pkg-config --static --with-path=${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig" \
         LDFLAGS="-L${PREFIX}/lib -L${PREFIX}/lib64" \
         ./configure --host="${TARGET}" --prefix="${PREFIX}" --enable-static --enable-shared=no \
-            --with-crypto=openssl --with-libssl-prefix="${PREFIX}";
+            --with-crypto=openssl --with-libssl-prefix="${PREFIX}" \
+            --disable-examples-build;
     make -j "$(nproc)";
     make install;
 
@@ -632,12 +628,7 @@ compile_zstd() {
 
 curl_config() {
     echo "Configuring curl ..."
-    local enable_libssh2 with_openssl_quic
-
-    enable_libssh2="--with-libssh2"
-    if echo "${libssh2_unsupported_arch}" | grep -q "\\b${ARCH}\\b"; then
-        enable_libssh2=""
-    fi
+    local with_openssl_quic
 
     # --with-openssl-quic and --with-ngtcp2 are mutually exclusive
     with_openssl_quic=""
@@ -658,7 +649,7 @@ curl_config() {
             --enable-static --disable-shared \
             --with-openssl "${with_openssl_quic}" --with-brotli --with-zstd \
             --with-nghttp2 --with-nghttp3 \
-            --with-libidn2 "${enable_libssh2}" \
+            --with-libidn2 --with-libssh2 \
             --enable-hsts --enable-mime --enable-cookies \
             --enable-http-auth --enable-manual \
             --enable-proxy --enable-file --enable-http \
