@@ -255,7 +255,7 @@ arch_variants() {
         # If the architecture is not the same as the host, need to cross compile
         install_qemu "${qemu_arch}";
 
-        if [ "${ARCH}" = "mips" ] || [ "${ARCH}" = "i686" ] || [ "${ID}" = "alpine" ]; then
+        if [ "${ARCH}" = "mips" ] || [ "${ID}" = "alpine" ]; then
             # Cross-compilation failed with atomic using clang in MIPS and i686.
             # Alpine does not have a GCC cross-compile toolchain.
             # Therefore, musl-cross-make is used for compilation.
@@ -738,7 +738,8 @@ compile_curl() {
     fi
 
     curl_config;
-    if [ "${ARCH}" = "armv7l" ] || [ "${ARCH}" = "mipsel" ] || [ "${ARCH}" = "mips" ] || [ "${ARCH}" = "powerpc" ]; then
+    if [ "${ARCH}" = "armv7l" ] || [ "${ARCH}" = "mipsel" ] || [ "${ARCH}" = "mips" ] \
+        || [ "${ARCH}" = "powerpc" ] || [ "${ARCH}" = "i686" ]; then
         # add -Wno-cast-align to avoid error alignment from 4 to 8
         make -j "$(nproc)" LDFLAGS="-static -all-static -Wl,-s ${LDFLAGS}" CFLAGS="-Wno-cast-align ${CFLAGS}";
     else
