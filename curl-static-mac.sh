@@ -49,6 +49,8 @@ init_env() {
 
     export LDFLAGS="-framework CoreFoundation -framework SystemConfiguration"
     export PKG_CONFIG_PATH="${PREFIX}/lib/pkgconfig"
+
+    mkdir -p "${DIR}"
 }
 
 install_packages() {
