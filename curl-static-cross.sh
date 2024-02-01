@@ -2,7 +2,7 @@
 
 # To compile locally, install Docker, clone the Git repository, navigate to the repository directory,
 # and then execute the following command:
-# ARCH=aarch64 CURL_VERSION=8.5.0 TLS_LIB=quictls QUICTLS_VERSION=3.1.4 \
+# ARCH=aarch64 CURL_VERSION=8.6.0 TLS_LIB=openssl QUICTLS_VERSION=3.1.5 \
 #     ZLIB_VERSION= CONTAINER_IMAGE=debian:latest \
 #     sh curl-static-cross.sh
 # script will create a container and compile curl.
@@ -14,10 +14,10 @@
 #     -e ARCH=all \
 #     -e ARCHS="x86_64 aarch64 armv7l i686 riscv64 s390x" \
 #     -e ENABLE_DEBUG=0 \
-#     -e CURL_VERSION=8.5.0 \
-#     -e TLS_LIB=quictls \
-#     -e QUICTLS_VERSION=3.1.4 \
-#     -e OPENSSL_VERSION=3.2.0 \
+#     -e CURL_VERSION=8.6.0 \
+#     -e TLS_LIB=openssl \
+#     -e QUICTLS_VERSION=3.1.5 \
+#     -e OPENSSL_VERSION="" \
 #     -e NGTCP2_VERSION="" \
 #     -e NGHTTP3_VERSION="" \
 #     -e NGHTTP2_VERSION="" \
@@ -173,15 +173,17 @@ install_cross_compile_debian() {
                    "binutils-${arch_name}-linux-${c_lib}";
 
     if [ -z "${CLANG_VERSION}" ]; then
-        export CC="clang -target ${arch_compiler}-linux-${c_lib} --ld-path=/usr/bin/${arch_compiler}-linux-${c_lib}-ld" \
-               CXX="clang++ -target ${arch_compiler}-linux-${c_lib} --ld-path=/usr/bin/${arch_compiler}-linux-${c_lib}-ld"
+        export CC="clang -target ${arch_compiler}-linux-${c_lib}" \
+               CXX="clang++ -target ${arch_compiler}-linux-${c_lib}"
     else
-        export CC="clang-${CLANG_VERSION} -target ${arch_compiler}-linux-${c_lib} --ld-path=/usr/bin/${arch_compiler}-linux-${c_lib}-ld" \
-               CXX="clang++-${CLANG_VERSION} -target ${arch_compiler}-linux-${c_lib} --ld-path=/usr/bin/${arch_compiler}-linux-${c_lib}-ld"
+        export CC="clang-${CLANG_VERSION} -target ${arch_compiler}-linux-${c_lib}" \
+               CXX="clang++-${CLANG_VERSION} -target ${arch_compiler}-linux-${c_lib}"
     fi
 
     export LD="/usr/bin/${arch_compiler}-linux-${c_lib}-ld" \
-           STRIP="/usr/bin/${arch_compiler}-linux-${c_lib}-strip";
+           STRIP="/usr/bin/${arch_compiler}-linux-${c_lib}-strip" \
+           CFLAGS="-O3" \
+           LDFLAGS="--ld-path=/usr/bin/${arch_compiler}-linux-${c_lib}-ld ${LDFLAGS}";
 }
 
 install_qemu() {
@@ -226,11 +228,7 @@ arch_variants() {
         armv7l)         qemu_arch="arm"
                         OPENSSL_ARCH="linux-armv4" ;;
         i686)           qemu_arch="i386"
-                        if [ "${ID}" = "alpine" ] && [ "${ARCH}" != "${ARCH_HOST}" ]; then
-                            OPENSSL_ARCH="linux-x86";
-                        else
-                            OPENSSL_ARCH="linux-x86-clang";
-                        fi ;;
+                        OPENSSL_ARCH="linux-x86" ;;
         riscv64)        qemu_arch="riscv64"
                         EC_NISTP_64_GCC_128="enable-ec_nistp_64_gcc_128"
                         OPENSSL_ARCH="linux64-riscv64" ;;
@@ -252,13 +250,13 @@ arch_variants() {
 
     unset LD STRIP LDFLAGS
     TARGET="${ARCH}-pc-linux-gnu"
-    export LDFLAGS="-L${PREFIX}/lib -L${PREFIX}/lib64 -Wl,--no-as-needed"
+    export LDFLAGS="-L${PREFIX}/lib -L${PREFIX}/lib64";
     if [ "${ARCH}" != "${ARCH_HOST}" ]; then
         # If the architecture is not the same as the host, need to cross compile
         install_qemu "${qemu_arch}";
 
-        if [ "${ARCH}" = "mips" ] || [ "${ID}" = "alpine" ]; then
-            # Cross-compilation failed with atomic using clang in MIPS.
+        if [ "${ARCH}" = "mips" ] || [ "${ARCH}" = "i686" ] || [ "${ID}" = "alpine" ]; then
+            # Cross-compilation failed with atomic using clang in MIPS and i686.
             # Alpine does not have a GCC cross-compile toolchain.
             # Therefore, musl-cross-make is used for compilation.
             install_cross_compile;
@@ -453,7 +451,7 @@ compile_libunistring() {
     local url
     change_dir;
 
-    [ -z "${LIBUNISTRING_VERSION}" ] && LIBUNISTRING_VERSION="1.1"
+    [ -z "${LIBUNISTRING_VERSION}" ] && LIBUNISTRING_VERSION="latest"
     url="https://mirrors.kernel.org/gnu/libunistring/libunistring-${LIBUNISTRING_VERSION}.tar.xz"
     download_and_extract "${url}"
 
@@ -469,7 +467,7 @@ compile_libidn2() {
     local url
     change_dir;
 
-    [ -z "${LIBIDN2_VERSION}" ] && LIBIDN2_VERSION="2.3.4"
+    [ -z "${LIBIDN2_VERSION}" ] && LIBIDN2_VERSION="latest"
     url="https://mirrors.kernel.org/gnu/libidn/libidn2-${LIBIDN2_VERSION}.tar.gz"
     download_and_extract "${url}"
 
@@ -498,7 +496,7 @@ compile_libpsl() {
       ./configure --host="${TARGET}" --prefix="${PREFIX}" \
         --enable-static --enable-shared=no --enable-builtin --disable-runtime;
 
-    make -j "$(nproc)" LDFLAGS="-static -all-static -Wl,-s ${LDFLAGS}" CFLAGS="-O3";
+    make -j "$(nproc)" LDFLAGS="-static -all-static -Wl,-s ${LDFLAGS}";
     make install;
 
     if [ ! -f "${RELEASE_DIR}/release/LICENSE-libpsl" ]; then cp -p LICENSE "${RELEASE_DIR}/release/LICENSE-libpsl" || true; fi
@@ -740,7 +738,7 @@ compile_curl() {
     fi
 
     curl_config;
-    make -j "$(nproc)" LDFLAGS="-static -all-static -Wl,-s ${LDFLAGS}" CFLAGS="-O3";
+    make -j "$(nproc)" LDFLAGS="-static -all-static -Wl,-s ${LDFLAGS}";
 
     if [ ! -f "${RELEASE_DIR}/release/LICENSE-curl" ]; then cp -p COPYING "${RELEASE_DIR}/release/LICENSE-curl" || true; fi
     install_curl;
@@ -774,8 +772,8 @@ _arch_match() {
 }
 
 _arch_valid() {
-    local  arch_x86_64="x86_64 aarch64 armv7l i686 riscv64 s390x mips64 mips64el powerpc64le mipsel mips powerpc"
-    local arch_aarch64="x86_64 aarch64 armv7l i686 riscv64 s390x mips64 mips64el powerpc64le mipsel"
+    local  arch_x86_64="x86_64 aarch64 armv7l riscv64 s390x mips64 mips64el powerpc64le mipsel i686 mips powerpc"
+    local arch_aarch64="x86_64 aarch64 armv7l riscv64 s390x mips64 mips64el powerpc64le mipsel"
 
     if [ "${ARCH_HOST}" = "x86_64" ]; then
         result=$(_arch_match "${ARCH}" "${arch_x86_64}")
