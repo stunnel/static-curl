@@ -738,7 +738,12 @@ compile_curl() {
     fi
 
     curl_config;
-    make -j "$(nproc)" LDFLAGS="-static -all-static -Wl,-s ${LDFLAGS}";
+    if [ "${ARCH}" = "armv7l" ] || [ "${ARCH}" = "mipsel" ] || [ "${ARCH}" = "mips" ] || [ "${ARCH}" = "powerpc" ]; then
+        # add -Wno-cast-align to avoid error alignment from 4 to 8
+        make -j "$(nproc)" LDFLAGS="-static -all-static -Wl,-s ${LDFLAGS}" CFLAGS="-Wno-cast-align ${CFLAGS}";
+    else
+        make -j "$(nproc)" LDFLAGS="-static -all-static -Wl,-s ${LDFLAGS}";
+    fi
 
     if [ ! -f "${RELEASE_DIR}/release/LICENSE-curl" ]; then cp -p COPYING "${RELEASE_DIR}/release/LICENSE-curl" || true; fi
     install_curl;

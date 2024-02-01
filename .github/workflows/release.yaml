@@ -103,6 +103,7 @@ jobs:
           path: release/version.txt
           retention-days: 90
           if-no-files-found: error
+          overwrite: true
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -111,6 +112,7 @@ jobs:
           path: release
           retention-days: 90
           if-no-files-found: error
+          overwrite: true
 
   build-macOS:
     name: build-macOS (${{ github.ref_name }})
@@ -205,6 +207,7 @@ jobs:
           path: ${{ env.MACOS_RELEASE_DIR }}/version.txt
           retention-days: 90
           if-no-files-found: error
+          overwrite: true
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -213,6 +216,7 @@ jobs:
           path: ${{ env.MACOS_RELEASE_DIR }}/release
           retention-days: 90
           if-no-files-found: error
+          overwrite: true
 
   release:
     name: release curl (${{ github.ref_name }})
@@ -286,3 +290,4 @@ jobs:
           path: release
           retention-days: 90
           if-no-files-found: error
+          overwrite: true
