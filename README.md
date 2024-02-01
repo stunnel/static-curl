@@ -32,7 +32,7 @@ The binary is built with GitHub Actions.
 
 ## Compile
 
-This script utilizes `qbt-musl-cross-make` for cross-compilation on Linux, providing support for the following architectures:
+This script utilizes `clang` or `qbt-musl-cross-make` for cross-compilation on Linux, providing support for the following architectures:
 
 - Linux
   - x86_64
@@ -65,7 +65,7 @@ script will create a container and compile the host architecture cURL only.
       --name "build-curl-$(date +%Y%m%d-%H%M)" \
       -e ARCH=all \
       -e ARCHS="x86_64 aarch64 armv7l i686 riscv64 s390x mips64 mips64el mips mipsel powerpc64le powerpc" \
-      -e TLS_LIB="quictls" \
+      -e TLS_LIB="openssl" \
       -e CURL_VERSION="" \
       -e QUICTLS_VERSION="" \
       -e OPENSSL_VERSION="" \
@@ -86,21 +86,21 @@ Run the following command to compile:
 
 ```shell
 ARCHS="x86_64 arm64" \
-    TLS_LIB=${TLS_LIB} \
-    CURL_VERSION=${CURL_VERSION} \
-    QUICTLS_VERSION=${QUICTLS_VERSION} \
-    OPENSSL_VERSION=${OPENSSL_VERSION} \
-    NGTCP2_VERSION=${NGTCP2_VERSION} \
-    NGHTTP3_VERSION=${NGHTTP3_VERSION} \
-    NGHTTP2_VERSION=${NGHTTP2_VERSION} \
-    LIBIDN2_VERSION=${LIBIDN2_VERSION} \
-    LIBUNISTRING_VERSION=${LIBUNISTRING_VERSION} \
-    ZLIB_VERSION=${ZLIB_VERSION} \
-    BROTLI_VERSION=${BROTLI_VERSION} \
-    ZSTD_VERSION=${ZSTD_VERSION} \
-    LIBSSH2_VERSION=${LIBSSH2_VERSION} \
-    LIBPSL_VERSION=${LIBPSL_VERSION} \
-    ARES_VERSION=${ARES_VERSION} \
+    TLS_LIB=openssl \
+    CURL_VERSION="" \
+    QUICTLS_VERSION="" \
+    OPENSSL_VERSION="" \
+    NGTCP2_VERSION="" \
+    NGHTTP3_VERSION="" \
+    NGHTTP2_VERSION="" \
+    LIBIDN2_VERSION="" \
+    LIBUNISTRING_VERSION="" \
+    ZLIB_VERSION="" \
+    BROTLI_VERSION="" \
+    ZSTD_VERSION="" \
+    LIBSSH2_VERSION="" \
+    LIBPSL_VERSION="" \
+    ARES_VERSION="" \
     bash curl-static-mac.sh
 ```
 

@@ -2,21 +2,29 @@
 
 # To compile locally, clone the Git repository, navigate to the repository directory,
 # and then execute the following command:
-# ARCHS="x86_64 arm64" CURL_VERSION=8.5.0 TLS_LIB=quictls QUICTLS_VERSION=3.1.4 bash curl-static-mac.sh
+# ARCHS="x86_64 arm64" CURL_VERSION=8.6.0 TLS_LIB=openssl QUICTLS_VERSION=3.1.5 bash curl-static-mac.sh
 
+
+shopt -s expand_aliases;
+alias grep=rg;
+alias sed=gsed;
+alias awk=gawk;
+alias stat=gstat;
+alias make=gmake;
 
 init_env() {
     local number
     export DIR="${DIR:-${HOME}/build}"
     export PREFIX="${DIR}/curl"
+    export RELEASE_DIR=${DIR};
     number=$(sysctl -n hw.ncpu 2>/dev/null)
     export CPU_CORES=${number:-1}
 
     case "${ENABLE_DEBUG}" in
         true|1|yes|on|y|Y)
-            export ENABLE_DEBUG="--enable-debug" ;;
+            ENABLE_DEBUG="--enable-debug" ;;
         *)
-            export ENABLE_DEBUG="" ;;
+            ENABLE_DEBUG="" ;;
     esac
 
     echo "Source directory: ${DIR}"
@@ -41,16 +49,13 @@ init_env() {
 
     export LDFLAGS="-framework CoreFoundation -framework SystemConfiguration"
     export PKG_CONFIG_PATH="${PREFIX}/lib/pkgconfig"
-}
 
-shopt -s expand_aliases;
-alias grep=rg;
-alias sed=gsed;
-alias stat=gstat;
+    mkdir -p "${DIR}"
+}
 
 install_packages() {
     brew install automake autoconf libtool binutils pkg-config coreutils cmake make llvm \
-         curl wget git jq xz ripgrep gnu-sed groff gnupg pcre2 cunit ca-certificates;
+         curl wget git jq xz ripgrep gnu-sed gawk groff gnupg pcre2 cunit ca-certificates;
 }
 
 _clang_path() {
@@ -67,21 +72,21 @@ _clang_path() {
 }
 
 arch_variants() {
-    echo "Setting up the ARCH and OpenSSL arch ..."
+    echo "Setting up the ARCH and OpenSSL arch"
     _clang_path;
     [ -z "${ARCH}" ] && ARCH="$(uname -m)"
     case "${ARCH}" in
-        x86_64)   export arch="amd64"
-                  export ARCHFLAGS="-arch x86_64"
-                  export OPENSSL_ARCH="darwin64-x86_64"
-                  export TARGET="x86_64-apple-darwin"
+        x86_64)   arch="amd64"
+                  ARCHFLAGS="-arch x86_64"
+                  OPENSSL_ARCH="darwin64-x86_64"
+                  TARGET="x86_64-apple-darwin"
                   export CC="${clang_path} -target x86_64-apple-macos11"
                   export CXX="${clang_pp_path} -target x86_64-apple-macos11"
                   ;;
-        arm64)    export arch="arm64"
-                  export ARCHFLAGS="-arch arm64"
-                  export OPENSSL_ARCH="darwin64-arm64"
-                  export TARGET="aarch64-apple-darwin"
+        arm64)    arch="arm64"
+                  ARCHFLAGS="-arch arm64"
+                  OPENSSL_ARCH="darwin64-arm64"
+                  TARGET="aarch64-apple-darwin"
                   export CC="${clang_path} -target arm64-apple-macos11"
                   export CXX="${clang_pp_path} -target arm64-apple-macos11"
                   ;;
@@ -94,7 +99,7 @@ _get_github() {
     release_file="github-${repo#*/}.json"
 
     # GitHub API has a limit of 60 requests per hour, cache the results.
-    echo "Downloading ${repo} releases from GitHub ..."
+    echo "Downloading ${repo} releases from GitHub"
     echo "URL: https://api.github.com/repos/${repo}/releases"
 
     # get token from github settings
@@ -204,11 +209,11 @@ url_from_github() {
     fi
 
     rm -f /tmp/tmp_release.json;
-    export URL="${url}"
+    URL="${url}"
 }
 
 download_and_extract() {
-    echo "Downloading $1 ..."
+    echo "Downloading $1"
     local url
 
     url="$1"
@@ -223,9 +228,9 @@ download_and_extract() {
             FILENAME=${url##*/}
         fi
 
-        echo "Downloaded ${FILENAME} ..."
+        echo "Downloaded ${FILENAME}"
     else
-        echo "Already downloaded ${FILENAME} ..."
+        echo "Already downloaded ${FILENAME}"
     fi
 
     # If the file is a tarball, extract it
@@ -244,7 +249,7 @@ change_dir() {
 }
 
 compile_zlib() {
-    echo "Compiling zlib ..."
+    echo "Compiling zlib, Arch: ${ARCH}" | tee "${RELEASE_DIR}/running"
     local url
     change_dir;
 
@@ -252,48 +257,46 @@ compile_zlib() {
     url="${URL}"
     download_and_extract "${url}"
 
-    LDFLAGS="${LDFLAGS}" \
     ./configure --prefix="${PREFIX}" --static;
-    gmake -j "${CPU_CORES}";
-    gmake install;
+    make -j "${CPU_CORES}";
+    make install;
 }
 
 compile_libunistring() {
-    echo "Compiling libunistring ..."
+    echo "Compiling libunistring, Arch: ${ARCH}" | tee "${RELEASE_DIR}/running"
     local url
     change_dir;
 
-    [ -z "${LIBUNISTRING_VERSION}" ] && LIBUNISTRING_VERSION="1.1"
+    [ -z "${LIBUNISTRING_VERSION}" ] && LIBUNISTRING_VERSION="latest"
     url="https://mirrors.kernel.org/gnu/libunistring/libunistring-${LIBUNISTRING_VERSION}.tar.xz"
     download_and_extract "${url}"
 
-    LDFLAGS="${LDFLAGS}" \
     ./configure --host="${TARGET}" --prefix="${PREFIX}" --disable-rpath --disable-shared;
-    gmake -j "${CPU_CORES}";
-    gmake install;
+    make -j "${CPU_CORES}";
+    make install;
 }
 
 compile_libidn2() {
-    echo "Compiling libidn2 ..."
+    echo "Compiling libidn2, Arch: ${ARCH}" | tee "${RELEASE_DIR}/running"
     local url
     change_dir;
 
-    [ -z "${LIBIDN2_VERSION}" ] && LIBIDN2_VERSION="2.3.4"
+    [ -z "${LIBIDN2_VERSION}" ] && LIBIDN2_VERSION="latest"
     url="https://mirrors.kernel.org/gnu/libidn/libidn2-${LIBIDN2_VERSION}.tar.gz"
     download_and_extract "${url}"
 
-    PKG_CONFIG="pkg-config --static" LDFLAGS="${LDFLAGS}" \
+    PKG_CONFIG="pkg-config --static" \
     ./configure \
         --host="${TARGET}" \
         --with-libunistring-prefix="${PREFIX}" \
         --prefix="${PREFIX}" \
         --disable-shared;
-    gmake -j "${CPU_CORES}";
-    gmake install;
+    make -j "${CPU_CORES}";
+    make install;
 }
 
 compile_libpsl() {
-    echo "Compiling libpsl ..."
+    echo "Compiling libpsl, Arch: ${ARCH}" | tee "${RELEASE_DIR}/running"
     local url
     change_dir;
 
@@ -302,15 +305,15 @@ compile_libpsl() {
     download_and_extract "${url}"
 
     PKG_CONFIG="pkg-config --static --with-path=${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig" \
-      LDFLAGS="-L${PREFIX}/lib -L${PREFIX}/lib64" \
+      LDFLAGS="-L${PREFIX}/lib -L${PREFIX}/lib64 ${LDFLAGS}" \
       ./configure --host="${TARGET}" --prefix="${PREFIX}" \
         --enable-static --enable-shared=no --enable-builtin --disable-runtime;
-    gmake -j "${CPU_CORES}";
-    gmake install;
+    make -j "${CPU_CORES}";
+    make install;
 }
 
 compile_ares() {
-    echo "Compiling c-ares ..."
+    echo "Compiling c-ares, Arch: ${ARCH}" | tee "${RELEASE_DIR}/running"
     local url
     change_dir;
 
@@ -319,12 +322,12 @@ compile_ares() {
     download_and_extract "${url}"
 
     ./configure --host="${TARGET}" --prefix="${PREFIX}" --enable-static --disable-shared;
-    gmake -j "$(nproc)";
-    gmake install;
+    make -j "$(nproc)";
+    make install;
 }
 
 compile_tls() {
-    echo "Compiling ${TLS_LIB} ..."
+    echo "Compiling ${TLS_LIB}, Arch: ${ARCH}" | tee "${RELEASE_DIR}/running"
     local url
     change_dir;
 
@@ -337,7 +340,6 @@ compile_tls() {
     url="${URL}"
     download_and_extract "${url}"
 
-     LDFLAGS="${LDFLAGS}" \
     ./Configure \
         ${OPENSSL_ARCH} \
         -fPIC \
@@ -350,12 +352,12 @@ compile_tls() {
         enable-des enable-rc4 \
         enable-weak-ssl-ciphers;
 
-    gmake -j "${CPU_CORES}";
-    gmake install_sw;
+    make -j "${CPU_CORES}";
+    make install_sw;
 }
 
 compile_libssh2() {
-    echo "Compiling libssh2 ..."
+    echo "Compiling libssh2, Arch: ${ARCH}" | tee "${RELEASE_DIR}/running"
     local url
     change_dir;
 
@@ -369,12 +371,12 @@ compile_libssh2() {
         LDFLAGS="-L${PREFIX}/lib ${LDFLAGS}" CFLAGS="-O3" \
         ./configure --host="${TARGET}" --prefix="${PREFIX}" --enable-static --enable-shared=no \
             --with-crypto=openssl --with-libssl-prefix="${PREFIX}";
-    gmake -j "${CPU_CORES}";
-    gmake install;
+    make -j "${CPU_CORES}";
+    make install;
 }
 
 compile_nghttp2() {
-    echo "Compiling nghttp2 ..."
+    echo "Compiling nghttp2, Arch: ${ARCH}" | tee "${RELEASE_DIR}/running"
     local url
     change_dir;
 
@@ -383,15 +385,15 @@ compile_nghttp2() {
     download_and_extract "${url}"
 
     autoreconf -i --force
-    PKG_CONFIG="pkg-config --static" LDFLAGS="${LDFLAGS}" \
+    PKG_CONFIG="pkg-config --static" \
         ./configure --host="${TARGET}" --prefix="${PREFIX}" --enable-static --enable-http3 \
             --enable-lib-only --enable-shared=no;
-    gmake -j "${CPU_CORES}";
-    gmake install;
+    make -j "${CPU_CORES}";
+    make install;
 }
 
 compile_ngtcp2() {
-    echo "Compiling ngtcp2 ..."
+    echo "Compiling ngtcp2, Arch: ${ARCH}" | tee "${RELEASE_DIR}/running"
     if [ "${TLS_LIB}" = "openssl" ]; then
         return
     fi
@@ -403,18 +405,18 @@ compile_ngtcp2() {
     download_and_extract "${url}"
 
     autoreconf -i --force
-    PKG_CONFIG="pkg-config --static" LDFLAGS="${LDFLAGS}" \
+    PKG_CONFIG="pkg-config --static" \
         ./configure --host="${TARGET}" --prefix="${PREFIX}" --enable-static --with-openssl="${PREFIX}" \
             --with-libnghttp3="${PREFIX}" --enable-lib-only --enable-shared=no;
 
-    gmake -j "${CPU_CORES}";
-    gmake install;
+    make -j "${CPU_CORES}";
+    make install;
     cp -a crypto/includes/ngtcp2/ngtcp2_crypto_quictls.h crypto/includes/ngtcp2/ngtcp2_crypto.h \
         "${PREFIX}/include/ngtcp2/"
 }
 
 compile_nghttp3() {
-    echo "Compiling nghttp3 ..."
+    echo "Compiling nghttp3, Arch: ${ARCH}" | tee "${RELEASE_DIR}/running"
     local url
     change_dir;
 
@@ -423,15 +425,15 @@ compile_nghttp3() {
     download_and_extract "${url}"
 
     autoreconf -i --force
-    MAKE=gmake PKG_CONFIG="pkg-config --static" LDFLAGS="${LDFLAGS}" \
+    PKG_CONFIG="pkg-config --static" \
         ./configure --host="${TARGET}" --prefix="${PREFIX}" --enable-static --enable-shared=no \
         --enable-lib-only --disable-dependency-tracking;
-    gmake -j "${CPU_CORES}";
-    gmake install;
+    make -j "${CPU_CORES}";
+    make install;
 }
 
 compile_brotli() {
-    echo "Compiling brotli ..."
+    echo "Compiling brotli, Arch: ${ARCH}" | tee "${RELEASE_DIR}/running"
     local url
     change_dir;
 
@@ -442,13 +444,12 @@ compile_brotli() {
     mkdir -p out
     cd out/
 
-    PKG_CONFIG="pkg-config --static" LDFLAGS="${LDFLAGS}" \
+    PKG_CONFIG="pkg-config --static" \
         cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="${PREFIX}" -DBUILD_SHARED_LIBS=OFF \
         -DCMAKE_OSX_ARCHITECTURES:STRING="${ARCH}" ..;
-    PKG_CONFIG="pkg-config --static" LDFLAGS="${LDFLAGS}" \
+    PKG_CONFIG="pkg-config --static" \
         cmake --build . --config Release --target install;
 
-    # gmake install;
     cd "${PREFIX}/lib/"
     if [ -f libbrotlidec-static.a ] && [ ! -f libbrotlidec.a ]; then ln -f libbrotlidec-static.a libbrotlidec.a; fi
     if [ -f libbrotlienc-static.a ] && [ ! -f libbrotlienc.a ]; then ln -f libbrotlienc-static.a libbrotlienc.a; fi
@@ -456,7 +457,7 @@ compile_brotli() {
 }
 
 compile_zstd() {
-    echo "Compiling zstd ..."
+    echo "Compiling zstd, Arch: ${ARCH}" | tee "${RELEASE_DIR}/running"
     local url
     change_dir;
 
@@ -464,13 +465,13 @@ compile_zstd() {
     url="${URL}"
     download_and_extract "${url}"
 
-    PKG_CONFIG="pkg-config --static" LDFLAGS="${LDFLAGS}" \
-        gmake -j "${CPU_CORES}" PREFIX="${PREFIX}";
-    gmake install;
+    PKG_CONFIG="pkg-config --static" \
+        make -j "${CPU_CORES}" PREFIX="${PREFIX}";
+    make install;
 }
 
 curl_config() {
-    echo "Configuring curl ..."
+    echo "Configuring curl, Arch: ${ARCH}" | tee "${RELEASE_DIR}/running"
     local with_openssl_quic
 
     # --with-openssl-quic and --with-ngtcp2 are mutually exclusive
@@ -518,7 +519,7 @@ curl_config() {
 }
 
 compile_curl() {
-    echo "Compiling cURL..."
+    echo "Compiling cURL, Arch: ${ARCH}" | tee "${RELEASE_DIR}/running"
     local url
     change_dir;
 
@@ -544,7 +545,7 @@ compile_curl() {
     LDFLAGS="-L${PREFIX}/lib -static -all-static -Wl,-s ${LDFLAGS}" \
         CFLAGS="-I${PREFIX}/include -I${PREFIX}/include/brotli" \
         CPPFLAGS="-I${PREFIX}/include -I${PREFIX}/include/brotli" \
-        gmake -j "${CPU_CORES}";
+        make -j "${CPU_CORES}";
 
     install_curl;
 }
@@ -598,7 +599,7 @@ main() {
         export PREFIX="${DIR}/curl-${ARCH}"
         export PKG_CONFIG_PATH="${PREFIX}/lib/pkgconfig"
 
-        echo "Compiling for ${arch_temp}..."
+        echo "Compiling for ${ARCH}"
         echo "Prefix directory: ${PREFIX}"
         compile;
     done
