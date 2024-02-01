@@ -16,6 +16,7 @@ init_env() {
     local number
     export DIR="${DIR:-${HOME}/build}"
     export PREFIX="${DIR}/curl"
+    export RELEASE_DIR=${DIR};
     number=$(sysctl -n hw.ncpu 2>/dev/null)
     export CPU_CORES=${number:-1}
 
