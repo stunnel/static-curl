@@ -97,7 +97,7 @@ jobs:
           echo "VERSION=$VERSION" >> $GITHUB_ENV
 
       - name: Upload artifact (version)
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: curl-version
           path: release/version.txt
@@ -105,7 +105,7 @@ jobs:
           if-no-files-found: error
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: curl-binary-linux-${{ env.VERSION }}
           path: release
@@ -199,7 +199,7 @@ jobs:
           echo "VERSION=$VERSION" >> $GITHUB_ENV
 
       - name: Upload artifact (version)
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: curl-version
           path: ${{ env.MACOS_RELEASE_DIR }}/version.txt
@@ -207,7 +207,7 @@ jobs:
           if-no-files-found: error
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: curl-binary-macos-${{ env.VERSION }}
           path: ${{ env.MACOS_RELEASE_DIR }}/release
@@ -226,7 +226,7 @@ jobs:
           fetch-depth: 1
 
       - name: Download artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: curl-version
           path: curl-version
@@ -237,13 +237,13 @@ jobs:
           echo "VERSION=$VERSION" >> $GITHUB_ENV
 
       - name: Download artifact (linux)
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: curl-binary-linux-${{ env.VERSION }}
           path: release
 
       - name: Download artifact (macos)
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: curl-binary-macos-${{ env.VERSION }}
           path: release
@@ -280,7 +280,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: curl-release-${{ env.VERSION }}
           path: release
