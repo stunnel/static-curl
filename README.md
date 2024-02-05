@@ -50,6 +50,11 @@ This script utilizes `clang` or `qbt-musl-cross-make` for cross-compilation on L
 - macOS
   - x86_64
   - aarch64
+- Windows
+  - x86_64
+  - aarch64
+  - i686
+  - armv7
 
 ### How to compile
 
@@ -103,6 +108,33 @@ ARCHS="x86_64 arm64" \
     ARES_VERSION="" \
     bash curl-static-mac.sh
 ```
+
+#### Windows
+
+- To compile locally, install Docker, clone the Git repository, navigate to the repository directory, and then execute the following command:  
+  `ARCH=x86_64 sh curl-static-win.sh`  
+  script will create a Linux container and cross-compile cURL via [LLVM MinGW toolchain](https://github.com/mstorsjo/llvm-mingw).
+
+- To compile in docker, run:
+  ```shell
+  docker run --network host --rm -v $(pwd):/mnt -w /mnt \
+      --name "build-curl-$(date +%Y%m%d-%H%M)" \
+      -e ARCH=all \
+      -e ARCHS="x86_64 i686 aarch64 armv7" \
+      -e TLS_LIB="openssl" \
+      -e CURL_VERSION="" \
+      -e QUICTLS_VERSION="" \
+      -e OPENSSL_VERSION="" \
+      -e NGTCP2_VERSION="" \
+      -e NGHTTP3_VERSION="" \
+      -e NGHTTP2_VERSION="" \
+      -e ZLIB_VERSION="" \
+      -e LIBUNISTRING_VERSION="" \
+      -e LIBIDN2_VERSION="" \
+      -e LIBPSL_VERSION="" \
+      -e ARES_VERSION="" \
+      mstorsjo/llvm-mingw:latest sh curl-static-win.sh
+  ```
 
 #### Environment Variables
 
