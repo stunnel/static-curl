@@ -2,9 +2,9 @@
 
 # To compile locally, install Docker, clone the Git repository, navigate to the repository directory,
 # and then execute the following command:
-# ARCH=aarch64 CURL_VERSION=8.6.0 TLS_LIB=openssl QUICTLS_VERSION=3.1.5 \
-#     ZLIB_VERSION= CONTAINER_IMAGE=debian:latest \
-#     sh curl-static-cross.sh
+# ARCH=x86_64 CURL_VERSION=8.6.0 TLS_LIB=openssl QUICTLS_VERSION=3.1.5 \
+#     ZLIB_VERSION= CONTAINER_IMAGE=mstorsjo/llvm-mingw:latest \
+#     sh curl-static-win.sh
 # script will create a container and compile curl.
 
 # or compile or cross-compile in docker, run:
@@ -12,7 +12,7 @@
 #     --name "build-curl-$(date +%Y%m%d-%H%M)" \
 #     -e RELEASE_DIR=/mnt \
 #     -e ARCH=all \
-#     -e ARCHS="x86_64 aarch64 armv7l i686 riscv64 s390x" \
+#     -e ARCHS="x86_64 i686 aarch64 armv7" \
 #     -e ENABLE_DEBUG=0 \
 #     -e CURL_VERSION=8.6.0 \
 #     -e TLS_LIB=openssl \
@@ -28,11 +28,9 @@
 #     -e BROTLI_VERSION="" \
 #     -e ZSTD_VERSION="" \
 #     -e LIBSSH2_VERSION="" \
-#     -e CONTAINER_IMAGE=debian:latest \
-#     debian:latest sh curl-static-cross.sh
-# Supported architectures: x86_64, aarch64, armv7l, i686, riscv64, s390x,
-#                          mips64, mips64el, mips, mipsel, powerpc64le, powerpc
-
+#     -e CONTAINER_IMAGE=mstorsjo/llvm-mingw:latest \
+#     mstorsjo/llvm-mingw:latest sh curl-static-win.sh
+# Supported architectures: x86_64 i686 aarch64 armv7
 
 init_env() {
     export DIR=${DIR:-/data};
@@ -75,203 +73,58 @@ init_env() {
     mkdir -p "${RELEASE_DIR}/release/"
 }
 
-install_packages_alpine() {
-    apk update;
-    apk upgrade;
-    apk add \
-        build-base clang automake cmake autoconf libtool binutils linux-headers \
-        curl wget git jq xz grep sed groff gnupg perl python3 \
-        ca-certificates ca-certificates-bundle \
-        cunit-dev \
-        zlib-static zlib-dev \
-        libunistring-static libunistring-dev \
-        libidn2-static libidn2-dev \
-        libpsl-static libpsl-dev \
-        zstd-static zstd-dev;
-}
-
 install_packages_debian() {
     export DEBIAN_FRONTEND=noninteractive;
     apt-get update -y > /dev/null;
     apt-get install -y apt-utils > /dev/null;
     apt-get upgrade -y > /dev/null;
-    apt-get install -y automake cmake autoconf libtool binutils pkg-config \
+    apt-get install -y automake cmake autoconf libtool pkg-config \
         curl wget git jq xz-utils grep sed groff gnupg libcunit1-dev libgpg-error-dev;
-    available_clang=$(apt-cache search clang | grep -E '^clang-[0-9]+ ' | awk '{print $1}' | sort -V | tail -n 1)
-    if [ -n "${available_clang}" ]; then
-        apt-get install -y "${available_clang}";
-        CLANG_VERSION=$(echo "${available_clang}" | cut -d- -f2);
-    else
-        apt-get install -y clang;
-    fi
 }
 
 install_packages() {
     case "${ID}" in
         debian|ubuntu|devuan)
             install_packages_debian ;;
-        alpine)
-            install_packages_alpine ;;
         *)
             echo "Unsupported distribution: ${ID}";
             exit 1 ;;
     esac
 }
 
-install_cross_compile() {
-    echo "Installing cross compile toolchain, Arch: ${ARCH}" | tee "${RELEASE_DIR}/running"
-    change_dir;
-    local url
+configure_toolchain() {
+    echo "Configuring compile toolchain, Arch: ${ARCH}" | tee "${RELEASE_DIR}/running"
+    local mingw_path
+    mingw_path="/opt/llvm-mingw"
 
-    if [ ! -f "github-qbt-musl-cross-make.json" ]; then
-        # GitHub API has a limit of 60 requests per hour, cache the results.
-        curl --retry 5 --retry-max-time 120 -s \
-            "https://api.github.com/repos/userdocs/qbt-musl-cross-make/releases" -o "github-qbt-musl-cross-make.json"
-    fi
-
-    browser_download_url=$(jq -r '.' "github-qbt-musl-cross-make.json" \
-        | grep browser_download_url \
-        | grep -i "${ARCH}-" \
-        | head -1)
-    url=$(printf "%s" "${browser_download_url}" | awk '{print $2}' | sed 's/"//g')
-    download_and_extract "${url}"
-
-    ln -s "${DIR}/${SOURCE_DIR}/${SOURCE_DIR}" "/${SOURCE_DIR}"
-    cd "/${SOURCE_DIR}/lib/"
-    mv libatomic.so libatomic.so.bak
-    ln -s libatomic.a libatomic.so
-
-    export CC=${DIR}/${SOURCE_DIR}/bin/${SOURCE_DIR}-cc \
-           CXX=${DIR}/${SOURCE_DIR}/bin/${SOURCE_DIR}-c++ \
-           STRIP=${DIR}/${SOURCE_DIR}/bin/${SOURCE_DIR}-strip \
-           PATH=${DIR}/${SOURCE_DIR}/bin:$PATH
-}
-
-install_cross_compile_debian() {
-    echo "Installing cross compile toolchain, Arch: ${ARCH}" | tee "${RELEASE_DIR}/running"
-    local arch_compiler c_lib arch_name
-    arch_compiler=${ARCH}
-    c_lib=gnu
-    arch_name=${ARCH}
-
-    case "${ARCH}" in
-        armv7l)
-            arch_compiler=arm
-            c_lib=gnueabihf
-            arch_name=arm
-            ;;
-        mips64|mips64el)
-            c_lib=gnuabi64
-            ;;
-        x86_64)
-            arch_name=x86-64
-            ;;
-    esac
-
-    apt install -y "gcc-${arch_name}-linux-${c_lib}" \
-                   "g++-${arch_name}-linux-${c_lib}" \
-                   "binutils-${arch_name}-linux-${c_lib}";
-
-    if [ -z "${CLANG_VERSION}" ]; then
-        export CC="clang -target ${arch_compiler}-linux-${c_lib}" \
-               CXX="clang++ -target ${arch_compiler}-linux-${c_lib}"
-    else
-        export CC="clang-${CLANG_VERSION} -target ${arch_compiler}-linux-${c_lib}" \
-               CXX="clang++-${CLANG_VERSION} -target ${arch_compiler}-linux-${c_lib}"
-    fi
-
-    export LD="/usr/bin/${arch_compiler}-linux-${c_lib}-ld" \
-           STRIP="/usr/bin/${arch_compiler}-linux-${c_lib}-strip" \
-           CFLAGS="-O3" \
-           LDFLAGS="--ld-path=/usr/bin/${arch_compiler}-linux-${c_lib}-ld ${LDFLAGS}";
-}
-
-install_qemu() {
-    local qemu_arch=$1
-    echo "Installing QEMU ${qemu_arch}, Arch: ${ARCH}" | tee "${RELEASE_DIR}/running"
-
-    case "${ID}" in
-        debian|ubuntu|devuan)
-            apt-get install -y qemu-user-static > /dev/null ;;
-        alpine)
-            apk add "qemu-${qemu_arch}" ;;
-    esac
+    export CC="${ARCH}-w64-mingw32-clang" \
+           CXX="${ARCH}-w64-mingw32-clang++" \
+           LD="${mingw_path}/bin/${ARCH}-w64-mingw32-ld" \
+           STRIP="${mingw_path}/bin/${ARCH}-w64-mingw32-strip" \
+           CFLAGS="-O3 -DCARES_STATICLIB -DCURL_STATICLIB -DNGHTTP2_STATICLIB -DNGHTTP3_STATICLIB -DNGTCP2_STATICLIB" \
+           CPPFLAGS="-I${mingw_path}/${ARCH}-w64-mingw32/include" \
+           CPPFLAGS="-I${mingw_path}/generic-w64-mingw32/include ${CPPFLAGS}" \
+           LDFLAGS="--ld-path=${mingw_path}/bin/${ARCH}-w64-mingw32-ld ${LDFLAGS}" \
+           LDFLAGS="-L${mingw_path}/${ARCH}-w64-mingw32/lib ${LDFLAGS}";
 }
 
 arch_variants() {
     echo "Setting up the ARCH and OpenSSL arch, Arch: ${ARCH}"
-    local qemu_arch
 
     [ -z "${ARCH}" ] && ARCH="${ARCH_HOST}"
     case "${ARCH}" in
         x86_64)     arch="amd64" ;;
-        aarch64)    arch="arm64" ;;
-        armv7l)     arch="armv7" ;;
+        armv7)      arch="armv7" ;;
         i686)       arch="i686" ;;
         *)          arch="${ARCH}" ;;
     esac
 
-    EC_NISTP_64_GCC_128=""
-    OPENSSL_ARCH=""
-
-    case "${ARCH}" in
-        x86_64)         qemu_arch="x86_64"
-                        EC_NISTP_64_GCC_128="enable-ec_nistp_64_gcc_128"
-                        if [ "${ID}" = "alpine" ] && [ "${ARCH}" != "${ARCH_HOST}" ]; then
-                            OPENSSL_ARCH="linux-x86_64";
-                        else
-                            OPENSSL_ARCH="linux-x86_64-clang";
-                        fi ;;
-        aarch64)        qemu_arch="aarch64"
-                        EC_NISTP_64_GCC_128="enable-ec_nistp_64_gcc_128"
-                        OPENSSL_ARCH="linux-aarch64" ;;
-        armv7l)         qemu_arch="arm"
-                        OPENSSL_ARCH="linux-armv4" ;;
-        i686)           qemu_arch="i386"
-                        OPENSSL_ARCH="linux-x86" ;;
-        riscv64)        qemu_arch="riscv64"
-                        EC_NISTP_64_GCC_128="enable-ec_nistp_64_gcc_128"
-                        OPENSSL_ARCH="linux64-riscv64" ;;
-        s390x)          qemu_arch="s390x"
-                        OPENSSL_ARCH="linux64-s390x" ;;
-        mips64)         qemu_arch="mips64"
-                        OPENSSL_ARCH="linux64-mips64" ;;
-        mips64el)       qemu_arch="mips64el"
-                        OPENSSL_ARCH="linux64-mips64" ;;
-        mips)           qemu_arch="mips"
-                        OPENSSL_ARCH="linux-mips32" ;;
-        mipsel)         qemu_arch="mipsel"
-                        OPENSSL_ARCH="linux-mips32" ;;
-        powerpc64le)    qemu_arch="ppc64le"
-                        OPENSSL_ARCH="linux-ppc64le" ;;
-        powerpc)        qemu_arch="ppc"
-                        OPENSSL_ARCH="linux-ppc" ;;
-    esac
+    TARGET="${ARCH}-w64-mingw32"
 
     unset LD STRIP LDFLAGS
-    TARGET="${ARCH}-pc-linux-gnu"
-    export LDFLAGS="-L${PREFIX}/lib -L${PREFIX}/lib64";
-    if [ "${ARCH}" != "${ARCH_HOST}" ]; then
-        # If the architecture is not the same as the host, need to cross compile
-        install_qemu "${qemu_arch}";
+    export LDFLAGS="-L${PREFIX}/lib -L${PREFIX}/lib64" ;
 
-        if [ "${ARCH}" = "mips" ]  || [ "${ARCH}" = "i686" ] || [ "${ID}" = "alpine" ]; then
-            # Cross-compilation failed with atomic using clang in MIPS and i686.
-            # Alpine does not have a GCC cross-compile toolchain.
-            # Therefore, musl-cross-make is used for compilation.
-            install_cross_compile;
-        else
-            # Uses Clang for default cross-compilation
-            install_cross_compile_debian;
-        fi
-    else
-        # If the architecture is the same as the host, no need to cross compile
-        if [ -z "${CLANG_VERSION}" ]; then
-            export CC=clang CXX=clang++
-        else
-            export CC="clang-${CLANG_VERSION}" CXX="clang++-${CLANG_VERSION}"
-        fi
-    fi
+    configure_toolchain;
 }
 
 _get_github() {
@@ -439,9 +292,14 @@ compile_zlib() {
     url="${URL}"
     download_and_extract "${url}"
 
-    ./configure --prefix="${PREFIX}" --static;
-    make -j "$(nproc)";
-    make install;
+    mkdir -p out
+    cd out/
+
+    PKG_CONFIG="pkg-config --static --with-path=${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig" \
+            cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_SYSTEM_NAME=Windows -DBUILD_SHARED_LIBS=OFF \
+                  -DCMAKE_INSTALL_PREFIX="${PREFIX}" .. ;
+    PKG_CONFIG="pkg-config --static --with-path=${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig" \
+        cmake --build . --config Release --target install;
 
     if [ ! -f "${RELEASE_DIR}/release/LICENSE-zlib" ]; then cp -p LICENSE "${RELEASE_DIR}/release/LICENSE-zlib" || true; fi
 }
@@ -520,7 +378,7 @@ compile_ares() {
 
 compile_tls() {
     echo "Compiling ${TLS_LIB}, Arch: ${ARCH}" | tee "${RELEASE_DIR}/running"
-    local url
+    local url openssl_arch ec_nistp_64_gcc_128
     change_dir;
 
     if [ "${TLS_LIB}" = "openssl" ]; then
@@ -532,13 +390,43 @@ compile_tls() {
     url="${URL}"
     download_and_extract "${url}"
 
+    case "${ARCH}" in
+        x86_64)     ec_nistp_64_gcc_128="enable-ec_nistp_64_gcc_128"
+                    openssl_arch="mingw64";;
+        aarch64)    openssl_arch="mingwarm64"
+                    echo '## -*- mode: perl; -*-
+                        my %targets = (
+                            "mingwarm64" => {
+                                inherit_from     => [ "mingw-common" ],
+                                bn_ops           => add("SIXTY_FOUR_BIT"),
+                                asm_arch         => "aarch64",
+                                perlasm_scheme   => "win64",
+                                multilib         => "64",
+                            }
+                        );' > Configurations/11-curl-mingwarm.conf;;
+        armv7)      openssl_arch="mingwarm"
+                    echo '## -*- mode: perl; -*-
+                        my %targets = (
+                            "mingwarm" => {
+                                inherit_from     => [ "mingw-common" ],
+                                bn_ops           => add("BN_LLONG"),
+                                asm_arch         => "armv7",
+                                perlasm_scheme   => "coff",
+                                multilib         => "",
+                            }
+                        );' > Configurations/11-curl-mingwarm.conf;;
+        i686)       openssl_arch="mingw" ;;
+    esac
+
     ./Configure \
-        ${OPENSSL_ARCH} \
+        --cross-compile-prefix="${TARGET}-" \
+        ${openssl_arch} \
+        CC=clang CXX=clang++ \
         -fPIC \
         --prefix="${PREFIX}" \
         threads no-shared \
         enable-ktls \
-        ${EC_NISTP_64_GCC_128} \
+        ${ec_nistp_64_gcc_128} \
         enable-tls1_3 \
         enable-ssl3 enable-ssl3-method \
         enable-des enable-rc4 \
@@ -645,7 +533,8 @@ compile_brotli() {
     cd out/
 
     PKG_CONFIG="pkg-config --static --with-path=${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig" \
-        cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="${PREFIX}" -DBUILD_SHARED_LIBS=OFF ..;
+        cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_SYSTEM_NAME=Windows -DBUILD_SHARED_LIBS=OFF \
+              -DCMAKE_COMPILE_PREFIX="${TARGET}" -DCMAKE_INSTALL_PREFIX="${PREFIX}" .. ;
     PKG_CONFIG="pkg-config --static --with-path=${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig" \
         cmake --build . --config Release --target install;
 
@@ -665,9 +554,14 @@ compile_zstd() {
     url="${URL}"
     download_and_extract "${url}"
 
+    mkdir -p build/cmake/out/
+    cd build/cmake/out/
+
     PKG_CONFIG="pkg-config --static --with-path=${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig" \
-        make -j "$(nproc)" PREFIX="${PREFIX}";
-    make install;
+        cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_SYSTEM_NAME=Windows -DCMAKE_INSTALL_PREFIX="${PREFIX}" \
+              -DZSTD_BUILD_STATIC=ON -DZSTD_BUILD_SHARED=OFF ..;
+    PKG_CONFIG="pkg-config --static --with-path=${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig" \
+        cmake --build . --config Release --target install;
 
     if [ ! -f "${PREFIX}/lib/libzstd.a" ]; then cp -f lib/libzstd.a "${PREFIX}/lib/libzstd.a"; fi
     if [ ! -f "${RELEASE_DIR}/release/LICENSE-zstd" ]; then cp -p LICENSE "${RELEASE_DIR}/release/LICENSE-zstd" || true; fi
@@ -720,7 +614,7 @@ curl_config() {
 
 compile_curl() {
     echo "Compiling curl, Arch: ${ARCH}" | tee "${RELEASE_DIR}/running"
-    local url
+    local url cflags_extra
     change_dir;
 
     if [ "${CURL_VERSION}" = "dev" ]; then
@@ -738,13 +632,19 @@ compile_curl() {
     fi
 
     curl_config;
-    if [ "${ARCH}" = "armv7l" ] || [ "${ARCH}" = "mipsel" ] || [ "${ARCH}" = "mips" ] \
-        || [ "${ARCH}" = "powerpc" ] || [ "${ARCH}" = "i686" ]; then
+
+    if [ "${ARCH}" = "armv7" ] || [ "${ARCH}" = "i686" ]; then
         # add -Wno-cast-align to avoid error alignment from 4 to 8
-        make -j "$(nproc)" LDFLAGS="-static -all-static -Wl,-s ${LDFLAGS}" CFLAGS="-Wno-cast-align ${CFLAGS}";
+        cflags_extra="-Wno-cast-align"
+    elif [ "${ARCH}" = "x86_64" ]; then
+        # add -Wno-error=shorten-64-to-32 to disable conversion check
+        # https://github.com/curl/curl/issues/12861
+        cflags_extra="-Wno-error=shorten-64-to-32"
     else
-        make -j "$(nproc)" LDFLAGS="-static -all-static -Wl,-s ${LDFLAGS}";
+        cflags_extra=""
     fi
+
+    make -j "$(nproc)" LDFLAGS="-static -all-static -Wl,-s ${LDFLAGS}" CFLAGS="$cflags_extra ${CFLAGS}";
 
     if [ ! -f "${RELEASE_DIR}/release/LICENSE-curl" ]; then cp -p COPYING "${RELEASE_DIR}/release/LICENSE-curl" || true; fi
     install_curl;
@@ -753,14 +653,11 @@ compile_curl() {
 install_curl() {
     mkdir -p "${RELEASE_DIR}/release/"
 
-    ls -l src/curl
-    cp -pf src/curl "${RELEASE_DIR}/release/curl-linux-${arch}"
+    ls -l src/curl.exe
+    cp -pf src/curl.exe "${RELEASE_DIR}/release/curl-windows-${arch}"
 
     if [ ! -f "${RELEASE_DIR}/release/version.txt" ]; then
         echo "${CURL_VERSION}" > "${RELEASE_DIR}/release/version.txt"
-    fi
-    if [ ! -f "${RELEASE_DIR}/release/version-info.txt" ]; then
-        src/curl -V >> "${RELEASE_DIR}/release/version-info.txt"
     fi
 }
 
@@ -778,18 +675,8 @@ _arch_match() {
 }
 
 _arch_valid() {
-    local  arch_x86_64="x86_64 aarch64 armv7l riscv64 s390x mips64 mips64el powerpc64le mipsel i686 mips powerpc"
-    local arch_aarch64="x86_64 aarch64 armv7l riscv64 s390x mips64 mips64el powerpc64le mipsel"
-
-    if [ "${ARCH_HOST}" = "x86_64" ]; then
-        result=$(_arch_match "${ARCH}" "${arch_x86_64}")
-    elif [ "${ARCH_HOST}" = "aarch64" ] && [ "${ID}" = "debian" ]; then
-        result=$(_arch_match "${ARCH}" "${arch_aarch64}")
-    else
-        result=1
-    fi
-
-    return ${result}
+    local  archs="x86_64 i686 aarch64 armv7"
+    return $(_arch_match "${ARCH}" "${archs}")
 }
 
 _build_in_docker() {
@@ -799,7 +686,7 @@ _build_in_docker() {
     cd "$(dirname "$0")";
     base_name=$(basename "$0")
     current_time=$(date "+%Y%m%d-%H%M")
-    container_image=${CONTAINER_IMAGE:-debian:latest}  # or alpine:latest
+    container_image=${CONTAINER_IMAGE:-mstorsjo/llvm-mingw:latest}  # or alpine:latest
 
     [ -z "${ARCH}" ] && ARCH=$(uname -m)
     container_name="build-curl-${ARCH}-${current_time}"
