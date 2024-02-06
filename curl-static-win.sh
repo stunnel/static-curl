@@ -101,7 +101,7 @@ configure_toolchain() {
            CXX="${ARCH}-w64-mingw32-clang++" \
            LD="${mingw_path}/bin/${ARCH}-w64-mingw32-ld" \
            STRIP="${mingw_path}/bin/${ARCH}-w64-mingw32-strip" \
-           CFLAGS="-O3 -DCARES_STATICLIB -DCURL_STATICLIB -DNGHTTP2_STATICLIB -DNGHTTP3_STATICLIB -DNGTCP2_STATICLIB" \
+           CFLAGS="-O3" \
            CPPFLAGS="-I${mingw_path}/${ARCH}-w64-mingw32/include" \
            CPPFLAGS="-I${mingw_path}/generic-w64-mingw32/include ${CPPFLAGS}" \
            LDFLAGS="--ld-path=${mingw_path}/bin/${ARCH}-w64-mingw32-ld ${LDFLAGS}" \
@@ -325,7 +325,7 @@ compile_libidn2() {
     local url
     change_dir;
 
-    [ -z "${LIBIDN2_VERSION}" ] && LIBIDN2_VERSION="latest"
+    [ -z "${LIBIDN2_VERSION}" ] && return
     url="https://mirrors.kernel.org/gnu/libidn/libidn2-${LIBIDN2_VERSION}.tar.gz"
     download_and_extract "${url}"
 
@@ -569,7 +569,7 @@ compile_zstd() {
 
 curl_config() {
     echo "Configuring curl, Arch: ${ARCH}" | tee "${RELEASE_DIR}/running"
-    local with_openssl_quic
+    local with_openssl_quic with_idn
 
     # --with-openssl-quic and --with-ngtcp2 are mutually exclusive
     with_openssl_quic=""
@@ -579,9 +579,18 @@ curl_config() {
         with_openssl_quic="--with-ngtcp2"
     fi
 
+    # it's possible to use libidn2 instead of winidn
+    with_idn="--with-winidn"
+    if [ -n "${LIBIDN2_VERSION}" ]; then
+        with_idn="--with-libidn2"
+    fi
+
     if [ ! -f configure ]; then
         autoreconf -fi;
     fi
+
+    CPPFLAGS="-DCURL_STATICLIB -DCARES_STATICLIB -DHAS_ALPN ${CPPFLAGS}"
+    CPPFLAGS="-DNGHTTP2_STATICLIB -DNGHTTP3_STATICLIB -DNGTCP2_STATICLIB ${CPPFLAGS}"
 
     PKG_CONFIG="pkg-config --static" \
         ./configure \
@@ -590,7 +599,7 @@ curl_config() {
             --enable-static --disable-shared \
             --with-openssl "${with_openssl_quic}" --with-brotli --with-zstd \
             --with-nghttp2 --with-nghttp3 \
-            --with-libidn2 --with-libssh2 \
+            "${with_idn}" --with-libssh2 \
             --enable-hsts --enable-mime --enable-cookies \
             --enable-http-auth --enable-manual \
             --enable-proxy --enable-file --enable-http \
@@ -606,9 +615,8 @@ curl_config() {
             --enable-curldebug --enable-dict --enable-netrc \
             --enable-bearer-auth --enable-tls-srp --enable-dnsshuffle \
             --enable-get-easy-options --enable-progress-meter \
-            --with-ca-bundle=/etc/ssl/certs/ca-certificates.crt \
-            --with-ca-path=/etc/ssl/certs \
-            --with-ca-fallback --enable-ares \
+            --without-ca-bundle --without-ca-path \
+            --without-ca-fallback --enable-ares \
             --disable-ldap --disable-ldaps "${ENABLE_DEBUG}";
 }
 
@@ -648,13 +656,30 @@ compile_curl() {
 
     if [ ! -f "${RELEASE_DIR}/release/LICENSE-curl" ]; then cp -p COPYING "${RELEASE_DIR}/release/LICENSE-curl" || true; fi
     install_curl;
+    prepare_certificates;
+}
+
+prepare_certificates() {
+    echo "Preparing CA certificates" | tee "${RELEASE_DIR}/running"
+    local license_file="${RELEASE_DIR}/release/LICENSE-ca-bundle"
+    local ca_cert_file="${RELEASE_DIR}/release/curl-ca-bundle.crt"
+
+    # add curl CA certificates
+    if [ ! -f "${ca_cert_file}" ]; then
+        curl --retry 5 --retry-max-time 120 -o "${ca_cert_file}" https://curl.se/ca/cacert.pem
+    fi
+
+    # add Mozilla source file license
+    if [ ! -f "${license_file}" ]; then
+        curl --retry 5 --retry-max-time 120 -o "${license_file}" https://www.mozilla.org/media/MPL/2.0/index.txt
+    fi
 }
 
 install_curl() {
     mkdir -p "${RELEASE_DIR}/release/"
 
     ls -l src/curl.exe
-    cp -pf src/curl.exe "${RELEASE_DIR}/release/curl-windows-${arch}"
+    cp -pf src/curl.exe "${RELEASE_DIR}/release/curl-windows-${arch}.exe"
 
     if [ ! -f "${RELEASE_DIR}/release/version.txt" ]; then
         echo "${CURL_VERSION}" > "${RELEASE_DIR}/release/version.txt"
