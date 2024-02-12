@@ -36,7 +36,7 @@
 
 init_env() {
     export DIR=${DIR:-/data};
-    export PREFIX="${DIR}/curl";
+    export PREFIX="${DIR}/curl-${ARCH}";
     export RELEASE_DIR=${RELEASE_DIR:-/mnt};
     export ARCH_HOST=$(uname -m)
 
@@ -472,6 +472,7 @@ compile_libidn2() {
     download_and_extract "${url}"
 
     PKG_CONFIG="pkg-config --static --with-path=${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig" \
+    LDFLAGS="${LDFLAGS} --static" \
     ./configure \
         --host "${TARGET}" \
         --with-libunistring-prefix="${PREFIX}" \
@@ -493,6 +494,7 @@ compile_libpsl() {
     download_and_extract "${url}"
 
     PKG_CONFIG="pkg-config --static --with-path=${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig" \
+    LDFLAGS="${LDFLAGS} --static" \
       ./configure --host="${TARGET}" --prefix="${PREFIX}" \
         --enable-static --enable-shared=no --enable-builtin --disable-runtime;
 
@@ -542,7 +544,8 @@ compile_tls() {
         enable-tls1_3 \
         enable-ssl3 enable-ssl3-method \
         enable-des enable-rc4 \
-        enable-weak-ssl-ciphers;
+        enable-weak-ssl-ciphers \
+        --static -static;
 
     make -j "$(nproc)";
     make install_sw;
@@ -644,9 +647,9 @@ compile_brotli() {
     mkdir -p out
     cd out/
 
-    PKG_CONFIG="pkg-config --static --with-path=${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig" \
+    PKG_CONFIG="pkg-config --static --with-path=${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig" LDFLAGS="-static" \
         cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="${PREFIX}" -DBUILD_SHARED_LIBS=OFF ..;
-    PKG_CONFIG="pkg-config --static --with-path=${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig" \
+    PKG_CONFIG="pkg-config --static --with-path=${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig" LDFLAGS="-static" \
         cmake --build . --config Release --target install;
 
     if [ ! -f "${RELEASE_DIR}/release/LICENSE-brotli" ]; then cp -p ../LICENSE "${RELEASE_DIR}/release/LICENSE-brotli" || true; fi
@@ -747,6 +750,7 @@ compile_curl() {
     fi
 
     if [ ! -f "${RELEASE_DIR}/release/LICENSE-curl" ]; then cp -p COPYING "${RELEASE_DIR}/release/LICENSE-curl" || true; fi
+    make install;
     install_curl;
 }
 
@@ -859,14 +863,15 @@ compile() {
 main() {
     local base_name current_time container_name arch_temp
 
-    if [ "${ARCH}" = "all" ] && [ "${ARCHS}" = "" ]; then
-        echo "Please set the ARCHS variable."
-        exit 1;
-    fi
-
     # If not in docker, run the script in docker and exit
     if [ ! -f /.dockerenv ]; then
         _build_in_docker;
+    fi
+
+    [ "${ARCH}" = "" ] && export ARCH="$(uname -m)"
+    if [ "${ARCH}" != "all" ]; then
+        ARCHS="${ARCH}";
+        ARCH=all;
     fi
 
     init_env;                    # Initialize the build env
