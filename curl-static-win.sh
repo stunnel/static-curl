@@ -34,7 +34,7 @@
 
 init_env() {
     export DIR=${DIR:-/data};
-    export PREFIX="${DIR}/curl";
+    export PREFIX="${DIR}/curl-${ARCH}";
     export RELEASE_DIR=${RELEASE_DIR:-/mnt};
     export ARCH_HOST=$(uname -m)
 
@@ -70,7 +70,7 @@ init_env() {
     export PKG_CONFIG_PATH="${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig";
 
     . /etc/os-release;  # get the ID variable
-    mkdir -p "${RELEASE_DIR}/release/"
+    mkdir -p "${RELEASE_DIR}/release/bin/"
 }
 
 install_packages_debian() {
@@ -283,6 +283,12 @@ change_dir() {
     cd "${DIR}";
 }
 
+_copy_license() {
+    # $1: original file name; $2: target file name
+    mkdir -p "${PREFIX}/licenses/";
+    cp -p "${1}" "${PREFIX}/licenses/${2}";
+}
+
 compile_zlib() {
     echo "Compiling zlib, Arch: ${ARCH}" | tee "${RELEASE_DIR}/running"
     local url
@@ -301,7 +307,7 @@ compile_zlib() {
     PKG_CONFIG="pkg-config --static --with-path=${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig" \
         cmake --build . --config Release --target install;
 
-    if [ ! -f "${RELEASE_DIR}/release/LICENSE-zlib" ]; then cp -p LICENSE "${RELEASE_DIR}/release/LICENSE-zlib" || true; fi
+    _copy_license LICENSE zlib;
 }
 
 compile_libunistring() {
@@ -317,7 +323,7 @@ compile_libunistring() {
     make -j "$(nproc)";
     make install;
 
-    if [ ! -f "${RELEASE_DIR}/release/LICENSE-libunistring" ]; then cp -p COPYING "${RELEASE_DIR}/release/LICENSE-libunistring" || true; fi
+    _copy_license COPYING libunistring;
 }
 
 compile_libidn2() {
@@ -330,6 +336,7 @@ compile_libidn2() {
     download_and_extract "${url}"
 
     PKG_CONFIG="pkg-config --static --with-path=${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig" \
+    LDFLAGS="${LDFLAGS} --static" \
     ./configure \
         --host "${TARGET}" \
         --with-libunistring-prefix="${PREFIX}" \
@@ -338,7 +345,7 @@ compile_libidn2() {
     make -j "$(nproc)";
     make install;
 
-    if [ ! -f "${RELEASE_DIR}/release/LICENSE-libidn2" ]; then cp -p COPYING "${RELEASE_DIR}/release/LICENSE-libidn2" || true; fi
+    _copy_license COPYING libidn2;
 }
 
 compile_libpsl() {
@@ -351,13 +358,14 @@ compile_libpsl() {
     download_and_extract "${url}"
 
     PKG_CONFIG="pkg-config --static --with-path=${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig" \
+    LDFLAGS="${LDFLAGS} --static" \
       ./configure --host="${TARGET}" --prefix="${PREFIX}" \
         --enable-static --enable-shared=no --enable-builtin --disable-runtime;
 
     make -j "$(nproc)" LDFLAGS="-static -all-static -Wl,-s ${LDFLAGS}";
     make install;
 
-    if [ ! -f "${RELEASE_DIR}/release/LICENSE-libpsl" ]; then cp -p LICENSE "${RELEASE_DIR}/release/LICENSE-libpsl" || true; fi
+    _copy_license LICENSE libpsl;
 }
 
 compile_ares() {
@@ -373,7 +381,7 @@ compile_ares() {
     make -j "$(nproc)";
     make install;
 
-    if [ ! -f "${RELEASE_DIR}/release/LICENSE-c-ares" ]; then cp -p LICENSE.md "${RELEASE_DIR}/release/LICENSE-c-ares" || true; fi
+    _copy_license LICENSE.md c-ares;
 }
 
 compile_tls() {
@@ -430,12 +438,13 @@ compile_tls() {
         enable-tls1_3 \
         enable-ssl3 enable-ssl3-method \
         enable-des enable-rc4 \
-        enable-weak-ssl-ciphers;
+        enable-weak-ssl-ciphers \
+        --static -static;
 
     make -j "$(nproc)";
     make install_sw;
 
-    if [ ! -f "${RELEASE_DIR}/release/LICENSE-openssl" ]; then cp -p LICENSE.txt "${RELEASE_DIR}/release/LICENSE-openssl" || true; fi
+    _copy_license LICENSE.txt openssl;
 }
 
 compile_libssh2() {
@@ -456,7 +465,7 @@ compile_libssh2() {
     make -j "$(nproc)";
     make install;
 
-    if [ ! -f "${RELEASE_DIR}/release/LICENSE-libssh2" ]; then cp -p COPYING "${RELEASE_DIR}/release/LICENSE-libssh2" || true; fi
+    _copy_license COPYING libssh2;
 }
 
 compile_nghttp2() {
@@ -475,7 +484,7 @@ compile_nghttp2() {
     make -j "$(nproc)";
     make install;
 
-    if [ ! -f "${RELEASE_DIR}/release/LICENSE-nghttp2" ]; then cp -p COPYING "${RELEASE_DIR}/release/LICENSE-nghttp2" || true; fi
+    _copy_license COPYING nghttp2;
 }
 
 compile_ngtcp2() {
@@ -499,7 +508,7 @@ compile_ngtcp2() {
     make -j "$(nproc)";
     make install;
 
-    if [ ! -f "${RELEASE_DIR}/release/LICENSE-ngtcp2" ]; then cp -p COPYING "${RELEASE_DIR}/release/LICENSE-ngtcp2" || true; fi
+    _copy_license COPYING ngtcp2;
 }
 
 compile_nghttp3() {
@@ -517,7 +526,7 @@ compile_nghttp3() {
     make -j "$(nproc)";
     make install;
 
-    if [ ! -f "${RELEASE_DIR}/release/LICENSE-nghttp3" ]; then cp -p COPYING "${RELEASE_DIR}/release/LICENSE-nghttp3" || true; fi
+    _copy_license COPYING nghttp3;
 }
 
 compile_brotli() {
@@ -532,13 +541,13 @@ compile_brotli() {
     mkdir -p out
     cd out/
 
-    PKG_CONFIG="pkg-config --static --with-path=${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig" \
+    PKG_CONFIG="pkg-config --static --with-path=${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig" LDFLAGS="-static" \
         cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_SYSTEM_NAME=Windows -DBUILD_SHARED_LIBS=OFF \
               -DCMAKE_COMPILE_PREFIX="${TARGET}" -DCMAKE_INSTALL_PREFIX="${PREFIX}" .. ;
-    PKG_CONFIG="pkg-config --static --with-path=${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig" \
+    PKG_CONFIG="pkg-config --static --with-path=${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig" LDFLAGS="-static" \
         cmake --build . --config Release --target install;
 
-    if [ ! -f "${RELEASE_DIR}/release/LICENSE-brotli" ]; then cp -p ../LICENSE "${RELEASE_DIR}/release/LICENSE-brotli" || true; fi
+    _copy_license ../LICENSE brotli;
     cd "${PREFIX}/lib/"
     if [ -f libbrotlidec-static.a ] && [ ! -f libbrotlidec.a ]; then ln -f libbrotlidec-static.a libbrotlidec.a; fi
     if [ -f libbrotlienc-static.a ] && [ ! -f libbrotlienc.a ]; then ln -f libbrotlienc-static.a libbrotlienc.a; fi
@@ -564,7 +573,7 @@ compile_zstd() {
         cmake --build . --config Release --target install;
 
     if [ ! -f "${PREFIX}/lib/libzstd.a" ]; then cp -f lib/libzstd.a "${PREFIX}/lib/libzstd.a"; fi
-    if [ ! -f "${RELEASE_DIR}/release/LICENSE-zstd" ]; then cp -p LICENSE "${RELEASE_DIR}/release/LICENSE-zstd" || true; fi
+    _copy_license LICENSE zstd
 }
 
 curl_config() {
@@ -654,15 +663,14 @@ compile_curl() {
 
     make -j "$(nproc)" LDFLAGS="-static -all-static -Wl,-s ${LDFLAGS}" CFLAGS="$cflags_extra ${CFLAGS}";
 
-    if [ ! -f "${RELEASE_DIR}/release/LICENSE-curl" ]; then cp -p COPYING "${RELEASE_DIR}/release/LICENSE-curl" || true; fi
-    install_curl;
-    prepare_certificates;
+    _copy_license COPYING curl;
+    make install;
 }
 
 prepare_certificates() {
     echo "Preparing CA certificates" | tee "${RELEASE_DIR}/running"
-    local license_file="${RELEASE_DIR}/release/LICENSE-ca-bundle"
-    local ca_cert_file="${RELEASE_DIR}/release/curl-ca-bundle.crt"
+    local license_file="${PREFIX}/licenses/ca-bundle"
+    local ca_cert_file="${RELEASE_DIR}/release/bin/curl-ca-bundle.crt"
 
     # add curl CA certificates
     if [ ! -f "${ca_cert_file}" ]; then
@@ -676,14 +684,17 @@ prepare_certificates() {
 }
 
 install_curl() {
-    mkdir -p "${RELEASE_DIR}/release/"
+    mkdir -p "${RELEASE_DIR}/release/bin/"
 
     ls -l src/curl.exe
-    cp -pf src/curl.exe "${RELEASE_DIR}/release/curl-windows-${arch}.exe"
+    cp -pf src/curl.exe "${RELEASE_DIR}/release/bin/curl-windows-${arch}.exe"
 
     if [ ! -f "${RELEASE_DIR}/release/version.txt" ]; then
         echo "${CURL_VERSION}" > "${RELEASE_DIR}/release/version.txt"
     fi
+
+    XZ_OPT=-9 tar -Jcf "${RELEASE_DIR}/release/curl-windows-${ARCH}-dev-${CURL_VERSION}.tar.xz" -C "${DIR}" "curl-${ARCH}"
+    prepare_certificates;
 }
 
 _arch_match() {
@@ -766,19 +777,22 @@ compile() {
     compile_nghttp2;
     compile_brotli;
     compile_curl;
+
+    install_curl;
 }
 
 main() {
     local base_name current_time container_name arch_temp
 
-    if [ "${ARCH}" = "all" ] && [ "${ARCHS}" = "" ]; then
-        echo "Please set the ARCHS variable."
-        exit 1;
-    fi
-
     # If not in docker, run the script in docker and exit
     if [ ! -f /.dockerenv ]; then
         _build_in_docker;
+    fi
+
+    [ "${ARCH}" = "" ] && export ARCH="$(uname -m)"
+    if [ "${ARCH}" != "all" ]; then
+        ARCHS="${ARCH}";
+        ARCH=all;
     fi
 
     init_env;                    # Initialize the build env

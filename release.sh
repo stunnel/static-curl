@@ -44,7 +44,7 @@ ${features}
 
 ## License
 
-This binary includes various open-source software such as curl, openssl, zlib, brotli, zstd, libidn2, libssh2, nghttp2, ngtcp2, nghttp3. Their license information has been compiled and is included in the LICENSE.tar.xz file.
+This binary includes various open-source software such as curl, openssl, zlib, brotli, zstd, libidn2, libssh2, nghttp2, ngtcp2, nghttp3. Their license information has been compiled and is included in the `dev` file.
 
 ## Checksums
 
@@ -54,14 +54,12 @@ EOF
 }
 
 tar_curl() {
-    cd "${RELEASE_DIR}/release" || exit
+    cd "${RELEASE_DIR}/release/bin" || exit
     chmod +x curl-*;
     for file in curl-*; do
         mv "${file}" curl;
         XZ_OPT=-9 tar -Jcf "${file}-${CURL_VERSION}.tar.xz" curl && rm -f curl;
     done
-
-    XZ_OPT=-9 tar -Jcf LICENSE.tar.xz LICENSE-* && rm -f LICENSE-*;
 }
 
 init_env;
