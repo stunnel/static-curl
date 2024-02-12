@@ -72,7 +72,7 @@ init_env() {
     export PKG_CONFIG_PATH="${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig";
 
     . /etc/os-release;  # get the ID variable
-    mkdir -p "${RELEASE_DIR}/release/"
+    mkdir -p "${RELEASE_DIR}/release/bin/"
 }
 
 install_packages_alpine() {
@@ -443,7 +443,7 @@ compile_zlib() {
     make -j "$(nproc)";
     make install;
 
-    if [ ! -f "${RELEASE_DIR}/release/LICENSE-zlib" ]; then cp -p LICENSE "${RELEASE_DIR}/release/LICENSE-zlib" || true; fi
+    if [ ! -f "${PREFIX}/licenses/zlib" ]; then mkdir -p "${PREFIX}/licenses"; cp -p LICENSE "${PREFIX}/licenses/zlib" || true; fi
 }
 
 compile_libunistring() {
@@ -459,7 +459,7 @@ compile_libunistring() {
     make -j "$(nproc)";
     make install;
 
-    if [ ! -f "${RELEASE_DIR}/release/LICENSE-libunistring" ]; then cp -p COPYING "${RELEASE_DIR}/release/LICENSE-libunistring" || true; fi
+    if [ ! -f "${PREFIX}/licenses/libunistring" ]; then mkdir -p "${PREFIX}/licenses"; cp -p COPYING "${PREFIX}/licenses/libunistring" || true; fi
 }
 
 compile_libidn2() {
@@ -481,7 +481,7 @@ compile_libidn2() {
     make -j "$(nproc)";
     make install;
 
-    if [ ! -f "${RELEASE_DIR}/release/LICENSE-libidn2" ]; then cp -p COPYING "${RELEASE_DIR}/release/LICENSE-libidn2" || true; fi
+    if [ ! -f "${PREFIX}/licenses/libidn2" ]; then mkdir -p "${PREFIX}/licenses"; cp -p COPYING "${PREFIX}/licenses/libidn2" || true; fi
 }
 
 compile_libpsl() {
@@ -501,7 +501,7 @@ compile_libpsl() {
     make -j "$(nproc)" LDFLAGS="-static -all-static -Wl,-s ${LDFLAGS}";
     make install;
 
-    if [ ! -f "${RELEASE_DIR}/release/LICENSE-libpsl" ]; then cp -p LICENSE "${RELEASE_DIR}/release/LICENSE-libpsl" || true; fi
+    if [ ! -f "${PREFIX}/licenses/libpsl" ]; then mkdir -p "${PREFIX}/licenses"; cp -p LICENSE "${PREFIX}/licenses/libpsl" || true; fi
 }
 
 compile_ares() {
@@ -517,7 +517,7 @@ compile_ares() {
     make -j "$(nproc)";
     make install;
 
-    if [ ! -f "${RELEASE_DIR}/release/LICENSE-c-ares" ]; then cp -p LICENSE.md "${RELEASE_DIR}/release/LICENSE-c-ares" || true; fi
+    if [ ! -f "${PREFIX}/licenses/c-ares" ]; then mkdir -p "${PREFIX}/licenses"; cp -p LICENSE.md "${PREFIX}/licenses/c-ares" || true; fi
 }
 
 compile_tls() {
@@ -550,7 +550,7 @@ compile_tls() {
     make -j "$(nproc)";
     make install_sw;
 
-    if [ ! -f "${RELEASE_DIR}/release/LICENSE-openssl" ]; then cp -p LICENSE.txt "${RELEASE_DIR}/release/LICENSE-openssl" || true; fi
+    if [ ! -f "${PREFIX}/licenses/openssl" ]; then mkdir -p "${PREFIX}/licenses"; cp -p LICENSE.txt "${PREFIX}/licenses/openssl" || true; fi
 }
 
 compile_libssh2() {
@@ -571,7 +571,7 @@ compile_libssh2() {
     make -j "$(nproc)";
     make install;
 
-    if [ ! -f "${RELEASE_DIR}/release/LICENSE-libssh2" ]; then cp -p COPYING "${RELEASE_DIR}/release/LICENSE-libssh2" || true; fi
+    if [ ! -f "${PREFIX}/licenses/libssh2" ]; then mkdir -p "${PREFIX}/licenses"; cp -p COPYING "${PREFIX}/licenses/libssh2" || true; fi
 }
 
 compile_nghttp2() {
@@ -590,7 +590,7 @@ compile_nghttp2() {
     make -j "$(nproc)";
     make install;
 
-    if [ ! -f "${RELEASE_DIR}/release/LICENSE-nghttp2" ]; then cp -p COPYING "${RELEASE_DIR}/release/LICENSE-nghttp2" || true; fi
+    if [ ! -f "${PREFIX}/licenses/nghttp2" ]; then mkdir -p "${PREFIX}/licenses"; cp -p COPYING "${PREFIX}/licenses/nghttp2" || true; fi
 }
 
 compile_ngtcp2() {
@@ -614,7 +614,7 @@ compile_ngtcp2() {
     make -j "$(nproc)";
     make install;
 
-    if [ ! -f "${RELEASE_DIR}/release/LICENSE-ngtcp2" ]; then cp -p COPYING "${RELEASE_DIR}/release/LICENSE-ngtcp2" || true; fi
+    if [ ! -f "${PREFIX}/licenses/ngtcp2" ]; then mkdir -p "${PREFIX}/licenses"; cp -p COPYING "${PREFIX}/licenses/ngtcp2" || true; fi
 }
 
 compile_nghttp3() {
@@ -632,7 +632,7 @@ compile_nghttp3() {
     make -j "$(nproc)";
     make install;
 
-    if [ ! -f "${RELEASE_DIR}/release/LICENSE-nghttp3" ]; then cp -p COPYING "${RELEASE_DIR}/release/LICENSE-nghttp3" || true; fi
+    if [ ! -f "${PREFIX}/licenses/nghttp3" ]; then mkdir -p "${PREFIX}/licenses"; cp -p COPYING "${PREFIX}/licenses/nghttp3" || true; fi
 }
 
 compile_brotli() {
@@ -652,7 +652,7 @@ compile_brotli() {
     PKG_CONFIG="pkg-config --static --with-path=${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig" LDFLAGS="-static" \
         cmake --build . --config Release --target install;
 
-    if [ ! -f "${RELEASE_DIR}/release/LICENSE-brotli" ]; then cp -p ../LICENSE "${RELEASE_DIR}/release/LICENSE-brotli" || true; fi
+    if [ ! -f "${PREFIX}/licenses/brotli" ]; then mkdir -p "${PREFIX}/licenses"; cp -p ../LICENSE "${PREFIX}/licenses/brotli" || true; fi
     cd "${PREFIX}/lib/"
     if [ -f libbrotlidec-static.a ] && [ ! -f libbrotlidec.a ]; then ln -f libbrotlidec-static.a libbrotlidec.a; fi
     if [ -f libbrotlienc-static.a ] && [ ! -f libbrotlienc.a ]; then ln -f libbrotlienc-static.a libbrotlienc.a; fi
@@ -673,7 +673,7 @@ compile_zstd() {
     make install;
 
     if [ ! -f "${PREFIX}/lib/libzstd.a" ]; then cp -f lib/libzstd.a "${PREFIX}/lib/libzstd.a"; fi
-    if [ ! -f "${RELEASE_DIR}/release/LICENSE-zstd" ]; then cp -p LICENSE "${RELEASE_DIR}/release/LICENSE-zstd" || true; fi
+    if [ ! -f "${PREFIX}/licenses/zstd" ]; then mkdir -p "${PREFIX}/licenses"; cp -p LICENSE "${PREFIX}/licenses/zstd" || true; fi
 }
 
 curl_config() {
@@ -749,16 +749,15 @@ compile_curl() {
         make -j "$(nproc)" LDFLAGS="-static -all-static -Wl,-s ${LDFLAGS}";
     fi
 
-    if [ ! -f "${RELEASE_DIR}/release/LICENSE-curl" ]; then cp -p COPYING "${RELEASE_DIR}/release/LICENSE-curl" || true; fi
+    if [ ! -f "${PREFIX}/licenses/curl" ]; then mkdir -p "${PREFIX}/licenses"; cp -p COPYING "${PREFIX}/licenses/curl" || true; fi
     make install;
-    install_curl;
 }
 
 install_curl() {
-    mkdir -p "${RELEASE_DIR}/release/"
+    mkdir -p "${RELEASE_DIR}/release/bin/"
 
     ls -l src/curl
-    cp -pf src/curl "${RELEASE_DIR}/release/curl-linux-${arch}"
+    cp -pf src/curl "${RELEASE_DIR}/release/bin/curl-linux-${arch}"
 
     if [ ! -f "${RELEASE_DIR}/release/version.txt" ]; then
         echo "${CURL_VERSION}" > "${RELEASE_DIR}/release/version.txt"
@@ -766,6 +765,8 @@ install_curl() {
     if [ ! -f "${RELEASE_DIR}/release/version-info.txt" ]; then
         src/curl -V >> "${RELEASE_DIR}/release/version-info.txt"
     fi
+
+    XZ_OPT=-9 tar -Jcf "${RELEASE_DIR}/release/curl-${ARCH}-dev-${CURL_VERSION}.tar.xz" -C "${DIR}" "curl-${ARCH}"
 }
 
 _arch_match() {
@@ -858,6 +859,8 @@ compile() {
     compile_nghttp2;
     compile_brotli;
     compile_curl;
+
+    install_curl;
 }
 
 main() {
