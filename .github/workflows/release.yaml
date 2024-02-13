@@ -5,46 +5,11 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
-    name: build (${{ github.ref_name }})
+  build-Linux:
+    name: build-Linux (${{ github.ref_name }})
     runs-on: ubuntu-latest
 
     steps:
-      - name: Use variables
-        env:
-          CURL_VERSION: ${{ vars.CURL_VERSION }}
-          TLS_LIB: ${{ vars.TLS_LIB }}
-          QUICTLS_VERSION: ${{ vars.QUICTLS_VERSION }}
-          OPENSSL_VERSION: ${{ vars.OPENSSL_VERSION }}
-          NGTCP2_VERSION: ${{ vars.NGTCP2_VERSION }}
-          NGHTTP3_VERSION: ${{ vars.NGHTTP3_VERSION }}
-          NGHTTP2_VERSION: ${{ vars.NGHTTP2_VERSION }}
-          LIBIDN2_VERSION: ${{ vars.LIBIDN2_VERSION }}
-          LIBUNISTRING_VERSION: ${{ vars.LIBUNISTRING_VERSION }}
-          ZLIB_VERSION: ${{ vars.ZLIB_VERSION }}
-          BROTLI_VERSION: ${{ vars.BROTLI_VERSION }}
-          ZSTD_VERSION: ${{ vars.ZSTD_VERSION }}
-          LIBSSH2_VERSION: ${{ vars.LIBSSH2_VERSION }}
-          ARES_VERSION: ${{ vars.ARES_VERSION }}
-          CONTAINER_IMAGE: ${{ vars.CONTAINER_IMAGE }}
-        run: |
-          echo "cURL version: ${CURL_VERSION}"
-          echo "TLS library: ${TLS_LIB}"
-          echo "QuicTLS version: ${QUICTLS_VERSION}"
-          echo "OpenSSL version: ${OPENSSL_VERSION}"
-          echo "ngtcp2 version: ${NGTCP2_VERSION}"
-          echo "nghttp3 version: ${NGHTTP3_VERSION}"
-          echo "nghttp2 version: ${NGHTTP2_VERSION}"
-          echo "libidn2 version: ${LIBIDN2_VERSION}"
-          echo "libunistring version: ${LIBUNISTRING_VERSION}"
-          echo "zlib version: ${ZLIB_VERSION}"
-          echo "brotli version: ${BROTLI_VERSION}"
-          echo "zstd version: ${ZSTD_VERSION}"
-          echo "libssh2 version: ${LIBSSH2_VERSION}"
-          echo "c-ares version: ${ARES_VERSION}"
-          echo "Container image: ${CONTAINER_IMAGE}"
-          echo "Home: ${HOME}"
-
       - name: Checkout
         uses: actions/checkout@v4
         with:
@@ -66,13 +31,11 @@ jobs:
           ZSTD_VERSION: ${{ vars.ZSTD_VERSION }}
           LIBSSH2_VERSION: ${{ vars.LIBSSH2_VERSION }}
           ARES_VERSION: ${{ vars.ARES_VERSION }}
-          CONTAINER_IMAGE: ${{ vars.CONTAINER_IMAGE }}
+          CONTAINER_IMAGE: debian:latest
           TOKEN_READ: ${{ secrets.GITHUB_TOKEN }}
-          ARCH: "all"
-          ARCHS: "x86_64 aarch64 armv7l i686 riscv64 s390x mips64 mips64el mips mipsel powerpc64le powerpc"
+          ARCHES: "x86_64 aarch64 armv7 riscv64 s390x mips64 mips64el mipsel powerpc64le powerpc"
         run: |
-          ARCH="${ARCH}"
-          ARCHS="${ARCHS}"
+          ARCHES="${ARCHES}"
           CURL_VERSION=${CURL_VERSION}
           TLS_LIB=${TLS_LIB}
           QUICTLS_VERSION=${QUICTLS_VERSION}
@@ -114,12 +77,17 @@ jobs:
           if-no-files-found: error
           overwrite: true
 
-  build-macOS:
-    name: build-macOS (${{ github.ref_name }})
-    runs-on: macos-latest
+  build-Windows:
+    name: build-Windows (${{ github.ref_name }})
+    runs-on: ubuntu-latest
 
     steps:
-      - name: Use variables
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Cross Build Static cURL
         env:
           CURL_VERSION: ${{ vars.CURL_VERSION }}
           TLS_LIB: ${{ vars.TLS_LIB }}
@@ -135,22 +103,59 @@ jobs:
           ZSTD_VERSION: ${{ vars.ZSTD_VERSION }}
           LIBSSH2_VERSION: ${{ vars.LIBSSH2_VERSION }}
           ARES_VERSION: ${{ vars.ARES_VERSION }}
+          CONTAINER_IMAGE: mstorsjo/llvm-mingw:latest
+          TOKEN_READ: ${{ secrets.GITHUB_TOKEN }}
+          ARCHES: "x86_64 aarch64 armv7 i686"
         run: |
-          echo "cURL version: ${CURL_VERSION}"
-          echo "TLS library: ${TLS_LIB}"
-          echo "QuicTLS version: ${QUICTLS_VERSION}"
-          echo "OpenSSL version: ${OPENSSL_VERSION}"
-          echo "ngtcp2 version: ${NGTCP2_VERSION}"
-          echo "nghttp3 version: ${NGHTTP3_VERSION}"
-          echo "nghttp2 version: ${NGHTTP2_VERSION}"
-          echo "libidn2 version: ${LIBIDN2_VERSION}"
-          echo "libunistring version: ${LIBUNISTRING_VERSION}"
-          echo "zlib version: ${ZLIB_VERSION}"
-          echo "brotli version: ${BROTLI_VERSION}"
-          echo "zstd version: ${ZSTD_VERSION}"
-          echo "libssh2 version: ${LIBSSH2_VERSION}"
-          echo "c-ares version: ${ARES_VERSION}"
-          echo "Home: ${HOME}"
+          ARCHES="${ARCHES}"
+          CURL_VERSION=${CURL_VERSION}
+          TLS_LIB=${TLS_LIB}
+          QUICTLS_VERSION=${QUICTLS_VERSION}
+          OPENSSL_VERSION=${OPENSSL_VERSION}
+          NGTCP2_VERSION=${NGTCP2_VERSION}
+          NGHTTP3_VERSION=${NGHTTP3_VERSION}
+          NGHTTP2_VERSION=${NGHTTP2_VERSION}
+          LIBIDN2_VERSION=${LIBIDN2_VERSION}
+          LIBUNISTRING_VERSION=${LIBUNISTRING_VERSION}
+          ZLIB_VERSION=${ZLIB_VERSION}
+          BROTLI_VERSION=${BROTLI_VERSION}
+          ZSTD_VERSION=${ZSTD_VERSION}
+          LIBSSH2_VERSION=${LIBSSH2_VERSION}
+          ARES_VERSION=${ARES_VERSION}
+          CONTAINER_IMAGE=${CONTAINER_IMAGE}
+          TOKEN_READ=${TOKEN_READ}
+          sh curl-static-win.sh
+
+      - name: Set up environment
+        run: |
+          VERSION=`cat release/version.txt`
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+
+      - name: Upload artifact (version)
+        uses: actions/upload-artifact@v4
+        with:
+          name: curl-version
+          path: release/version.txt
+          retention-days: 90
+          if-no-files-found: error
+          overwrite: true
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: curl-binary-windows-${{ env.VERSION }}
+          path: release
+          retention-days: 90
+          if-no-files-found: error
+          overwrite: true
+
+  build-macOS:
+    name: build-macOS (${{ github.ref_name }})
+    runs-on: macos-latest
+
+    steps:
+      - name: Set variables
+        run: |
           echo "MACOS_RELEASE_DIR=${HOME}" >> $GITHUB_ENV
 
       - name: Checkout
@@ -175,9 +180,9 @@ jobs:
           LIBSSH2_VERSION: ${{ vars.LIBSSH2_VERSION }}
           ARES_VERSION: ${{ vars.ARES_VERSION }}
           TOKEN_READ: ${{ secrets.GITHUB_TOKEN }}
-          ARCHS: "x86_64 arm64"
+          ARCHES: "x86_64 arm64"
         run: |
-          ARCHS="${ARCHS}"
+          ARCHES="${ARCHES}"
           CURL_VERSION=${CURL_VERSION}
           TLS_LIB=${TLS_LIB}
           QUICTLS_VERSION=${QUICTLS_VERSION}
@@ -220,7 +225,7 @@ jobs:
 
   release:
     name: release curl (${{ github.ref_name }})
-    needs: [build, build-macOS]
+    needs: [build-Linux, build-Windows, build-macOS]
     runs-on: ubuntu-latest
 
     steps:
@@ -252,15 +257,21 @@ jobs:
           name: curl-binary-macos-${{ env.VERSION }}
           path: release
 
+      - name: Download artifact (windows)
+        uses: actions/download-artifact@v4
+        with:
+          name: curl-binary-windows-${{ env.VERSION }}
+          path: release
+
       - name: List compiled files
         run: |
-          ls -l release
+          ls -l release/*
           echo
-          file release/curl-*
+          file release/bin/curl-*
           echo
           cat release/version-info.txt
           echo
-          sha256sum release/curl-*
+          sha256sum release/bin/curl-*
 
       - name: Compress and Create Release Note
         env:
@@ -270,15 +281,15 @@ jobs:
           bash release.sh
 
       - name: List compressed files
-        run: ls -l release
+        run: ls -l release/*
 
       - name: Upload Release Asset
         uses: softprops/action-gh-release@v1
         if: github.ref == 'refs/heads/main'
         with:
           files: |
+            release/bin/curl-*.tar.xz
             release/curl-*.tar.xz
-            release/LICENSE.tar.xz
           body_path: release/release.md
           tag_name: ${{ env.VERSION }}
           token: ${{ secrets.GITHUB_TOKEN }}
