@@ -30,23 +30,32 @@ Download the latest release from the [Releases page](https://github.com/stunnel/
 Extract the archive and use it.  
 The binary is built with GitHub Actions.
 
+### Release files
+
+- `curl-linux-ARCH-VERSION`: binaries for Linux, linked with `glibc`
+- `curl-linux-ARCH-dev-VERSION`: binaries, headers and static library archives for Linux, for development
+- `curl-linux-ARCH-musl-VERSION`: binaries for Linux, linked with `musl`
+- `curl-macOS-ARCH-VERSION`: binaries for macOS
+- `curl-windows-ARCH-VERSION`: binaries for Windows
+- `curl-windows-ARCH-dev-VERSION`: binaries, headers and library archives for Windows, for development
+
 ## Compile
 
 This script utilizes `clang` or `qbt-musl-cross-make` for cross-compilation on Linux, `mstorsjo/llvm-mingw` for cross-compilation for Windows, providing support for the following architectures:
 
 - Linux
-  - x86_64
-  - aarch64
-  - armv7
-  - i686
-  - riscv64
-  - s390x
-  - mips64
-  - mips64el
-  - mips
-  - mipsel
-  - powerpc64le
-  - powerpc
+  - x86_64(glibc and musl)
+  - aarch64(glibc and musl)
+  - armv7(glibc and musl)
+  - i686(musl)
+  - riscv64(glibc and musl)
+  - s390x(glibc and musl)
+  - mips64(glibc and musl)
+  - mips64el(glibc and musl)
+  - mips(musl)
+  - mipsel(glibc and musl)
+  - powerpc64le(glibc and musl)
+  - powerpc(glibc and musl)
 - macOS
   - x86_64
   - aarch64
@@ -140,7 +149,7 @@ Supported Environment Variables list:
 For all `VERSION` variables, leaving them blank will automatically fetch the latest version.
 
 - `ARCHES`: The list of architectures to compile. You can set one or multiple architectures from the following options: [Compile](#Compile)
-- `TLS_LIB`: The TLS library. `quictls`(default) or `openssl`(requires openssl 3.2.0 or later, and curl 8.6.0+).
+- `TLS_LIB`: The TLS library. `quictls`(default) or `openssl`(requires openssl 3.2.0+, and curl 8.6.0+).
 - `CURL_VERSION`: The version of cURL. If set to `dev`, will clone the latest source code from GitHub.
 - `QUICTLS_VERSION`: The version of quictls.
 - `OPENSSL_VERSION`: The version of OpenSSL.
