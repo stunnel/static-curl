@@ -2,7 +2,7 @@
 
 # To compile locally, clone the Git repository, navigate to the repository directory,
 # and then execute the following command:
-# ARCHS="x86_64 arm64" CURL_VERSION=8.6.0 TLS_LIB=openssl QUICTLS_VERSION=3.1.5 bash curl-static-mac.sh
+# ARCHES="x86_64 arm64" CURL_VERSION=8.6.0 TLS_LIB=openssl QUICTLS_VERSION=3.1.5 bash curl-static-mac.sh
 
 
 shopt -s expand_aliases;
@@ -15,7 +15,6 @@ alias make=gmake;
 init_env() {
     local number
     export DIR="${DIR:-${HOME}/build}"
-    export PREFIX="${DIR}/curl"
     export RELEASE_DIR=${RELEASE_DIR:-${HOME}};
     number=$(sysctl -n hw.ncpu 2>/dev/null)
     export CPU_CORES=${number:-1}
@@ -28,9 +27,7 @@ init_env() {
     esac
 
     echo "Source directory: ${DIR}"
-    echo "Prefix directory: ${PREFIX}"
     echo "Release directory: ${RELEASE_DIR}"
-    echo "Architecture: ${ARCH}"
     echo "cURL version: ${CURL_VERSION}"
     echo "TLS Library: ${TLS_LIB}"
     echo "QuicTLS version: ${QUICTLS_VERSION}"
@@ -564,6 +561,24 @@ install_curl() {
     fi
 }
 
+_arch_match() {
+    local arch_search="$1"
+    local arch_array="$2"
+
+    for element in ${arch_array}; do
+        if [ "${element}" = "${arch_search}" ]; then
+            return 0    # in the array
+        fi
+    done
+
+    return 1            # not in the array
+}
+
+_arch_valid() {
+    local arches="x86_64 arm64"
+    return $(_arch_match "${ARCH}" "${arches}")
+}
+
 compile() {
     arch_variants;
 
@@ -587,21 +602,33 @@ compile() {
 main() {
     local arch_temp
 
+    if [ "${ARCHES}" = "" ] && [ "${ARCHS}" = "" ] && [ "${ARCH}" = "" ]; then
+        ARCHES="$(uname -m)";
+    elif [ "${ARCHES}" = "" ] && [ "${ARCHS}" != "" ]; then
+        ARCHES="${ARCHS}";    # previous misspellings, keep this parameter for compatibility
+    elif [ "${ARCHES}" = "" ] && [ "${ARCH}" != "" ]; then
+        ARCHES="${ARCH}";
+    fi
+
     init_env;                    # Initialize the build env
     install_packages;            # Install dependencies
     set -o errexit -o xtrace;
 
-    [ -z "${ARCHS}" ] && ARCHS=$(uname -m)
-    echo "Compiling for all ARCHs: ${ARCHS}"
-    for arch_temp in ${ARCHS}; do
+    echo "Compiling for all ARCHes: ${ARCHES}"
+    for arch_temp in ${ARCHES}; do
         # Set the ARCH, PREFIX and PKG_CONFIG_PATH env variables
         export ARCH=${arch_temp}
         export PREFIX="${DIR}/curl-${ARCH}"
         export PKG_CONFIG_PATH="${PREFIX}/lib/pkgconfig"
 
-        echo "Compiling for ${ARCH}"
+        echo "Architecture: ${ARCH}"
         echo "Prefix directory: ${PREFIX}"
-        compile;
+
+        if _arch_valid; then
+            compile;
+        else
+            echo "Unsupported architecture ${ARCH}";
+        fi
     done
 }
 
