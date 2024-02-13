@@ -27,6 +27,8 @@
 #     -e BROTLI_VERSION="" \
 #     -e ZSTD_VERSION="" \
 #     -e LIBSSH2_VERSION="" \
+#     -e LIBC="" \
+#     -e STATIC_LIBRARY=1 \
 #     -e CONTAINER_IMAGE=debian:latest \
 #     debian:latest sh curl-static-cross.sh
 # Supported architectures: x86_64, aarch64, armv7, i686, riscv64, s390x,
@@ -248,15 +250,18 @@ arch_variants() {
     unset LD STRIP LDFLAGS
     TARGET="${ARCH}-pc-linux-gnu"
     export LDFLAGS="-L${PREFIX}/lib -L${PREFIX}/lib64";
-    if [ "${ARCH}" != "${ARCH_HOST}" ]; then
-        # If the architecture is not the same as the host, need to cross compile
+    libc_flag="";
+
+    if [ "${ARCH}" != "${ARCH_HOST}" ] || [ "${LIBC}" = "musl" ]; then
+        # If the architecture is not the same as the host, or it is Alpine, then cross compile
         install_qemu "${qemu_arch}";
 
-        if [ "${ARCH}" = "mips" ]  || [ "${ARCH}" = "i686" ] || [ "${ID}" = "alpine" ]; then
+        if [ "${LIBC}" = "musl" ] || [ "${ID}" = "alpine" ] || [ "${ARCH}" = "mips" ] || [ "${ARCH}" = "i686" ]; then
             # Cross-compilation failed with atomic using clang in MIPS and i686.
             # Alpine does not have a GCC cross-compile toolchain.
             # Therefore, musl-cross-make is used for compilation.
             install_cross_compile;
+            libc_flag="-musl";
         else
             # Uses Clang for default cross-compilation
             install_cross_compile_debian;
@@ -765,7 +770,7 @@ install_curl() {
     mkdir -p "${RELEASE_DIR}/release/bin/"
 
     ls -l src/curl
-    cp -pf src/curl "${RELEASE_DIR}/release/bin/curl-linux-${arch}"
+    cp -pf src/curl "${RELEASE_DIR}/release/bin/curl-linux-${arch}${libc_flag}"
 
     if [ ! -f "${RELEASE_DIR}/release/version.txt" ]; then
         echo "${CURL_VERSION}" > "${RELEASE_DIR}/release/version.txt"
@@ -774,7 +779,9 @@ install_curl() {
         src/curl -V >> "${RELEASE_DIR}/release/version-info.txt"
     fi
 
-    XZ_OPT=-9 tar -Jcf "${RELEASE_DIR}/release/curl-linux-${ARCH}-dev-${CURL_VERSION}.tar.xz" -C "${DIR}" "curl-${ARCH}"
+    if [ -z "${STATIC_LIBRARY}" ]; then
+        XZ_OPT=-9 tar -Jcf "${RELEASE_DIR}/release/curl-linux-${ARCH}-dev-${CURL_VERSION}.tar.xz" -C "${DIR}" "curl-${ARCH}"
+    fi
 }
 
 _arch_match() {
@@ -842,6 +849,8 @@ _build_in_docker() {
         -e LIBSSH2_VERSION="${LIBSSH2_VERSION}" \
         -e LIBUNISTRING_VERSION="${LIBUNISTRING_VERSION}" \
         -e LIBIDN2_VERSION="${LIBIDN2_VERSION}" \
+        -e LIBC="${LIBC}" \
+        -e STATIC_LIBRARY="${STATIC_LIBRARY}" \
         "${container_image}" sh "${RELEASE_DIR}/${base_name}" 2>&1 | tee -a "${container_name}.log"
 
     # Exit script after docker finishes

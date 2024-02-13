@@ -25,8 +25,8 @@ create_release_note() {
     output_sha256=$(sha256sum release/bin/curl-linux* release/bin/curl-macos* release/bin/curl-windows* \
         | sed 's#release/bin/##g' | sed 's#-# #g' | sed 's#.exe##g')
     markdown_table=$(printf "%s" "${output_sha256}" |
-        awk 'BEGIN {print "| File | Platform | Arch | SHA256 |\n|------|------|--------|--------|"}
-            {printf("| %s | %s | %s | %s |\n", $2, $3, $4, $1)}')
+        awk 'BEGIN {print "| File | Platform | Arch | LibC | SHA256 |\n|------|------|------|--------|--------|"}
+            {printf("| %s | %s | %s | %s | %s |\n", $2, $3, $4, $5, $1)}')
 
     cat > release/release.md<<EOF
 # Static cURL ${CURL_VERSION} with HTTP3
@@ -45,7 +45,7 @@ ${features}
 
 ## License
 
-This binary includes various open-source software such as curl, openssl, zlib, brotli, zstd, libidn2, libssh2, nghttp2, ngtcp2, nghttp3. Their license information has been compiled and is included in the `dev` file.
+This binary includes various open-source software such as curl, openssl, zlib, brotli, zstd, libidn2, libssh2, nghttp2, ngtcp2, nghttp3. Their license information has been compiled and is included in the dev package.
 
 ## Checksums
 
