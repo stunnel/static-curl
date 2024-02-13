@@ -32,12 +32,12 @@ The binary is built with GitHub Actions.
 
 ## Compile
 
-This script utilizes `clang` or `qbt-musl-cross-make` for cross-compilation on Linux, providing support for the following architectures:
+This script utilizes `clang` or `qbt-musl-cross-make` for cross-compilation on Linux, `mstorsjo/llvm-mingw` for cross-compilation for Windows, providing support for the following architectures:
 
 - Linux
   - x86_64
   - aarch64
-  - armv7l
+  - armv7
   - i686
   - riscv64
   - s390x
@@ -68,8 +68,7 @@ script will create a container and compile the host architecture cURL only.
   ```shell
   docker run --network host --rm -v $(pwd):/mnt -w /mnt \
       --name "build-curl-$(date +%Y%m%d-%H%M)" \
-      -e ARCH=all \
-      -e ARCHS="x86_64 aarch64 armv7l i686 riscv64 s390x mips64 mips64el mips mipsel powerpc64le powerpc" \
+      -e ARCHES="x86_64 aarch64 armv7 i686 riscv64 s390x mips64 mips64el mips mipsel powerpc64le powerpc" \
       -e TLS_LIB="openssl" \
       -e CURL_VERSION="" \
       -e QUICTLS_VERSION="" \
@@ -90,7 +89,7 @@ script will create a container and compile the host architecture cURL only.
 Run the following command to compile:
 
 ```shell
-ARCHS="x86_64 arm64" \
+ARCHES="x86_64 arm64" \
     TLS_LIB=openssl \
     CURL_VERSION="" \
     QUICTLS_VERSION="" \
@@ -112,15 +111,14 @@ ARCHS="x86_64 arm64" \
 #### Windows
 
 - To compile locally, install Docker, clone the Git repository, navigate to the repository directory, and then execute the following command:  
-  `ARCH=x86_64 sh curl-static-win.sh`  
+  `ARCHES="x86_64 aarch64" sh curl-static-win.sh`  
   script will create a Linux container and cross-compile cURL via [LLVM MinGW toolchain](https://github.com/mstorsjo/llvm-mingw).
 
 - To compile in docker, run:
   ```shell
   docker run --network host --rm -v $(pwd):/mnt -w /mnt \
       --name "build-curl-$(date +%Y%m%d-%H%M)" \
-      -e ARCH=all \
-      -e ARCHS="x86_64 i686 aarch64 armv7" \
+      -e ARCHES="x86_64 i686 aarch64 armv7" \
       -e TLS_LIB="openssl" \
       -e CURL_VERSION="" \
       -e QUICTLS_VERSION="" \
@@ -141,8 +139,7 @@ ARCHS="x86_64 arm64" \
 Supported Environment Variables list:  
 For all `VERSION` variables, leaving them blank will automatically fetch the latest version.
 
-- `ARCH`: The architecture to compile. The default is the host architecture. If set to `all`, all architectures listed in `ARCHS` will be compiled.
-- `ARCHS`: The list of architectures to compile. You can set one or multiple architectures from the following options: `x86_64 aarch64 armv7l i686 riscv64 s390x mips64 mips64el mips mipsel powerpc64le powerpc`.
+- `ARCHES`: The list of architectures to compile. You can set one or multiple architectures from the following options: [Compile](#Compile)
 - `TLS_LIB`: The TLS library. `quictls`(default) or `openssl`(requires openssl 3.2.0 or later, and curl 8.6.0+).
 - `CURL_VERSION`: The version of cURL. If set to `dev`, will clone the latest source code from GitHub.
 - `QUICTLS_VERSION`: The version of quictls.

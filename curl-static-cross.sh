@@ -2,7 +2,7 @@
 
 # To compile locally, install Docker, clone the Git repository, navigate to the repository directory,
 # and then execute the following command:
-# ARCH=aarch64 CURL_VERSION=8.6.0 TLS_LIB=openssl QUICTLS_VERSION=3.1.5 \
+# ARCHES="x86_64 aarch64" CURL_VERSION=8.6.0 TLS_LIB=openssl QUICTLS_VERSION=3.1.5 \
 #     ZLIB_VERSION= CONTAINER_IMAGE=debian:latest \
 #     sh curl-static-cross.sh
 # script will create a container and compile curl.
@@ -11,8 +11,7 @@
 # docker run --network host --rm -v $(pwd):/mnt -w /mnt \
 #     --name "build-curl-$(date +%Y%m%d-%H%M)" \
 #     -e RELEASE_DIR=/mnt \
-#     -e ARCH=all \
-#     -e ARCHS="x86_64 aarch64 armv7l i686 riscv64 s390x" \
+#     -e ARCHES="x86_64 aarch64 armv7 i686 riscv64 s390x" \
 #     -e ENABLE_DEBUG=0 \
 #     -e CURL_VERSION=8.6.0 \
 #     -e TLS_LIB=openssl \
@@ -30,13 +29,12 @@
 #     -e LIBSSH2_VERSION="" \
 #     -e CONTAINER_IMAGE=debian:latest \
 #     debian:latest sh curl-static-cross.sh
-# Supported architectures: x86_64, aarch64, armv7l, i686, riscv64, s390x,
+# Supported architectures: x86_64, aarch64, armv7, i686, riscv64, s390x,
 #                          mips64, mips64el, mips, mipsel, powerpc64le, powerpc
 
 
 init_env() {
     export DIR=${DIR:-/data};
-    export PREFIX="${DIR}/curl-${ARCH}";
     export RELEASE_DIR=${RELEASE_DIR:-/mnt};
     export ARCH_HOST=$(uname -m)
 
@@ -48,11 +46,9 @@ init_env() {
     esac
 
     echo "Source directory: ${DIR}"
-    echo "Prefix directory: ${PREFIX}"
     echo "Release directory: ${RELEASE_DIR}"
     echo "Host Architecture: ${ARCH_HOST}"
-    echo "Architecture: ${ARCH}"
-    echo "Architecture list: ${ARCHS}"
+    echo "Architecture list: ${ARCHES}"
     echo "cURL version: ${CURL_VERSION}"
     echo "TLS Library: ${TLS_LIB}"
     echo "QuicTLS version: ${QUICTLS_VERSION}"
@@ -121,7 +117,7 @@ install_packages() {
 install_cross_compile() {
     echo "Installing cross compile toolchain, Arch: ${ARCH}" | tee "${RELEASE_DIR}/running"
     change_dir;
-    local url
+    local url arch_alt
 
     if [ ! -f "github-qbt-musl-cross-make.json" ]; then
         # GitHub API has a limit of 60 requests per hour, cache the results.
@@ -129,9 +125,10 @@ install_cross_compile() {
             "https://api.github.com/repos/userdocs/qbt-musl-cross-make/releases" -o "github-qbt-musl-cross-make.json"
     fi
 
+    if [ "${ARCH}" = "armv7" ]; then arch_alt=armv7l; else arch_alt=${ARCH}; fi
     browser_download_url=$(jq -r '.' "github-qbt-musl-cross-make.json" \
         | grep browser_download_url \
-        | grep -i "${ARCH}-" \
+        | grep -i "${arch_alt}-" \
         | head -1)
     url=$(printf "%s" "${browser_download_url}" | awk '{print $2}' | sed 's/"//g')
     download_and_extract "${url}"
@@ -155,7 +152,7 @@ install_cross_compile_debian() {
     arch_name=${ARCH}
 
     case "${ARCH}" in
-        armv7l)
+        armv7l|armv7)
             arch_compiler=arm
             c_lib=gnueabihf
             arch_name=arm
@@ -204,11 +201,11 @@ arch_variants() {
 
     [ -z "${ARCH}" ] && ARCH="${ARCH_HOST}"
     case "${ARCH}" in
-        x86_64)     arch="amd64" ;;
-        aarch64)    arch="arm64" ;;
-        armv7l)     arch="armv7" ;;
-        i686)       arch="i686" ;;
-        *)          arch="${ARCH}" ;;
+        x86_64)       arch="amd64" ;;
+        aarch64)      arch="arm64" ;;
+        armv7l|armv7) arch="armv7" ;;
+        i686)         arch="i686" ;;
+        *)            arch="${ARCH}" ;;
     esac
 
     EC_NISTP_64_GCC_128=""
@@ -225,7 +222,7 @@ arch_variants() {
         aarch64)        qemu_arch="aarch64"
                         EC_NISTP_64_GCC_128="enable-ec_nistp_64_gcc_128"
                         OPENSSL_ARCH="linux-aarch64" ;;
-        armv7l)         qemu_arch="arm"
+        armv7l|armv7)   qemu_arch="arm"
                         OPENSSL_ARCH="linux-armv4" ;;
         i686)           qemu_arch="i386"
                         OPENSSL_ARCH="linux-x86" ;;
@@ -674,12 +671,17 @@ compile_zstd() {
     url="${URL}"
     download_and_extract "${url}"
 
+    mkdir -p build/cmake/out/
+    cd build/cmake/out/
+
     PKG_CONFIG="pkg-config --static --with-path=${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig" \
-        make -j "$(nproc)" PREFIX="${PREFIX}";
-    make install;
+        cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="${PREFIX}" \
+              -DZSTD_BUILD_STATIC=ON -DZSTD_BUILD_SHARED=OFF ..;
+    PKG_CONFIG="pkg-config --static --with-path=${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig" \
+        cmake --build . --config Release --target install;
 
     if [ ! -f "${PREFIX}/lib/libzstd.a" ]; then cp -f lib/libzstd.a "${PREFIX}/lib/libzstd.a"; fi
-    _copy_license LICENSE zstd
+    _copy_license ../../../LICENSE zstd
 }
 
 curl_config() {
@@ -747,7 +749,7 @@ compile_curl() {
     fi
 
     curl_config;
-    if [ "${ARCH}" = "armv7l" ] || [ "${ARCH}" = "mipsel" ] || [ "${ARCH}" = "mips" ] \
+    if [ "${ARCH}" = "armv7l" ] || [ "${ARCH}" = "armv7" ] || [ "${ARCH}" = "mipsel" ] || [ "${ARCH}" = "mips" ] \
         || [ "${ARCH}" = "powerpc" ] || [ "${ARCH}" = "i686" ]; then
         # add -Wno-cast-align to avoid error alignment from 4 to 8
         make -j "$(nproc)" LDFLAGS="-static -all-static -Wl,-s ${LDFLAGS}" CFLAGS="-Wno-cast-align ${CFLAGS}";
@@ -789,8 +791,8 @@ _arch_match() {
 }
 
 _arch_valid() {
-    local  arch_x86_64="x86_64 aarch64 armv7l riscv64 s390x mips64 mips64el powerpc64le mipsel i686 mips powerpc"
-    local arch_aarch64="x86_64 aarch64 armv7l riscv64 s390x mips64 mips64el powerpc64le mipsel"
+    local  arch_x86_64="x86_64 aarch64 armv7 armv7l riscv64 s390x mips64 mips64el powerpc64le mipsel i686 mips powerpc"
+    local arch_aarch64="x86_64 aarch64 armv7 armv7l riscv64 s390x mips64 mips64el powerpc64le mipsel"
 
     if [ "${ARCH_HOST}" = "x86_64" ]; then
         result=$(_arch_match "${ARCH}" "${arch_x86_64}")
@@ -812,8 +814,7 @@ _build_in_docker() {
     current_time=$(date "+%Y%m%d-%H%M")
     container_image=${CONTAINER_IMAGE:-debian:latest}  # or alpine:latest
 
-    [ -z "${ARCH}" ] && ARCH=$(uname -m)
-    container_name="build-curl-${ARCH}-${current_time}"
+    container_name="build-curl-${current_time}"
     RELEASE_DIR=${RELEASE_DIR:-/mnt}
 
     # Run in docker,
@@ -826,8 +827,7 @@ _build_in_docker() {
         --network host \
         -v "$(pwd):${RELEASE_DIR}" -w "${RELEASE_DIR}" \
         -e RELEASE_DIR="${RELEASE_DIR}" \
-        -e ARCH="${ARCH}" \
-        -e ARCHS="${ARCHS}" \
+        -e ARCHES="${ARCHES}" \
         -e ENABLE_DEBUG="${ENABLE_DEBUG}" \
         -e CURL_VERSION="${CURL_VERSION}" \
         -e TLS_LIB="${TLS_LIB}" \
@@ -872,43 +872,39 @@ compile() {
 main() {
     local base_name current_time container_name arch_temp
 
+    if [ "${ARCHES}" = "" ] && [ "${ARCHS}" = "" ] && [ "${ARCH}" = "" ]; then
+        ARCHES="$(uname -m)";
+    elif [ "${ARCHES}" = "" ] && [ "${ARCHS}" != "" ]; then
+        ARCHES="${ARCHS}";    # previous misspellings, keep this parameter for compatibility
+    elif [ "${ARCHES}" = "" ] && [ "${ARCH}" != "" ]; then
+        ARCHES="${ARCH}";
+    fi
+
     # If not in docker, run the script in docker and exit
     if [ ! -f /.dockerenv ]; then
         _build_in_docker;
-    fi
-
-    [ "${ARCH}" = "" ] && export ARCH="$(uname -m)"
-    if [ "${ARCH}" != "all" ]; then
-        ARCHS="${ARCH}";
-        ARCH=all;
     fi
 
     init_env;                    # Initialize the build env
     install_packages;            # Install dependencies
     set -o errexit -o xtrace;
 
-    # if ${ARCH} = "all", then compile all the ARCHS
-    if [ "${ARCH}" = "all" ]; then
-        echo "Compiling for all ARCHs: ${ARCHS}"
+    echo "Compiling for all ARCHes: ${ARCHES}"
+    for arch_temp in ${ARCHES}; do
+        # Set the ARCH, PREFIX and PKG_CONFIG_PATH env variables
+        export ARCH=${arch_temp}
+        export PREFIX="${DIR}/curl-${ARCH}"
+        export PKG_CONFIG_PATH="${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig"
 
-        for arch_temp in ${ARCHS}; do
-            # Set the ARCH, PREFIX and PKG_CONFIG_PATH env variables
-            export ARCH=${arch_temp}
-            export PREFIX="${DIR}/curl-${ARCH}"
-            export PKG_CONFIG_PATH="${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig"
+        echo "Architecture: ${ARCH}"
+        echo "Prefix directory: ${PREFIX}"
 
-            echo "Prefix directory: ${PREFIX}"
-
-            if _arch_valid; then
-                compile;
-            else
-                echo "Unsupported architecture ${ARCH} in ${ARCH_HOST}";
-            fi
-        done
-    else
-        # else compile for the host ARCH
-        compile;
-    fi
+        if _arch_valid; then
+            compile;
+        else
+            echo "Unsupported architecture ${ARCH} in ${ARCH_HOST}";
+        fi
+    done
 }
 
 # If the first argument is not "--source-only" then run the script,
