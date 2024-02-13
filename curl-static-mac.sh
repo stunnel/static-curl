@@ -546,12 +546,10 @@ compile_curl() {
         CFLAGS="-I${PREFIX}/include -I${PREFIX}/include/brotli" \
         CPPFLAGS="-I${PREFIX}/include -I${PREFIX}/include/brotli" \
         make -j "${CPU_CORES}";
-
-    install_curl;
 }
 
 install_curl() {
-    mkdir -p "${RELEASE_DIR}/release/"
+    mkdir -p "${RELEASE_DIR}/release/bin/"
 
     ls -l src/curl
     file src/curl
@@ -559,7 +557,7 @@ install_curl() {
     sha256sum src/curl
     src/curl -V || true
 
-    cp -f src/curl "${RELEASE_DIR}/release/curl-macos-${arch}"
+    cp -f src/curl "${RELEASE_DIR}/release/bin/curl-macos-${arch}"
 
     if [ ! -f "${RELEASE_DIR}/version.txt" ]; then
         echo "${CURL_VERSION}" > "${RELEASE_DIR}/version.txt"
@@ -582,6 +580,8 @@ compile() {
     compile_nghttp2;
     compile_brotli;
     compile_curl;
+
+    install_curl;
 }
 
 main() {
