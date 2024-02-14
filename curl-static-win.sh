@@ -107,16 +107,7 @@ configure_toolchain() {
 arch_variants() {
     echo "Setting up the ARCH and OpenSSL arch, Arch: ${ARCH}"
 
-    [ -z "${ARCH}" ] && ARCH="${ARCH_HOST}"
-    case "${ARCH}" in
-        x86_64)     arch="amd64" ;;
-        armv7)      arch="armv7" ;;
-        i686)       arch="i686" ;;
-        *)          arch="${ARCH}" ;;
-    esac
-
     TARGET="${ARCH}-w64-mingw32"
-
     unset LD STRIP LDFLAGS
     export LDFLAGS="-L${PREFIX}/lib -L${PREFIX}/lib64" ;
 
@@ -683,7 +674,7 @@ install_curl() {
     mkdir -p "${RELEASE_DIR}/release/bin/"
 
     ls -l src/curl.exe
-    cp -pf src/curl.exe "${RELEASE_DIR}/release/bin/curl-windows-${arch}.exe"
+    cp -pf src/curl.exe "${RELEASE_DIR}/release/bin/curl-windows-${ARCH}.exe"
 
     if [ ! -f "${RELEASE_DIR}/release/version.txt" ]; then
         echo "${CURL_VERSION}" > "${RELEASE_DIR}/release/version.txt"
