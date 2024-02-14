@@ -201,15 +201,6 @@ arch_variants() {
     echo "Setting up the ARCH and OpenSSL arch, Arch: ${ARCH}"
     local qemu_arch
 
-    [ -z "${ARCH}" ] && ARCH="${ARCH_HOST}"
-    case "${ARCH}" in
-        x86_64)       arch="amd64" ;;
-        aarch64)      arch="arm64" ;;
-        armv7l|armv7) arch="armv7" ;;
-        i686)         arch="i686" ;;
-        *)            arch="${ARCH}" ;;
-    esac
-
     EC_NISTP_64_GCC_128=""
     OPENSSL_ARCH=""
 
@@ -770,7 +761,7 @@ install_curl() {
     mkdir -p "${RELEASE_DIR}/release/bin/"
 
     ls -l src/curl
-    cp -pf src/curl "${RELEASE_DIR}/release/bin/curl-linux-${arch}${libc_flag}"
+    cp -pf src/curl "${RELEASE_DIR}/release/bin/curl-linux-${ARCH}${libc_flag}"
 
     if [ ! -f "${RELEASE_DIR}/release/version.txt" ]; then
         echo "${CURL_VERSION}" > "${RELEASE_DIR}/release/version.txt"

@@ -73,15 +73,13 @@ arch_variants() {
     _clang_path;
     [ -z "${ARCH}" ] && ARCH="$(uname -m)"
     case "${ARCH}" in
-        x86_64)   arch="amd64"
-                  ARCHFLAGS="-arch x86_64"
+        x86_64)   ARCHFLAGS="-arch x86_64"
                   OPENSSL_ARCH="darwin64-x86_64"
                   TARGET="x86_64-apple-darwin"
                   export CC="${clang_path} -target x86_64-apple-macos11"
                   export CXX="${clang_pp_path} -target x86_64-apple-macos11"
                   ;;
-        arm64)    arch="arm64"
-                  ARCHFLAGS="-arch arm64"
+        arm64)    ARCHFLAGS="-arch arm64"
                   OPENSSL_ARCH="darwin64-arm64"
                   TARGET="aarch64-apple-darwin"
                   export CC="${clang_path} -target arm64-apple-macos11"
@@ -554,7 +552,7 @@ install_curl() {
     sha256sum src/curl
     src/curl -V || true
 
-    cp -f src/curl "${RELEASE_DIR}/release/bin/curl-macos-${arch}"
+    cp -f src/curl "${RELEASE_DIR}/release/bin/curl-macos-${ARCH}"
 
     if [ ! -f "${RELEASE_DIR}/version.txt" ]; then
         echo "${CURL_VERSION}" > "${RELEASE_DIR}/version.txt"
