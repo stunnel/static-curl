@@ -243,6 +243,12 @@ change_dir() {
     cd "${DIR}";
 }
 
+_copy_license() {
+    # $1: original file name; $2: target file name
+    mkdir -p "${PREFIX}/licenses/";
+    cp -p "${1}" "${PREFIX}/licenses/${2}";
+}
+
 compile_zlib() {
     echo "Compiling zlib, Arch: ${ARCH}" | tee "${RELEASE_DIR}/running"
     local url
@@ -255,6 +261,8 @@ compile_zlib() {
     ./configure --prefix="${PREFIX}" --static;
     make -j "${CPU_CORES}";
     make install;
+
+    _copy_license LICENSE zlib;
 }
 
 compile_libunistring() {
@@ -269,6 +277,8 @@ compile_libunistring() {
     ./configure --host="${TARGET}" --prefix="${PREFIX}" --disable-rpath --disable-shared;
     make -j "${CPU_CORES}";
     make install;
+
+    _copy_license COPYING libunistring;
 }
 
 compile_libidn2() {
@@ -288,6 +298,8 @@ compile_libidn2() {
         --disable-shared;
     make -j "${CPU_CORES}";
     make install;
+
+    _copy_license COPYING libidn2;
 }
 
 compile_libpsl() {
@@ -305,6 +317,8 @@ compile_libpsl() {
         --enable-static --enable-shared=no --enable-builtin --disable-runtime;
     make -j "${CPU_CORES}";
     make install;
+
+    _copy_license LICENSE libpsl;
 }
 
 compile_ares() {
@@ -319,6 +333,8 @@ compile_ares() {
     ./configure --host="${TARGET}" --prefix="${PREFIX}" --enable-static --disable-shared;
     make -j "$(nproc)";
     make install;
+
+    _copy_license LICENSE.md c-ares;
 }
 
 compile_tls() {
@@ -349,6 +365,8 @@ compile_tls() {
 
     make -j "${CPU_CORES}";
     make install_sw;
+
+    _copy_license LICENSE.txt openssl;
 }
 
 compile_libssh2() {
@@ -368,6 +386,8 @@ compile_libssh2() {
             --with-crypto=openssl --with-libssl-prefix="${PREFIX}";
     make -j "${CPU_CORES}";
     make install;
+
+    _copy_license COPYING libssh2;
 }
 
 compile_nghttp2() {
@@ -385,6 +405,8 @@ compile_nghttp2() {
             --enable-lib-only --enable-shared=no;
     make -j "${CPU_CORES}";
     make install;
+
+    _copy_license COPYING nghttp2;
 }
 
 compile_ngtcp2() {
@@ -408,6 +430,8 @@ compile_ngtcp2() {
     make install;
     cp -a crypto/includes/ngtcp2/ngtcp2_crypto_quictls.h crypto/includes/ngtcp2/ngtcp2_crypto.h \
         "${PREFIX}/include/ngtcp2/"
+
+    _copy_license COPYING ngtcp2;
 }
 
 compile_nghttp3() {
@@ -425,6 +449,8 @@ compile_nghttp3() {
         --enable-lib-only --disable-dependency-tracking;
     make -j "${CPU_CORES}";
     make install;
+
+    _copy_license COPYING nghttp3;
 }
 
 compile_brotli() {
@@ -445,6 +471,7 @@ compile_brotli() {
     PKG_CONFIG="pkg-config --static" \
         cmake --build . --config Release --target install;
 
+    _copy_license ../LICENSE brotli;
     cd "${PREFIX}/lib/"
     if [ -f libbrotlidec-static.a ] && [ ! -f libbrotlidec.a ]; then ln -f libbrotlidec-static.a libbrotlidec.a; fi
     if [ -f libbrotlienc-static.a ] && [ ! -f libbrotlienc.a ]; then ln -f libbrotlienc-static.a libbrotlienc.a; fi
@@ -463,6 +490,8 @@ compile_zstd() {
     PKG_CONFIG="pkg-config --static" \
         make -j "${CPU_CORES}" PREFIX="${PREFIX}";
     make install;
+
+    _copy_license LICENSE zstd
 }
 
 curl_config() {
@@ -541,22 +570,24 @@ compile_curl() {
         CFLAGS="-I${PREFIX}/include -I${PREFIX}/include/brotli" \
         CPPFLAGS="-I${PREFIX}/include -I${PREFIX}/include/brotli" \
         make -j "${CPU_CORES}";
+
+    _copy_license COPYING curl;
+    make install;
 }
 
 install_curl() {
     mkdir -p "${RELEASE_DIR}/release/bin/"
 
-    ls -l src/curl
-    file src/curl
-    otool -L src/curl
-    sha256sum src/curl
-    src/curl -V || true
+    ls -l "${PREFIX}"/bin/curl;
+    cp -pf "${PREFIX}/bin/curl" "${RELEASE_DIR}/release/bin/curl-macos-${ARCH}";
 
-    cp -f src/curl "${RELEASE_DIR}/release/bin/curl-macos-${ARCH}"
+    ${PREFIX}/bin/curl -V || true
 
     if [ ! -f "${RELEASE_DIR}/version.txt" ]; then
         echo "${CURL_VERSION}" > "${RELEASE_DIR}/version.txt"
     fi
+
+    XZ_OPT=-9 tar -Jcf "${RELEASE_DIR}/release/curl-macos-${ARCH}-dev-${CURL_VERSION}.tar.xz" -C "${DIR}" "curl-${ARCH}"
 }
 
 _arch_match() {
