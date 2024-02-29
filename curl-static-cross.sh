@@ -801,7 +801,7 @@ install_curl() {
         "${PREFIX}"/bin/curl -V >> "${RELEASE_DIR}/release/version-info.txt"
     fi
 
-    if [ -z "${STATIC_LIBRARY}" ]; then
+    if [ -n "${STATIC_LIBRARY}" ]; then
         XZ_OPT=-9 tar -Jcf "${RELEASE_DIR}/release/curl-linux-${ARCH}-dev-${CURL_VERSION}.tar.xz" -C "${DIR}" "curl-${ARCH}"
     fi
 }
