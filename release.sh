@@ -56,7 +56,19 @@ EOF
 
 tar_curl() {
     cd "${RELEASE_DIR}/release/bin" || exit
-    chmod +x curl-*;
+    chmod +x curl-[lmw]* trurl-*;
+
+    for file in curl-linux-* curl-macos-*; do
+        mv "${file}" curl;
+        trurl_filename=$(echo "${file}" | sed 's#curl-#trurl-#g')
+        if [ -f "${trurl_filename}" ]; then
+            mv "${trurl_filename}" trurl;
+            XZ_OPT=-9 tar -Jcf "${file}-${CURL_VERSION}.tar.xz" curl trurl && rm -f curl trurl;
+        else
+            XZ_OPT=-9 tar -Jcf "${file}-${CURL_VERSION}.tar.xz" curl && rm -f curl
+        fi
+    done
+
     for file in curl-*.exe; do
         mv "${file}" curl.exe;
         filename="${file%.exe}"
@@ -69,17 +81,7 @@ tar_curl() {
             XZ_OPT=-9 tar -Jcf "${filename}-${CURL_VERSION}.tar.xz" curl.exe curl-ca-bundle.crt && rm -f curl.exe;
         fi
     done
-
-    for file in curl-linux-* curl-macos-*; do
-        mv "${file}" curl;
-        trurl_filename=$(echo "${file}" | sed 's#curl-#trurl-#g')
-        if [ -f "${trurl_filename}" ]; then
-            mv "${trurl_filename}" trurl;
-            XZ_OPT=-9 tar -Jcf "${file}-${CURL_VERSION}.tar.xz" curl trurl && rm -f curl trurl;
-        else
-            XZ_OPT=-9 tar -Jcf "${file}-${CURL_VERSION}.tar.xz" curl && rm -f curl
-        fi
-    done
+    rm -f curl-ca-bundle.crt;
 }
 
 init_env;

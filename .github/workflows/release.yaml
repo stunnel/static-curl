@@ -31,6 +31,8 @@ jobs:
           ZSTD_VERSION: ${{ vars.ZSTD_VERSION }}
           LIBSSH2_VERSION: ${{ vars.LIBSSH2_VERSION }}
           ARES_VERSION: ${{ vars.ARES_VERSION }}
+          ENABLE_TRURL: ${{ vars.ENABLE_TRURL }}
+          TRURL_VERSION: ${{ vars.TRURL_VERSION }}
           LIBC: glibc
           STATIC_LIBRARY: 1
           CONTAINER_IMAGE: debian:latest
@@ -52,6 +54,8 @@ jobs:
           ZSTD_VERSION=${ZSTD_VERSION}
           LIBSSH2_VERSION=${LIBSSH2_VERSION}
           ARES_VERSION=${ARES_VERSION}
+          ENABLE_TRURL=${ENABLE_TRURL}
+          TRURL_VERSION=${TRURL_VERSION}
           LIBC=${LIBC}
           STATIC_LIBRARY=${STATIC_LIBRARY}
           CONTAINER_IMAGE=${CONTAINER_IMAGE}
@@ -107,6 +111,8 @@ jobs:
           ZSTD_VERSION: ${{ vars.ZSTD_VERSION }}
           LIBSSH2_VERSION: ${{ vars.LIBSSH2_VERSION }}
           ARES_VERSION: ${{ vars.ARES_VERSION }}
+          ENABLE_TRURL: ${{ vars.ENABLE_TRURL }}
+          TRURL_VERSION: ${{ vars.TRURL_VERSION }}
           LIBC: musl
           CONTAINER_IMAGE: debian:latest
           TOKEN_READ: ${{ secrets.GITHUB_TOKEN }}
@@ -127,6 +133,8 @@ jobs:
           ZSTD_VERSION=${ZSTD_VERSION}
           LIBSSH2_VERSION=${LIBSSH2_VERSION}
           ARES_VERSION=${ARES_VERSION}
+          ENABLE_TRURL=${ENABLE_TRURL}
+          TRURL_VERSION=${TRURL_VERSION}
           LIBC=${LIBC}
           CONTAINER_IMAGE=${CONTAINER_IMAGE}
           TOKEN_READ=${TOKEN_READ}
@@ -181,6 +189,8 @@ jobs:
           ZSTD_VERSION: ${{ vars.ZSTD_VERSION }}
           LIBSSH2_VERSION: ${{ vars.LIBSSH2_VERSION }}
           ARES_VERSION: ${{ vars.ARES_VERSION }}
+          ENABLE_TRURL: ${{ vars.ENABLE_TRURL }}
+          TRURL_VERSION: ${{ vars.TRURL_VERSION }}
           CONTAINER_IMAGE: mstorsjo/llvm-mingw:latest
           TOKEN_READ: ${{ secrets.GITHUB_TOKEN }}
           ARCHES: "x86_64 aarch64 armv7 i686"
@@ -200,6 +210,8 @@ jobs:
           ZSTD_VERSION=${ZSTD_VERSION}
           LIBSSH2_VERSION=${LIBSSH2_VERSION}
           ARES_VERSION=${ARES_VERSION}
+          ENABLE_TRURL=${ENABLE_TRURL}
+          TRURL_VERSION=${TRURL_VERSION}
           CONTAINER_IMAGE=${CONTAINER_IMAGE}
           TOKEN_READ=${TOKEN_READ}
           sh curl-static-win.sh

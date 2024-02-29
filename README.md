@@ -37,6 +37,7 @@ The binary is built with GitHub Actions.
 - `curl-linux-ARCH-dev-VERSION`: binaries, headers and static library archives for Linux, for development
 - `curl-linux-ARCH-musl-VERSION`: binaries for Linux, linked with `musl`
 - `curl-macOS-ARCH-VERSION`: binaries for macOS
+- `curl-macOS-ARCH-dev-VERSION`: binaries, headers and static library archives for macOS, for development
 - `curl-windows-ARCH-VERSION`: binaries for Windows
 - `curl-windows-ARCH-dev-VERSION`: binaries, headers and library archives for Windows, for development
 
@@ -91,6 +92,7 @@ script will create a container and compile the host architecture cURL only.
       -e LIBIDN2_VERSION="" \
       -e LIBPSL_VERSION="" \
       -e ARES_VERSION="" \
+      -e ENABLE_TRURL="true" \
       -e TRURL_VERSION="" \
       debian:latest sh curl-static-cross.sh
   ```
@@ -142,6 +144,8 @@ ARCHES="x86_64 arm64" \
       -e LIBIDN2_VERSION="" \
       -e LIBPSL_VERSION="" \
       -e ARES_VERSION="" \
+      -e ENABLE_TRURL="true" \
+      -e TRURL_VERSION="" \
       mstorsjo/llvm-mingw:latest sh curl-static-win.sh
   ```
 
@@ -167,6 +171,7 @@ For all `VERSION` variables, leaving them blank will automatically fetch the lat
 - `ZSTD_VERSION`: The version of zstd.
 - `ARES_VERSION`: The version of c-ares.
 - `TRURL_VERSION`: The version of trurl.
+- `ENABLE_TRURL`: Compile trurl. Default is `false`, set to `true` or `yes` to enable it. NOT available for macOS.
 - `ENABLE_DEBUG`: Enable curl debug. Default is `false`, set to `true` or `yes` to enable it.
 
 The compiled files will be saved in the current `release` directory.
