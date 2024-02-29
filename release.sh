@@ -60,7 +60,14 @@ tar_curl() {
     for file in curl-*.exe; do
         mv "${file}" curl.exe;
         filename="${file%.exe}"
-        XZ_OPT=-9 tar -Jcf "${filename}-${CURL_VERSION}.tar.xz" curl.exe curl-ca-bundle.crt && rm -f curl.exe;
+
+        trurl_filename=$(echo "${file}" | sed 's#curl-#trurl-#g')
+        if [ -f "${trurl_filename}" ]; then
+            mv "${trurl_filename}" trurl.exe;
+            XZ_OPT=-9 tar -Jcf "${filename}-${CURL_VERSION}.tar.xz" curl.exe trurl.exe curl-ca-bundle.crt && rm -f curl.exe trurl.exe;
+        else
+            XZ_OPT=-9 tar -Jcf "${filename}-${CURL_VERSION}.tar.xz" curl.exe curl-ca-bundle.crt && rm -f curl.exe;
+        fi
     done
 
     for file in curl-linux-* curl-macos-*; do
