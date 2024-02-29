@@ -528,10 +528,10 @@ compile_brotli() {
     mkdir -p out
     cd out/
 
-    PKG_CONFIG="pkg-config --static --with-path=${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig" LDFLAGS="-static" \
+    PKG_CONFIG="pkg-config --static" \
         cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_SYSTEM_NAME=Windows -DBUILD_SHARED_LIBS=OFF \
               -DCMAKE_COMPILE_PREFIX="${TARGET}" -DCMAKE_INSTALL_PREFIX="${PREFIX}" .. ;
-    PKG_CONFIG="pkg-config --static --with-path=${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig" LDFLAGS="-static" \
+    PKG_CONFIG="pkg-config --static" \
         cmake --build . --config Release --target install;
 
     _copy_license ../LICENSE brotli;
@@ -553,11 +553,9 @@ compile_zstd() {
     mkdir -p build/cmake/out/
     cd build/cmake/out/
 
-    PKG_CONFIG="pkg-config --static --with-path=${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig" \
-        cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_SYSTEM_NAME=Windows -DCMAKE_INSTALL_PREFIX="${PREFIX}" \
-              -DZSTD_BUILD_STATIC=ON -DZSTD_BUILD_SHARED=OFF ..;
-    PKG_CONFIG="pkg-config --static --with-path=${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig" \
-        cmake --build . --config Release --target install;
+    cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_SYSTEM_NAME=Windows -DCMAKE_INSTALL_PREFIX="${PREFIX}" \
+          -DZSTD_BUILD_STATIC=ON -DZSTD_BUILD_SHARED=OFF ..;
+    cmake --build . --config Release --target install;
 
     if [ ! -f "${PREFIX}/lib/libzstd.a" ]; then cp -f lib/libzstd.a "${PREFIX}/lib/libzstd.a"; fi
     _copy_license ../../../LICENSE zstd
