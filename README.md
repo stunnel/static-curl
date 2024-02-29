@@ -19,6 +19,7 @@ Simply execute it to compile the most recent version.
 - [libidn2](https://github.com/libidn/libidn2)
 - [c-ares](https://c-ares.haxx.se)
 - [libpsl](https://rockdaboot.github.io/libpsl/)
+- [trurl](https://curl.se/trurl/)
 
 `curl -V`
 - Protocols: dict file ftp ftps gopher gophers http https imap imaps mqtt pop3 pop3s rtsp scp sftp smb smbs smtp smtps telnet tftp ws wss
@@ -90,6 +91,7 @@ script will create a container and compile the host architecture cURL only.
       -e LIBIDN2_VERSION="" \
       -e LIBPSL_VERSION="" \
       -e ARES_VERSION="" \
+      -e TRURL_VERSION="" \
       debian:latest sh curl-static-cross.sh
   ```
 
@@ -164,10 +166,7 @@ For all `VERSION` variables, leaving them blank will automatically fetch the lat
 - `BROTLI_VERSION`: The version of brotli.
 - `ZSTD_VERSION`: The version of zstd.
 - `ARES_VERSION`: The version of c-ares.
+- `TRURL_VERSION`: The version of trurl.
 - `ENABLE_DEBUG`: Enable curl debug. Default is `false`, set to `true` or `yes` to enable it.
 
 The compiled files will be saved in the current `release` directory.
-
-## Why build cURL on my own?
-
-Because I need to test HTTP3, but currently there is no Linux distribution's cURL that supports HTTP3.

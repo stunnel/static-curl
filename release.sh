@@ -65,7 +65,13 @@ tar_curl() {
 
     for file in curl-linux-* curl-macos-*; do
         mv "${file}" curl;
-        XZ_OPT=-9 tar -Jcf "${file}-${CURL_VERSION}.tar.xz" curl && rm -f curl;
+        trurl_filename=$(echo "${file}" | sed 's#curl-#trurl-#g')
+        if [ -f "${trurl_filename}" ]; then
+            mv "${trurl_filename}" trurl;
+            XZ_OPT=-9 tar -Jcf "${file}-${CURL_VERSION}.tar.xz" curl trurl && rm -f curl trurl;
+        else
+            XZ_OPT=-9 tar -Jcf "${file}-${CURL_VERSION}.tar.xz" curl && rm -f curl
+        fi
     done
 }
 
