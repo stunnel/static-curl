@@ -27,6 +27,8 @@
 #     -e BROTLI_VERSION="" \
 #     -e ZSTD_VERSION="" \
 #     -e LIBSSH2_VERSION="" \
+#     -e ENABLE_TRURL="" \
+#     -e TRURL_VERSION="" \
 #     -e CONTAINER_IMAGE=mstorsjo/llvm-mingw:latest \
 #     mstorsjo/llvm-mingw:latest sh curl-static-win.sh
 # Supported architectures: x86_64 i686 aarch64 armv7
@@ -62,6 +64,7 @@ init_env() {
     echo "zstd version: ${ZSTD_VERSION}"
     echo "libssh2 version: ${LIBSSH2_VERSION}"
     echo "c-ares version: ${ARES_VERSION}"
+    echo "trurl version: ${TRURL_VERSION}"
 
     export PKG_CONFIG_PATH="${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig";
 
@@ -561,6 +564,29 @@ compile_zstd() {
     _copy_license ../../../LICENSE zstd
 }
 
+compile_trurl() {
+    case "${ENABLE_TRURL}" in
+        true|1|yes|on|y|Y)
+            echo ;;
+        *)
+            return ;;
+    esac
+
+    echo "Compiling trurl, Arch: ${ARCH}" | tee "${RELEASE_DIR}/running"
+    local url
+    change_dir;
+
+    url_from_github curl/trurl "${TRURL_VERSION}"
+    url="${URL}"
+    download_and_extract "${url}"
+
+    export PATH=${PREFIX}/bin:$PATH
+
+    LDFLAGS="-static -Wl,-s ${LDFLAGS}" make PREFIX="${PREFIX}";
+    make install TARGET=trurl.exe;
+    _copy_license LICENSES/curl.txt trurl;
+}
+
 curl_config() {
     echo "Configuring curl, Arch: ${ARCH}" | tee "${RELEASE_DIR}/running"
     local with_openssl_quic with_idn
@@ -671,8 +697,12 @@ prepare_certificates() {
 install_curl() {
     mkdir -p "${RELEASE_DIR}/release/bin/"
 
-    ls -l src/curl.exe
-    cp -pf src/curl.exe "${RELEASE_DIR}/release/bin/curl-windows-${ARCH}.exe"
+    ls -l "${PREFIX}/bin/curl.exe";
+    cp -pf "${PREFIX}/bin/curl.exe" "${RELEASE_DIR}/release/bin/curl-windows-${ARCH}.exe"
+    if [ -f "${PREFIX}/bin/trurl.exe" ]; then
+        ls -l "${PREFIX}/bin/trurl.exe";
+        cp -pf "${PREFIX}/bin/trurl.exe" "${RELEASE_DIR}/release/bin/trurl-windows-${ARCH}.exe";
+    fi
 
     if [ ! -f "${RELEASE_DIR}/release/version.txt" ]; then
         echo "${CURL_VERSION}" > "${RELEASE_DIR}/release/version.txt"
@@ -738,6 +768,8 @@ _build_in_docker() {
         -e LIBSSH2_VERSION="${LIBSSH2_VERSION}" \
         -e LIBUNISTRING_VERSION="${LIBUNISTRING_VERSION}" \
         -e LIBIDN2_VERSION="${LIBIDN2_VERSION}" \
+        -e ENABLE_TRURL="${ENABLE_TRURL}" \
+        -e TRURL_VERSION="${TRURL_VERSION}" \
         "${container_image}" sh "${RELEASE_DIR}/${base_name}" 2>&1 | tee -a "${container_name}.log"
 
     # Exit script after docker finishes
@@ -761,6 +793,7 @@ compile() {
     compile_nghttp2;
     compile_brotli;
     compile_curl;
+    compile_trurl;
 
     install_curl;
 }

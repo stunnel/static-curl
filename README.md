@@ -19,6 +19,7 @@ Simply execute it to compile the most recent version.
 - [libidn2](https://github.com/libidn/libidn2)
 - [c-ares](https://c-ares.haxx.se)
 - [libpsl](https://rockdaboot.github.io/libpsl/)
+- [trurl](https://curl.se/trurl/)
 
 `curl -V`
 - Protocols: dict file ftp ftps gopher gophers http https imap imaps mqtt pop3 pop3s rtsp scp sftp smb smbs smtp smtps telnet tftp ws wss
@@ -36,6 +37,7 @@ The binary is built with GitHub Actions.
 - `curl-linux-ARCH-dev-VERSION`: binaries, headers and static library archives for Linux, for development
 - `curl-linux-ARCH-musl-VERSION`: binaries for Linux, linked with `musl`
 - `curl-macOS-ARCH-VERSION`: binaries for macOS
+- `curl-macOS-ARCH-dev-VERSION`: binaries, headers and static library archives for macOS, for development
 - `curl-windows-ARCH-VERSION`: binaries for Windows
 - `curl-windows-ARCH-dev-VERSION`: binaries, headers and library archives for Windows, for development
 
@@ -90,6 +92,8 @@ script will create a container and compile the host architecture cURL only.
       -e LIBIDN2_VERSION="" \
       -e LIBPSL_VERSION="" \
       -e ARES_VERSION="" \
+      -e ENABLE_TRURL="true" \
+      -e TRURL_VERSION="" \
       debian:latest sh curl-static-cross.sh
   ```
 
@@ -140,6 +144,8 @@ ARCHES="x86_64 arm64" \
       -e LIBIDN2_VERSION="" \
       -e LIBPSL_VERSION="" \
       -e ARES_VERSION="" \
+      -e ENABLE_TRURL="true" \
+      -e TRURL_VERSION="" \
       mstorsjo/llvm-mingw:latest sh curl-static-win.sh
   ```
 
@@ -164,10 +170,8 @@ For all `VERSION` variables, leaving them blank will automatically fetch the lat
 - `BROTLI_VERSION`: The version of brotli.
 - `ZSTD_VERSION`: The version of zstd.
 - `ARES_VERSION`: The version of c-ares.
+- `TRURL_VERSION`: The version of trurl.
+- `ENABLE_TRURL`: Compile trurl. Default is `false`, set to `true` or `yes` to enable it. NOT available for macOS.
 - `ENABLE_DEBUG`: Enable curl debug. Default is `false`, set to `true` or `yes` to enable it.
 
 The compiled files will be saved in the current `release` directory.
-
-## Why build cURL on my own?
-
-Because I need to test HTTP3, but currently there is no Linux distribution's cURL that supports HTTP3.
