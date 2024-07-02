@@ -43,7 +43,7 @@ The binary is built with GitHub Actions.
 
 ## Compile
 
-This script utilizes `clang` or `qbt-musl-cross-make` for cross-compilation on Linux, `mstorsjo/llvm-mingw` for cross-compilation for Windows, providing support for the following architectures:
+This script utilizes `clang` or [qbt-musl-cross-make](https://github.com/userdocs/qbt-musl-cross-make) for cross-compilation on Linux, `mstorsjo/llvm-mingw` for cross-compilation for Windows, providing support for the following architectures:
 
 - Linux
   - x86_64(glibc and musl)
@@ -73,7 +73,7 @@ This script utilizes `clang` or `qbt-musl-cross-make` for cross-compilation on L
 
 - To compile locally, install Docker, clone the Git repository, navigate to the repository directory, and then execute the following command:  
 `sh curl-static-cross.sh`  
-script will create a container and compile the host architecture cURL only.
+script will create a container and compile the host architecture cURL only.  
 
 - To compile in docker, run:  
   ```shell
@@ -81,6 +81,7 @@ script will create a container and compile the host architecture cURL only.
       --name "build-curl-$(date +%Y%m%d-%H%M)" \
       -e ARCHES="x86_64 aarch64 armv7 i686 riscv64 s390x mips64 mips64el mips mipsel powerpc64le powerpc" \
       -e TLS_LIB="openssl" \
+      -e LIBC="glibc" \
       -e CURL_VERSION="" \
       -e QUICTLS_VERSION="" \
       -e OPENSSL_VERSION="" \
@@ -155,7 +156,8 @@ Supported Environment Variables list:
 For all `VERSION` variables, leaving them blank will automatically fetch the latest version.
 
 - `ARCHES`: The list of architectures to compile. You can set one or multiple architectures from the following options: [Compile](#Compile)
-- `TLS_LIB`: The TLS library. `quictls`(default) or `openssl`(requires openssl 3.2.0+, and curl 8.6.0+).
+- `TLS_LIB`: The TLS library. `openssl`(default, requires openssl 3.2.0+ and curl 8.6.0+) or `quictls`.
+- `LIBC`: The libc. `glibc`(default) or `musl`, only available for Linux.
 - `CURL_VERSION`: The version of cURL. If set to `dev`, will clone the latest source code from GitHub.
 - `QUICTLS_VERSION`: The version of quictls.
 - `OPENSSL_VERSION`: The version of OpenSSL.
@@ -164,11 +166,11 @@ For all `VERSION` variables, leaving them blank will automatically fetch the lat
 - `NGHTTP2_VERSION`: The version of nghttp2.
 - `LIBUNISTRING_VERSION`: The version of libunistring.
 - `LIBIDN2_VERSION`: The version of libidn2.
-- `LIBPSL_VERSION`: The version of libpsl.
 - `LIBSSH2_VERSION`: The version of libssh2.
 - `ZLIB_VERSION`: The version of zlib.
 - `BROTLI_VERSION`: The version of brotli.
 - `ZSTD_VERSION`: The version of zstd.
+- `LIBPSL_VERSION`: The version of libpsl.
 - `ARES_VERSION`: The version of c-ares.
 - `TRURL_VERSION`: The version of trurl.
 - `ENABLE_TRURL`: Compile trurl. Default is `false`, set to `true` or `yes` to enable it. NOT available for macOS.
