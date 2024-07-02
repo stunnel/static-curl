@@ -81,6 +81,7 @@ script will create a container and compile the host architecture cURL only.
       --name "build-curl-$(date +%Y%m%d-%H%M)" \
       -e ARCHES="x86_64 aarch64 armv7 i686 riscv64 s390x mips64 mips64el mips mipsel powerpc64le powerpc" \
       -e TLS_LIB="openssl" \
+      -e LIBC="glibc" \
       -e CURL_VERSION="" \
       -e QUICTLS_VERSION="" \
       -e OPENSSL_VERSION="" \
@@ -156,6 +157,7 @@ For all `VERSION` variables, leaving them blank will automatically fetch the lat
 
 - `ARCHES`: The list of architectures to compile. You can set one or multiple architectures from the following options: [Compile](#Compile)
 - `TLS_LIB`: The TLS library. `openssl`(default, requires openssl 3.2.0+ and curl 8.6.0+) or `quictls`.
+- `LIBC`: The libc. `glibc`(default) or `musl`, only available for Linux.
 - `CURL_VERSION`: The version of cURL. If set to `dev`, will clone the latest source code from GitHub.
 - `QUICTLS_VERSION`: The version of quictls.
 - `OPENSSL_VERSION`: The version of OpenSSL.
