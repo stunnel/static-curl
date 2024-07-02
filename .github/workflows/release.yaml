@@ -3,13 +3,135 @@ name: build-and-release
 on:
   # run it manually
   workflow_dispatch:
+    inputs:
+      curl_version:
+        description: 'The curl version'
+        default: ''
+        required: false
+        type: string
+      tls_lib:
+        type: choice
+        description: 'The TLS library'
+        default: 'openssl'
+        required: true
+        options:
+          - openssl
+          - quictls
+          - boringssl
+      openssl_version:
+        description: 'The openssl version'
+        default: ''
+        required: false
+        type: string
+      quictls_version:
+        description: 'The quictls version'
+        default: ''
+        required: false
+        type: string
+      ngtcp2_version:
+        description: 'The ngtcp2 version'
+        required: false
+        type: string
+      nghttp3_version:
+        description: 'The nghttp3 version'
+        required: false
+        type: string
+      nghttp2_version:
+        description: 'The nghttp2 version'
+        required: false
+        type: string
+      libidn2_version:
+        description: 'The LIBIDN2 version'
+        required: false
+        type: string
+      libunistring_version:
+        description: 'The LIBUNISTRING version'
+        required: false
+        type: string
+      zlib_version:
+        description: 'The zlib version'
+        required: false
+        type: string
+      brotli_version:
+        description: 'The brotli version'
+        required: false
+        type: string
+      zstd_version:
+        description: 'The zstd version'
+        required: false
+        type: string
+      libssh2_version:
+        description: 'The libssh2 version'
+        required: false
+        type: string
+      libpsl_version:
+        description: 'The libpsl version'
+        required: false
+        type: string
+      c_ares_version:
+        description: 'The c-ares version'
+        required: false
+        type: string
+      enable_trurl:
+        description: 'Enable trurl'
+        default: true
+        required: false
+        type: boolean
+      trurl_version:
+        description: 'The trurl version'
+        required: false
+        type: string
+      enable_curl_debug:
+        description: 'Enable curl debug'
+        default: false
+        required: false
+        type: boolean
+      glibc:
+        description: 'Use glibc for Linux'
+        default: true
+        required: false
+        type: boolean
+      musl:
+        description: 'Use musl for Linux'
+        default: false
+        required: false
+        type: boolean
+      arches_linux_glibc:
+        description: 'What target architectures to compile for Linux glibc'
+        default: 'x86_64 aarch64 armv7 riscv64 s390x mips64 mips64el mipsel powerpc64le powerpc'
+        required: true
+        type: string
+      arches_linux:
+        description: 'What target architectures to compile for Linux musl'
+        default: 'x86_64 aarch64 armv7 i686 riscv64 s390x mips64 mips64el mips mipsel powerpc64le powerpc'
+        required: true
+        type: string
+      arches_macos:
+        description: 'What target architectures to compile for macOS, leaving empty will skip macOS builds'
+        default: 'x86_64 aarch64'
+        required: false
+        type: string
+      arches_windows:
+        description: 'What target architectures to compile for Windows, leaving empty will skip Windows builds'
+        default: 'x86_64 aarch64 armv7 i686'
+        required: false
+        type: string
+      publish:
+        description: 'Publish release'
+        default: false
+        required: false
+        type: boolean
 
 jobs:
   build-Linux:
+    if: ${{ inputs.glibc == true }}
     name: build-Linux (${{ github.ref_name }})
     runs-on: ubuntu-latest
 
     steps:
+      - name: Show the input variables
+        run: echo "${{ toJSON(github.event.inputs) }}"
+
       - name: Checkout
         uses: actions/checkout@v4
         with:
@@ -17,27 +139,28 @@ jobs:
 
       - name: Cross Build Static cURL
         env:
-          CURL_VERSION: ${{ vars.CURL_VERSION }}
-          TLS_LIB: ${{ vars.TLS_LIB }}
-          QUICTLS_VERSION: ${{ vars.QUICTLS_VERSION }}
-          OPENSSL_VERSION: ${{ vars.OPENSSL_VERSION }}
-          NGTCP2_VERSION: ${{ vars.NGTCP2_VERSION }}
-          NGHTTP3_VERSION: ${{ vars.NGHTTP3_VERSION }}
-          NGHTTP2_VERSION: ${{ vars.NGHTTP2_VERSION }}
-          LIBIDN2_VERSION: ${{ vars.LIBIDN2_VERSION }}
-          LIBUNISTRING_VERSION: ${{ vars.LIBUNISTRING_VERSION }}
-          ZLIB_VERSION: ${{ vars.ZLIB_VERSION }}
-          BROTLI_VERSION: ${{ vars.BROTLI_VERSION }}
-          ZSTD_VERSION: ${{ vars.ZSTD_VERSION }}
-          LIBSSH2_VERSION: ${{ vars.LIBSSH2_VERSION }}
-          ARES_VERSION: ${{ vars.ARES_VERSION }}
-          ENABLE_TRURL: ${{ vars.ENABLE_TRURL }}
-          TRURL_VERSION: ${{ vars.TRURL_VERSION }}
+          CURL_VERSION: ${{ inputs.curl_version }}
+          TLS_LIB: ${{ inputs.tls_lib }}
+          OPENSSL_VERSION: ${{ inputs.openssl_version }}
+          QUICTLS_VERSION: ${{ inputs.quictls_version }}
+          NGTCP2_VERSION: ${{ inputs.ngtcp2_version }}
+          NGHTTP3_VERSION: ${{ inputs.nghttp3_version }}
+          NGHTTP2_VERSION: ${{ inputs.nghttp2_version }}
+          LIBIDN2_VERSION: ${{ inputs.libidn2_version }}
+          LIBUNISTRING_VERSION: ${{ inputs.libunistring_version }}
+          ZLIB_VERSION: ${{ inputs.zlib_version }}
+          BROTLI_VERSION: ${{ inputs.brotli_version }}
+          ZSTD_VERSION: ${{ inputs.zstd_version }}
+          LIBSSH2_VERSION: ${{ inputs.libssh2_version }}
+          LIBPSL_VERSION: ${{ inputs.libpsl_version }}
+          ARES_VERSION: ${{ inputs.c_ares_version }}
+          ENABLE_TRURL: ${{ inputs.enable_trurl }}
+          TRURL_VERSION: ${{ inputs.trurl_version }}
           LIBC: glibc
           STATIC_LIBRARY: 1
           CONTAINER_IMAGE: debian:latest
           TOKEN_READ: ${{ secrets.GITHUB_TOKEN }}
-          ARCHES: "x86_64 aarch64 armv7 riscv64 s390x mips64 mips64el mipsel powerpc64le powerpc"
+          ARCHES: ${{ inputs.arches_linux_glibc }}
         run: |
           ARCHES="${ARCHES}"
           CURL_VERSION=${CURL_VERSION}
@@ -53,6 +176,7 @@ jobs:
           BROTLI_VERSION=${BROTLI_VERSION}
           ZSTD_VERSION=${ZSTD_VERSION}
           LIBSSH2_VERSION=${LIBSSH2_VERSION}
+          LIBPSL_VERSION=${LIBPSL_VERSION}
           ARES_VERSION=${ARES_VERSION}
           ENABLE_TRURL=${ENABLE_TRURL}
           TRURL_VERSION=${TRURL_VERSION}
@@ -86,6 +210,7 @@ jobs:
           overwrite: true
 
   build-Linux-musl:
+    if: ${{ inputs.musl == true }}
     name: build-Linux-musl (${{ github.ref_name }})
     runs-on: ubuntu-latest
 
@@ -97,26 +222,27 @@ jobs:
 
       - name: Cross Build Static cURL
         env:
-          CURL_VERSION: ${{ vars.CURL_VERSION }}
-          TLS_LIB: ${{ vars.TLS_LIB }}
-          QUICTLS_VERSION: ${{ vars.QUICTLS_VERSION }}
-          OPENSSL_VERSION: ${{ vars.OPENSSL_VERSION }}
-          NGTCP2_VERSION: ${{ vars.NGTCP2_VERSION }}
-          NGHTTP3_VERSION: ${{ vars.NGHTTP3_VERSION }}
-          NGHTTP2_VERSION: ${{ vars.NGHTTP2_VERSION }}
-          LIBIDN2_VERSION: ${{ vars.LIBIDN2_VERSION }}
-          LIBUNISTRING_VERSION: ${{ vars.LIBUNISTRING_VERSION }}
-          ZLIB_VERSION: ${{ vars.ZLIB_VERSION }}
-          BROTLI_VERSION: ${{ vars.BROTLI_VERSION }}
-          ZSTD_VERSION: ${{ vars.ZSTD_VERSION }}
-          LIBSSH2_VERSION: ${{ vars.LIBSSH2_VERSION }}
-          ARES_VERSION: ${{ vars.ARES_VERSION }}
-          ENABLE_TRURL: ${{ vars.ENABLE_TRURL }}
-          TRURL_VERSION: ${{ vars.TRURL_VERSION }}
+          CURL_VERSION: ${{ inputs.curl_version }}
+          TLS_LIB: ${{ inputs.tls_lib }}
+          OPENSSL_VERSION: ${{ inputs.openssl_version }}
+          QUICTLS_VERSION: ${{ inputs.quictls_version }}
+          NGTCP2_VERSION: ${{ inputs.ngtcp2_version }}
+          NGHTTP3_VERSION: ${{ inputs.nghttp3_version }}
+          NGHTTP2_VERSION: ${{ inputs.nghttp2_version }}
+          LIBIDN2_VERSION: ${{ inputs.libidn2_version }}
+          LIBUNISTRING_VERSION: ${{ inputs.libunistring_version }}
+          ZLIB_VERSION: ${{ inputs.zlib_version }}
+          BROTLI_VERSION: ${{ inputs.brotli_version }}
+          ZSTD_VERSION: ${{ inputs.zstd_version }}
+          LIBSSH2_VERSION: ${{ inputs.libssh2_version }}
+          LIBPSL_VERSION: ${{ inputs.libpsl_version }}
+          ARES_VERSION: ${{ inputs.c_ares_version }}
+          ENABLE_TRURL: ${{ inputs.enable_trurl }}
+          TRURL_VERSION: ${{ inputs.trurl_version }}
           LIBC: musl
           CONTAINER_IMAGE: debian:latest
           TOKEN_READ: ${{ secrets.GITHUB_TOKEN }}
-          ARCHES: "x86_64 aarch64 armv7 i686 riscv64 s390x mips64 mips64el mips mipsel powerpc64le powerpc"
+          ARCHES: ${{ inputs.arches_linux_musl }}
         run: |
           ARCHES="${ARCHES}"
           CURL_VERSION=${CURL_VERSION}
@@ -132,6 +258,7 @@ jobs:
           BROTLI_VERSION=${BROTLI_VERSION}
           ZSTD_VERSION=${ZSTD_VERSION}
           LIBSSH2_VERSION=${LIBSSH2_VERSION}
+          LIBPSL_VERSION=${LIBPSL_VERSION}
           ARES_VERSION=${ARES_VERSION}
           ENABLE_TRURL=${ENABLE_TRURL}
           TRURL_VERSION=${TRURL_VERSION}
@@ -164,6 +291,7 @@ jobs:
           overwrite: true
 
   build-Windows:
+    if: ${{ inputs.arches_windows != '' }}
     name: build-Windows (${{ github.ref_name }})
     runs-on: ubuntu-latest
 
@@ -175,25 +303,26 @@ jobs:
 
       - name: Cross Build Static cURL
         env:
-          CURL_VERSION: ${{ vars.CURL_VERSION }}
-          TLS_LIB: ${{ vars.TLS_LIB }}
-          QUICTLS_VERSION: ${{ vars.QUICTLS_VERSION }}
-          OPENSSL_VERSION: ${{ vars.OPENSSL_VERSION }}
-          NGTCP2_VERSION: ${{ vars.NGTCP2_VERSION }}
-          NGHTTP3_VERSION: ${{ vars.NGHTTP3_VERSION }}
-          NGHTTP2_VERSION: ${{ vars.NGHTTP2_VERSION }}
-          LIBIDN2_VERSION: ${{ vars.LIBIDN2_VERSION }}
-          LIBUNISTRING_VERSION: ${{ vars.LIBUNISTRING_VERSION }}
-          ZLIB_VERSION: ${{ vars.ZLIB_VERSION }}
-          BROTLI_VERSION: ${{ vars.BROTLI_VERSION }}
-          ZSTD_VERSION: ${{ vars.ZSTD_VERSION }}
-          LIBSSH2_VERSION: ${{ vars.LIBSSH2_VERSION }}
-          ARES_VERSION: ${{ vars.ARES_VERSION }}
-          ENABLE_TRURL: ${{ vars.ENABLE_TRURL }}
-          TRURL_VERSION: ${{ vars.TRURL_VERSION }}
+          CURL_VERSION: ${{ inputs.curl_version }}
+          TLS_LIB: ${{ inputs.tls_lib }}
+          OPENSSL_VERSION: ${{ inputs.openssl_version }}
+          QUICTLS_VERSION: ${{ inputs.quictls_version }}
+          NGTCP2_VERSION: ${{ inputs.ngtcp2_version }}
+          NGHTTP3_VERSION: ${{ inputs.nghttp3_version }}
+          NGHTTP2_VERSION: ${{ inputs.nghttp2_version }}
+          LIBIDN2_VERSION: ${{ inputs.libidn2_version }}
+          LIBUNISTRING_VERSION: ${{ inputs.libunistring_version }}
+          ZLIB_VERSION: ${{ inputs.zlib_version }}
+          BROTLI_VERSION: ${{ inputs.brotli_version }}
+          ZSTD_VERSION: ${{ inputs.zstd_version }}
+          LIBSSH2_VERSION: ${{ inputs.libssh2_version }}
+          LIBPSL_VERSION: ${{ inputs.libpsl_version }}
+          ARES_VERSION: ${{ inputs.c_ares_version }}
+          ENABLE_TRURL: ${{ inputs.enable_trurl }}
+          TRURL_VERSION: ${{ inputs.trurl_version }}
           CONTAINER_IMAGE: mstorsjo/llvm-mingw:latest
           TOKEN_READ: ${{ secrets.GITHUB_TOKEN }}
-          ARCHES: "x86_64 aarch64 armv7 i686"
+          ARCHES: ${{ inputs.arches_win }}
         run: |
           ARCHES="${ARCHES}"
           CURL_VERSION=${CURL_VERSION}
@@ -209,6 +338,7 @@ jobs:
           BROTLI_VERSION=${BROTLI_VERSION}
           ZSTD_VERSION=${ZSTD_VERSION}
           LIBSSH2_VERSION=${LIBSSH2_VERSION}
+          LIBPSL_VERSION: ${{ inputs.libpsl_version }}
           ARES_VERSION=${ARES_VERSION}
           ENABLE_TRURL=${ENABLE_TRURL}
           TRURL_VERSION=${TRURL_VERSION}
@@ -240,6 +370,7 @@ jobs:
           overwrite: true
 
   build-macOS:
+    if: ${{ inputs.arches_macos != '' }}
     name: build-macOS (${{ github.ref_name }})
     runs-on: macos-latest
 
@@ -255,22 +386,23 @@ jobs:
 
       - name: Build Static cURL on macOS
         env:
-          CURL_VERSION: ${{ vars.CURL_VERSION }}
-          TLS_LIB: ${{ vars.TLS_LIB }}
-          QUICTLS_VERSION: ${{ vars.QUICTLS_VERSION }}
-          OPENSSL_VERSION: ${{ vars.OPENSSL_VERSION }}
-          NGTCP2_VERSION: ${{ vars.NGTCP2_VERSION }}
-          NGHTTP3_VERSION: ${{ vars.NGHTTP3_VERSION }}
-          NGHTTP2_VERSION: ${{ vars.NGHTTP2_VERSION }}
-          LIBIDN2_VERSION: ${{ vars.LIBIDN2_VERSION }}
-          LIBUNISTRING_VERSION: ${{ vars.LIBUNISTRING_VERSION }}
-          ZLIB_VERSION: ${{ vars.ZLIB_VERSION }}
-          BROTLI_VERSION: ${{ vars.BROTLI_VERSION }}
-          ZSTD_VERSION: ${{ vars.ZSTD_VERSION }}
-          LIBSSH2_VERSION: ${{ vars.LIBSSH2_VERSION }}
-          ARES_VERSION: ${{ vars.ARES_VERSION }}
+          CURL_VERSION: ${{ inputs.curl_version }}
+          TLS_LIB: ${{ inputs.tls_lib }}
+          OPENSSL_VERSION: ${{ inputs.openssl_version }}
+          QUICTLS_VERSION: ${{ inputs.quictls_version }}
+          NGTCP2_VERSION: ${{ inputs.ngtcp2_version }}
+          NGHTTP3_VERSION: ${{ inputs.nghttp3_version }}
+          NGHTTP2_VERSION: ${{ inputs.nghttp2_version }}
+          LIBIDN2_VERSION: ${{ inputs.libidn2_version }}
+          LIBUNISTRING_VERSION: ${{ inputs.libunistring_version }}
+          ZLIB_VERSION: ${{ inputs.zlib_version }}
+          BROTLI_VERSION: ${{ inputs.brotli_version }}
+          ZSTD_VERSION: ${{ inputs.zstd_version }}
+          LIBSSH2_VERSION: ${{ inputs.libssh2_version }}
+          LIBPSL_VERSION: ${{ inputs.libpsl_version }}
+          ARES_VERSION: ${{ inputs.c_ares_version }}
           TOKEN_READ: ${{ secrets.GITHUB_TOKEN }}
-          ARCHES: "x86_64 arm64"
+          ARCHES: ${{ inputs.arches_macos }}
         run: |
           ARCHES="${ARCHES}"
           CURL_VERSION=${CURL_VERSION}
@@ -286,6 +418,7 @@ jobs:
           BROTLI_VERSION=${BROTLI_VERSION}
           ZSTD_VERSION=${ZSTD_VERSION}
           LIBSSH2_VERSION=${LIBSSH2_VERSION}
+          LIBPSL_VERSION=${LIBPSL_VERSION}
           ARES_VERSION=${ARES_VERSION}
           TOKEN_READ=${TOKEN_READ}
           bash curl-static-mac.sh
@@ -314,6 +447,7 @@ jobs:
           overwrite: true
 
   release:
+    if: ${{ inputs.publish == true }}
     name: release curl (${{ github.ref_name }})
     needs: [build-Linux, build-Linux-musl, build-Windows, build-macOS]
     runs-on: ubuntu-latest
@@ -371,7 +505,7 @@ jobs:
 
       - name: Compress and Create Release Note
         env:
-          TLS_LIB: ${{ vars.TLS_LIB }}
+          TLS_LIB: ${{ inputs.TLS_LIB }}
         run: |
           TLS_LIB=${TLS_LIB}
           bash release.sh
@@ -380,7 +514,7 @@ jobs:
         run: ls -l release/*
 
       - name: Upload Release Asset
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         if: github.ref == 'refs/heads/main'
         with:
           files: |
