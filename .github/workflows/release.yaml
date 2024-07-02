@@ -447,6 +447,7 @@ jobs:
           overwrite: true
 
   release:
+    if: ${{ inputs.publish == true }}
     name: release curl (${{ github.ref_name }})
     needs: [build-Linux, build-Linux-musl, build-Windows, build-macOS]
     runs-on: ubuntu-latest
