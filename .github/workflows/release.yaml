@@ -116,6 +116,11 @@ on:
         default: 'x86_64 aarch64 armv7 i686'
         required: false
         type: string
+      publish:
+        description: 'Publish release'
+        default: false
+        required: false
+        type: boolean
 
 jobs:
   build-Linux:
