@@ -1,10 +1,12 @@
 name: build-and-release
 
 on:
+  # run it manually
   workflow_dispatch:
     inputs:
       curl_version:
         description: 'The curl version'
+        default: ''
         required: false
         type: string
       tls_lib:
@@ -18,10 +20,12 @@ on:
           - boringssl
       openssl_version:
         description: 'The openssl version'
+        default: ''
         required: false
         type: string
       quictls_version:
         description: 'The quictls version'
+        default: ''
         required: false
         type: string
       ngtcp2_version:
@@ -95,12 +99,12 @@ on:
       arches_linux_glibc:
         description: 'What target architectures to compile for Linux glibc'
         default: 'x86_64 aarch64 armv7 riscv64 s390x mips64 mips64el mipsel powerpc64le powerpc'
-        required: false
+        required: true
         type: string
       arches_linux:
         description: 'What target architectures to compile for Linux musl'
         default: 'x86_64 aarch64 armv7 i686 riscv64 s390x mips64 mips64el mips mipsel powerpc64le powerpc'
-        required: false
+        required: true
         type: string
       arches_macos:
         description: 'What target architectures to compile for macOS, leaving empty will skip macOS builds'
@@ -156,7 +160,7 @@ jobs:
           STATIC_LIBRARY: 1
           CONTAINER_IMAGE: debian:latest
           TOKEN_READ: ${{ secrets.GITHUB_TOKEN }}
-          ARCHES: "${{ inputs.arches_linux_glibc }}"
+          ARCHES: ${{ inputs.arches_linux_glibc }}
         run: |
           ARCHES="${ARCHES}"
           CURL_VERSION=${CURL_VERSION}
@@ -238,7 +242,7 @@ jobs:
           LIBC: musl
           CONTAINER_IMAGE: debian:latest
           TOKEN_READ: ${{ secrets.GITHUB_TOKEN }}
-          ARCHES: "${{ inputs.arches_linux_musl }}"
+          ARCHES: ${{ inputs.arches_linux_musl }}
         run: |
           ARCHES="${ARCHES}"
           CURL_VERSION=${CURL_VERSION}
@@ -318,7 +322,7 @@ jobs:
           TRURL_VERSION: ${{ inputs.trurl_version }}
           CONTAINER_IMAGE: mstorsjo/llvm-mingw:latest
           TOKEN_READ: ${{ secrets.GITHUB_TOKEN }}
-          ARCHES: "${{ inputs.arches_win }}"
+          ARCHES: ${{ inputs.arches_win }}
         run: |
           ARCHES="${ARCHES}"
           CURL_VERSION=${CURL_VERSION}
@@ -334,7 +338,7 @@ jobs:
           BROTLI_VERSION=${BROTLI_VERSION}
           ZSTD_VERSION=${ZSTD_VERSION}
           LIBSSH2_VERSION=${LIBSSH2_VERSION}
-          LIBPSL_VERSION=${LIBPSL_VERSION}
+          LIBPSL_VERSION: ${{ inputs.libpsl_version }}
           ARES_VERSION=${ARES_VERSION}
           ENABLE_TRURL=${ENABLE_TRURL}
           TRURL_VERSION=${TRURL_VERSION}
