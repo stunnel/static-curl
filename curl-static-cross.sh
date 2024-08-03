@@ -33,7 +33,7 @@
 #     -e STATIC_LIBRARY=1 \
 #     -e CONTAINER_IMAGE=debian:latest \
 #     debian:latest sh curl-static-cross.sh
-# Supported architectures: x86_64, aarch64, armv7, i686, riscv64, s390x,
+# Supported architectures: x86_64, aarch64, armv5, armv7, i686, riscv64, s390x,
 #                          mips64, mips64el, mips, mipsel, powerpc64le, powerpc
 
 
@@ -130,7 +130,15 @@ install_cross_compile() {
             "https://api.github.com/repos/userdocs/qbt-musl-cross-make/releases" -o "github-qbt-musl-cross-make.json"
     fi
 
-    if [ "${ARCH}" = "armv7" ]; then arch_alt=armv7l; else arch_alt=${ARCH}; fi
+    case "${ARCH}" in
+        armv7)
+            arch_alt=armv7l ;;
+        armv5)
+            arch_alt=arm ;;
+        *)
+            arch_alt=${ARCH} ;;
+    esac
+
     browser_download_url=$(jq -r '.' "github-qbt-musl-cross-make.json" \
         | grep browser_download_url \
         | grep -i "${arch_alt}-" \
@@ -158,6 +166,11 @@ install_cross_compile_debian() {
     arch_name=${ARCH}
 
     case "${ARCH}" in
+    	armv5)
+            arch_compiler=arm
+            c_lib=gnueabi
+            arch_name=arm
+            ;;
         armv7l|armv7)
             arch_compiler=arm
             c_lib=gnueabihf
@@ -219,7 +232,9 @@ arch_variants() {
         aarch64)        qemu_arch="aarch64"
                         EC_NISTP_64_GCC_128="enable-ec_nistp_64_gcc_128"
                         OPENSSL_ARCH="linux-aarch64" ;;
-        armv7l|armv7)   qemu_arch="arm"
+        armv5)          qemu_arch="arm"
+                        OPENSSL_ARCH="linux-armv4" ;;
+        armv7l|armv6)   qemu_arch="arm"
                         OPENSSL_ARCH="linux-armv4" ;;
         i686)           qemu_arch="i386"
                         OPENSSL_ARCH="linux-x86" ;;
@@ -766,7 +781,7 @@ compile_curl() {
     fi
 
     curl_config;
-    if [ "${ARCH}" = "armv7l" ] || [ "${ARCH}" = "armv7" ] || [ "${ARCH}" = "mipsel" ] || [ "${ARCH}" = "mips" ] \
+    if [ "${ARCH}" = "armv5" ] || [ "${ARCH}" = "armv7l" ] || [ "${ARCH}" = "armv7" ] || [ "${ARCH}" = "mipsel" ] || [ "${ARCH}" = "mips" ] \
         || [ "${ARCH}" = "powerpc" ] || [ "${ARCH}" = "i686" ]; then
         # add -Wno-cast-align to avoid error alignment from 4 to 8
         make -j "$(nproc)" LDFLAGS="-static -all-static -Wl,-s ${LDFLAGS}" CFLAGS="-Wno-cast-align ${CFLAGS}";
@@ -792,7 +807,7 @@ install_curl() {
         echo "${CURL_VERSION}" > "${RELEASE_DIR}/release/version.txt"
     fi
     if [ ! -f "${RELEASE_DIR}/release/version-info.txt" ]; then
-        "${PREFIX}"/bin/curl -V >> "${RELEASE_DIR}/release/version-info.txt"
+        "${PREFIX}"/bin/curl -V >> "${RELEASE_DIR}/release/version-info.txt" || true
     fi
 
     if [ -n "${STATIC_LIBRARY}" ]; then
@@ -814,8 +829,8 @@ _arch_match() {
 }
 
 _arch_valid() {
-    local  arch_x86_64="x86_64 aarch64 armv7 armv7l riscv64 s390x mips64 mips64el powerpc64le mipsel i686 mips powerpc"
-    local arch_aarch64="x86_64 aarch64 armv7 armv7l riscv64 s390x mips64 mips64el powerpc64le mipsel"
+    local arch_x86_64="x86_64 aarch64 armv5 armv7 armv7l riscv64 s390x mips64 mips64el powerpc64le mipsel i686 mips powerpc"
+    local arch_aarch64="x86_64 aarch64 armv5 armv7 armv7l riscv64 s390x mips64 mips64el powerpc64le mipsel"
 
     if [ "${ARCH_HOST}" = "x86_64" ]; then
         result=$(_arch_match "${ARCH}" "${arch_x86_64}")
@@ -849,6 +864,8 @@ _build_in_docker() {
         --name "${container_name}" \
         --network host \
         -v "$(pwd):${RELEASE_DIR}" -w "${RELEASE_DIR}" \
+        -e HTTP_PROXY="${HTTP_PROXY}" \
+        -e HTTPS_PROXY="${HTTPS_PROXY}" \
         -e RELEASE_DIR="${RELEASE_DIR}" \
         -e ARCHES="${ARCHES}" \
         -e ENABLE_DEBUG="${ENABLE_DEBUG}" \
