@@ -37,7 +37,7 @@ jobs:
           STATIC_LIBRARY: 1
           CONTAINER_IMAGE: debian:latest
           TOKEN_READ: ${{ secrets.GITHUB_TOKEN }}
-          ARCHES: "x86_64 aarch64 armv7 riscv64 s390x mips64 mips64el mipsel powerpc64le powerpc"
+          ARCHES: "x86_64 aarch64 armv7 armv5 riscv64 s390x mips64 mips64el mipsel powerpc64le powerpc"
         run: |
           ARCHES="${ARCHES}"
           CURL_VERSION=${CURL_VERSION}
@@ -116,7 +116,7 @@ jobs:
           LIBC: musl
           CONTAINER_IMAGE: debian:latest
           TOKEN_READ: ${{ secrets.GITHUB_TOKEN }}
-          ARCHES: "x86_64 aarch64 armv7 i686 riscv64 s390x mips64 mips64el mips mipsel powerpc64le powerpc"
+          ARCHES: "x86_64 aarch64 armv7 armv5 i686 riscv64 s390x mips64 mips64el mips mipsel powerpc64le powerpc"
         run: |
           ARCHES="${ARCHES}"
           CURL_VERSION=${CURL_VERSION}
