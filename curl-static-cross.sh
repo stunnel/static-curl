@@ -552,12 +552,19 @@ compile_tls() {
     url="${URL}"
     download_and_extract "${url}"
 
+    # issues/83 VIA padlock
+    no_hw_padlock=""
+    if [ "${ARCH}" = "x86_64" ] || [ "${ARCH}" = "i686" ]; then
+        no_hw_padlock="no-hw-padlock"
+    fi
+
     ./Configure \
         ${OPENSSL_ARCH} \
         -fPIC \
         --prefix="${PREFIX}" \
         threads no-shared \
         enable-ktls \
+        ${no_hw_padlock} \
         ${EC_NISTP_64_GCC_128} \
         enable-tls1_3 \
         enable-ssl3 enable-ssl3-method \
