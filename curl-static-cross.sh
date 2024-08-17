@@ -234,7 +234,7 @@ arch_variants() {
                         OPENSSL_ARCH="linux-aarch64" ;;
         armv5)          qemu_arch="arm"
                         OPENSSL_ARCH="linux-armv4" ;;
-        armv7l|armv6)   qemu_arch="arm"
+        armv7*|armv6)   qemu_arch="arm"
                         OPENSSL_ARCH="linux-armv4" ;;
         i686)           qemu_arch="i386"
                         OPENSSL_ARCH="linux-x86" ;;
