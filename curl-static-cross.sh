@@ -720,7 +720,11 @@ compile_trurl() {
     LDFLAGS="-static -Wl,-s ${LDFLAGS}" make PREFIX="${PREFIX}";
     make install;
 
-    _copy_license LICENSES/curl.txt trurl;
+    if [ -f LICENSES/COPYING ]; then
+        _copy_license LICENSES/COPYING trurl;
+    elif [ -f LICENSES/curl.txt ]; then
+        _copy_license LICENSES/curl.txt trurl;
+    fi
 }
 
 curl_config() {
