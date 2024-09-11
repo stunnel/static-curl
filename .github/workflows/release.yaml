@@ -17,6 +17,7 @@ jobs:
 
       - name: Cross Build Static cURL
         env:
+          ARCHES: ${{ vars.ARCHES_LINUX_GLIBC }}
           CURL_VERSION: ${{ vars.CURL_VERSION }}
           TLS_LIB: ${{ vars.TLS_LIB }}
           QUICTLS_VERSION: ${{ vars.QUICTLS_VERSION }}
@@ -37,7 +38,6 @@ jobs:
           STATIC_LIBRARY: 1
           CONTAINER_IMAGE: debian:latest
           TOKEN_READ: ${{ secrets.GITHUB_TOKEN }}
-          ARCHES: "x86_64 aarch64 armv7 armv5 riscv64 s390x mips64 mips64el mipsel powerpc64le powerpc"
         run: |
           ARCHES="${ARCHES}"
           CURL_VERSION=${CURL_VERSION}
@@ -97,6 +97,7 @@ jobs:
 
       - name: Cross Build Static cURL
         env:
+          ARCHES: ${{ vars.ARCHES_LINUX_MUSL }}
           CURL_VERSION: ${{ vars.CURL_VERSION }}
           TLS_LIB: ${{ vars.TLS_LIB }}
           QUICTLS_VERSION: ${{ vars.QUICTLS_VERSION }}
@@ -116,7 +117,6 @@ jobs:
           LIBC: musl
           CONTAINER_IMAGE: debian:latest
           TOKEN_READ: ${{ secrets.GITHUB_TOKEN }}
-          ARCHES: "x86_64 aarch64 armv7 armv5 i686 riscv64 s390x mips64 mips64el mips mipsel powerpc64le powerpc"
         run: |
           ARCHES="${ARCHES}"
           CURL_VERSION=${CURL_VERSION}
@@ -175,6 +175,7 @@ jobs:
 
       - name: Cross Build Static cURL
         env:
+          ARCHES: ${{ vars.ARCHES_WINDOWS }}
           CURL_VERSION: ${{ vars.CURL_VERSION }}
           TLS_LIB: ${{ vars.TLS_LIB }}
           QUICTLS_VERSION: ${{ vars.QUICTLS_VERSION }}
@@ -193,7 +194,6 @@ jobs:
           TRURL_VERSION: ${{ vars.TRURL_VERSION }}
           CONTAINER_IMAGE: mstorsjo/llvm-mingw:latest
           TOKEN_READ: ${{ secrets.GITHUB_TOKEN }}
-          ARCHES: "x86_64 aarch64 armv7 i686"
         run: |
           ARCHES="${ARCHES}"
           CURL_VERSION=${CURL_VERSION}
@@ -255,6 +255,7 @@ jobs:
 
       - name: Build Static cURL on macOS
         env:
+          ARCHES: ${{ vars.ARCHES_MACOS }}
           CURL_VERSION: ${{ vars.CURL_VERSION }}
           TLS_LIB: ${{ vars.TLS_LIB }}
           QUICTLS_VERSION: ${{ vars.QUICTLS_VERSION }}
@@ -270,7 +271,6 @@ jobs:
           LIBSSH2_VERSION: ${{ vars.LIBSSH2_VERSION }}
           ARES_VERSION: ${{ vars.ARES_VERSION }}
           TOKEN_READ: ${{ secrets.GITHUB_TOKEN }}
-          ARCHES: "x86_64 arm64"
         run: |
           ARCHES="${ARCHES}"
           CURL_VERSION=${CURL_VERSION}
