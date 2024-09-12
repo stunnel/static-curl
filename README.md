@@ -49,6 +49,7 @@ This script utilizes `clang` or [qbt-musl-cross-make](https://github.com/userdoc
   - x86_64(glibc and musl)
   - aarch64(glibc and musl)
   - armv7(glibc and musl)
+  - armv5(glibc and musl)
   - i686(musl)
   - riscv64(glibc and musl)
   - s390x(glibc and musl)
@@ -79,7 +80,7 @@ script will create a container and compile the host architecture cURL only.
   ```shell
   docker run --network host --rm -v $(pwd):/mnt -w /mnt \
       --name "build-curl-$(date +%Y%m%d-%H%M)" \
-      -e ARCHES="x86_64 aarch64 armv7 i686 riscv64 s390x mips64 mips64el mips mipsel powerpc64le powerpc" \
+      -e ARCHES="x86_64 aarch64 armv7 armv5 i686 riscv64 s390x mips64 mips64el mips mipsel powerpc64le powerpc" \
       -e TLS_LIB="openssl" \
       -e LIBC="glibc" \
       -e CURL_VERSION="" \
