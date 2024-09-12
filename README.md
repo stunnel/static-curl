@@ -1,4 +1,4 @@
-# Static cURL with HTTP3
+# Static cURL with HTTP3 for Linux, macOS and Windows
 
 Static cURL binary built with HTTP3, brotli, and zstd support.
 
