@@ -275,6 +275,7 @@ arch_variants() {
         else
             # Uses Clang for default cross-compilation
             install_cross_compile_debian;
+            libc_flag="-glibc";
         fi
     else
         # If the architecture is the same as the host, no need to cross compile
