@@ -562,6 +562,7 @@ compile_tls() {
         ${OPENSSL_ARCH} \
         -fPIC \
         --prefix="${PREFIX}" \
+        --openssldir=/etc/ssl \
         threads no-shared \
         enable-ktls \
         ${no_hw_padlock} \
