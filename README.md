@@ -33,9 +33,9 @@ The binary is built with GitHub Actions.
 
 ### Release files
 
-- `curl-linux-ARCH-VERSION`: binaries for Linux, linked with `glibc`
-- `curl-linux-ARCH-dev-VERSION`: binaries, headers and static library archives for Linux, for development
+- `curl-linux-ARCH-glibc-VERSION`: binaries for Linux, linked with `glibc`, may be **incompatible** with some CPUs
 - `curl-linux-ARCH-musl-VERSION`: binaries for Linux, linked with `musl`
+- `curl-linux-ARCH-dev-VERSION`: binaries, headers and static library archives for Linux, for development, linked with `glibc`
 - `curl-macOS-ARCH-VERSION`: binaries for macOS
 - `curl-macOS-ARCH-dev-VERSION`: binaries, headers and static library archives for macOS, for development
 - `curl-windows-ARCH-VERSION`: binaries for Windows
