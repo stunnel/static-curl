@@ -41,6 +41,11 @@ The binary is built with GitHub Actions.
 - `curl-windows-ARCH-VERSION`: binaries for Windows
 - `curl-windows-ARCH-dev-VERSION`: binaries, headers and library archives for Windows, for development
 
+## Known issue
+For Linux glibc versions, if your system’s `/etc/nsswitch.conf` file is configured with `passwd: compat`, `glibc` will attempt to load `libnss_compat.so`, `libnss_nis.so`, `libpthread.so`, etc. These libraries may not be compatible with the statically linked `glibc`, and the program might crash.  
+Currently, there is no good solution for this issue, except for compiling glibc within the script.  
+In this case, it is recommended to use the `musl` version.
+
 ## Compile
 
 This script utilizes `clang` or [qbt-musl-cross-make](https://github.com/userdocs/qbt-musl-cross-make) for cross-compilation on Linux, `mstorsjo/llvm-mingw` for cross-compilation for Windows, providing support for the following architectures:
