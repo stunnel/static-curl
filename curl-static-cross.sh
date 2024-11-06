@@ -153,7 +153,7 @@ install_cross_compile() {
 
     export CC=${DIR}/${SOURCE_DIR}/bin/${SOURCE_DIR}-cc \
            CXX=${DIR}/${SOURCE_DIR}/bin/${SOURCE_DIR}-c++ \
-           CFLAGS="-O3 -Wno-error=unknown-pragmas -Wno-error=sign-compare -Wno-error=cast-align" \
+           CFLAGS="-O3 -Wno-error=unknown-pragmas -Wno-error=sign-compare -Wno-error=cast-align -Wno-maybe-uninitialized" \
            STRIP=${DIR}/${SOURCE_DIR}/bin/${SOURCE_DIR}-strip \
            PATH=${DIR}/${SOURCE_DIR}/bin:$PATH
 }
@@ -473,7 +473,8 @@ compile_libunistring() {
     url="https://mirrors.kernel.org/gnu/libunistring/libunistring-${LIBUNISTRING_VERSION}.tar.xz"
     download_and_extract "${url}"
 
-    ./configure --host "${TARGET}" --prefix="${PREFIX}" --disable-rpath --disable-shared;
+    ./configure --host "${TARGET}" --prefix="${PREFIX}" --disable-rpath --disable-shared \
+        --disable-dependency-tracking --enable-year2038;
     make -j "$(nproc)";
     make install;
 
