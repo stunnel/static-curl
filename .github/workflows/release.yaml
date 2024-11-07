@@ -100,20 +100,20 @@ jobs:
           ARCHES: ${{ vars.ARCHES_LINUX_MUSL }}
           CURL_VERSION: ${{ vars.CURL_VERSION }}
           TLS_LIB: ${{ vars.TLS_LIB }}
-          QUICTLS_VERSION: ${{ vars.QUICTLS_VERSION }}
-          OPENSSL_VERSION: ${{ vars.OPENSSL_VERSION }}
-          NGTCP2_VERSION: ${{ vars.NGTCP2_VERSION }}
-          NGHTTP3_VERSION: ${{ vars.NGHTTP3_VERSION }}
-          NGHTTP2_VERSION: ${{ vars.NGHTTP2_VERSION }}
-          LIBIDN2_VERSION: ${{ vars.LIBIDN2_VERSION }}
-          LIBUNISTRING_VERSION: ${{ vars.LIBUNISTRING_VERSION }}
-          ZLIB_VERSION: ${{ vars.ZLIB_VERSION }}
-          BROTLI_VERSION: ${{ vars.BROTLI_VERSION }}
-          ZSTD_VERSION: ${{ vars.ZSTD_VERSION }}
-          LIBSSH2_VERSION: ${{ vars.LIBSSH2_VERSION }}
-          ARES_VERSION: ${{ vars.ARES_VERSION }}
-          ENABLE_TRURL: ${{ vars.ENABLE_TRURL }}
-          TRURL_VERSION: ${{ vars.TRURL_VERSION }}
+          QUICTLS_VERSION: ${{ vars.QUICTLS_VERSION_MUSL }}
+          OPENSSL_VERSION: ${{ vars.OPENSSL_VERSION_MUSL }}
+          NGTCP2_VERSION: ${{ vars.NGTCP2_VERSION_MUSL }}
+          NGHTTP3_VERSION: ${{ vars.NGHTTP3_VERSION_MUSL }}
+          NGHTTP2_VERSION: ${{ vars.NGHTTP2_VERSION_MUSL }}
+          LIBIDN2_VERSION: ${{ vars.LIBIDN2_VERSION_MUSL }}
+          LIBUNISTRING_VERSION: ${{ vars.LIBUNISTRING_VERSION_MUSL }}
+          ZLIB_VERSION: ${{ vars.ZLIB_VERSION_MUSL }}
+          BROTLI_VERSION: ${{ vars.BROTLI_VERSION_MUSL }}
+          ZSTD_VERSION: ${{ vars.ZSTD_VERSION_MUSL }}
+          LIBSSH2_VERSION: ${{ vars.LIBSSH2_VERSION_MUSL }}
+          ARES_VERSION: ${{ vars.ARES_VERSION_MUSL }}
+          ENABLE_TRURL: ${{ vars.ENABLE_TRURL_MUSL }}
+          TRURL_VERSION: ${{ vars.TRURL_VERSION_MUSL }}
           LIBC: musl
           CONTAINER_IMAGE: debian:latest
           TOKEN_READ: ${{ secrets.GITHUB_TOKEN }}
