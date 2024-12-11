@@ -52,16 +52,14 @@ init_env() {
 
 install_packages() {
     # xcode-select --install 2>&1 || sudo xcodebuild -license accept; sudo xcode-select --install
-    brew install --quiet automake autoconf libtool binutils pkg-config coreutils homebrew/core/cmake make llvm \
+    brew install --quiet automake autoconf libtool binutils pkg-config coreutils homebrew/core/cmake make \
          curl wget git jq xz ripgrep gnu-sed gawk groff gnupg pcre2 cunit ca-certificates;
 }
 
 _clang_path() {
     # find the path of clang
-    clang_path=$(which /usr/local/opt/llvm/bin/clang || which /opt/homebrew/opt/llvm/bin/clang \
-        || which /Library/Developer/CommandLineTools/usr/bin/clang || which clang || true)
-    clang_pp_path=$(which /usr/local/opt/llvm/bin/clang++ || which /opt/homebrew/opt/llvm/bin/clang++ \
-        || which /Library/Developer/CommandLineTools/usr/bin/clang++ || which clang++ || true)
+    clang_path=$(which clang || true)
+    clang_pp_path=$(which clang++ || true)
 
     if [ -z "${clang_path}" ] || [ -z "${clang_pp_path}" ]; then
         echo "clang not found"
