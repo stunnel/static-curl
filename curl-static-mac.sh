@@ -357,8 +357,6 @@ compile_tls() {
         -fPIC \
         --prefix="${PREFIX}" \
         --openssldir=/etc/ssl \
-        -I$(xcrun --show-sdk-path)/usr/include \
-        -L$(xcrun --show-sdk-path)/usr/lib \
         threads no-shared \
         enable-ktls \
         enable-ec_nistp_64_gcc_128 \
