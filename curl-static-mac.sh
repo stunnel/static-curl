@@ -2,7 +2,7 @@
 
 # To compile locally, clone the Git repository, navigate to the repository directory,
 # and then execute the following command:
-# ARCHES="x86_64 arm64" CURL_VERSION=8.6.0 TLS_LIB=openssl QUICTLS_VERSION=3.1.5 bash curl-static-mac.sh
+# ARCHES="x86_64 arm64" CURL_VERSION=8.11.1 TLS_LIB=openssl OPENSSL_VERSION=3.4.0 bash curl-static-mac.sh
 
 
 shopt -s expand_aliases;
@@ -51,16 +51,15 @@ init_env() {
 }
 
 install_packages() {
-    brew install --quiet automake autoconf libtool binutils pkg-config coreutils homebrew/core/cmake make llvm \
+    # xcode-select --install 2>&1 || sudo xcodebuild -license accept; sudo xcode-select --install
+    brew install --quiet automake autoconf libtool binutils pkg-config coreutils homebrew/core/cmake make \
          curl wget git jq xz ripgrep gnu-sed gawk groff gnupg pcre2 cunit ca-certificates;
 }
 
 _clang_path() {
     # find the path of clang
-    clang_path=$(which /usr/local/opt/llvm/bin/clang || which /opt/homebrew/opt/llvm/bin/clang \
-        || which /Library/Developer/CommandLineTools/usr/bin/clang || which clang || true)
-    clang_pp_path=$(which /usr/local/opt/llvm/bin/clang++ || which /opt/homebrew/opt/llvm/bin/clang++ \
-        || which /Library/Developer/CommandLineTools/usr/bin/clang++ || which clang++ || true)
+    clang_path=$(which clang || true)
+    clang_pp_path=$(which clang++ || true)
 
     if [ -z "${clang_path}" ] || [ -z "${clang_pp_path}" ]; then
         echo "clang not found"
@@ -74,13 +73,13 @@ arch_variants() {
     [ -z "${ARCH}" ] && ARCH="$(uname -m)"
     case "${ARCH}" in
         x86_64)   ARCHFLAGS="-arch x86_64"
-                  OPENSSL_ARCH="darwin64-x86_64"
+                  OPENSSL_ARCH="darwin64-x86_64-cc"
                   TARGET="x86_64-apple-darwin"
                   export CC="${clang_path} -target x86_64-apple-macos11"
                   export CXX="${clang_pp_path} -target x86_64-apple-macos11"
                   ;;
         arm64)    ARCHFLAGS="-arch arm64"
-                  OPENSSL_ARCH="darwin64-arm64"
+                  OPENSSL_ARCH="darwin64-arm64-cc"
                   TARGET="aarch64-apple-darwin"
                   export CC="${clang_path} -target arm64-apple-macos11"
                   export CXX="${clang_pp_path} -target arm64-apple-macos11"
