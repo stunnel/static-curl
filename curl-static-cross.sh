@@ -151,11 +151,11 @@ install_cross_compile() {
     mv libatomic.so libatomic.so.bak
     ln -s libatomic.a libatomic.so
 
-    export CC=${DIR}/${SOURCE_DIR}/bin/${SOURCE_DIR}-cc \
-           CXX=${DIR}/${SOURCE_DIR}/bin/${SOURCE_DIR}-c++ \
+    export CC="${DIR}/${SOURCE_DIR}/bin/${SOURCE_DIR}-cc" \
+           CXX="${DIR}/${SOURCE_DIR}/bin/${SOURCE_DIR}-c++" \
            CFLAGS="-O3 -Wno-error=unknown-pragmas -Wno-error=sign-compare -Wno-error=cast-align -Wno-maybe-uninitialized" \
-           STRIP=${DIR}/${SOURCE_DIR}/bin/${SOURCE_DIR}-strip \
-           PATH=${DIR}/${SOURCE_DIR}/bin:$PATH
+           STRIP="${DIR}/${SOURCE_DIR}/bin/${SOURCE_DIR}-strip" \
+           PATH="${DIR}/${SOURCE_DIR}/bin":"${DIR}/${SOURCE_DIR}/${SOURCE_DIR}/bin":"$PATH"
 }
 
 install_cross_compile_debian() {
@@ -559,6 +559,8 @@ compile_tls() {
         no_hw_padlock="no-hw-padlock"
     fi
 
+    _patch_openssl;
+
     ./Configure \
         ${OPENSSL_ARCH} \
         -fPIC \
@@ -578,6 +580,26 @@ compile_tls() {
     make install_sw;
 
     _copy_license LICENSE.txt openssl;
+}
+
+_patch_openssl() {
+    if [ "${TLS_LIB}" != "openssl" ] || [ "${LIBC}" != "musl" ] || [ "${OPENSSL_VERSION}" != "3.4.0" ] || [ "${ARCH}" != "riscv64" ]; then
+        return
+    fi
+    content=$(cat << EOF
+#ifndef __NR_riscv_hwprobe
+/* RISC-V specific syscall number for hwprobe */
+#define __NR_riscv_hwprobe 258
+#endif
+EOF
+    )
+
+    file_path="crypto/riscvcap.c"
+    if [ -f "$file_path" ]; then
+        echo -e "$content\n\n$(cat $file_path)" > "$file_path"
+    else
+        echo "File $file_path not found"
+    fi
 }
 
 compile_libssh2() {
