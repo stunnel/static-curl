@@ -60,28 +60,32 @@ tar_curl() {
 
     for file in curl-linux-* curl-macos-*; do
         mv "${file}" curl;
-        trurl_filename=$(echo "${file}" | sed 's#curl-#trurl-#g')
+        sha256sum curl > SHA256SUMS;
+        trurl_filename=$(echo "${file}" | sed 's#curl-#trurl-#g');
         if [ -f "${trurl_filename}" ]; then
             mv "${trurl_filename}" trurl;
-            XZ_OPT=-9 tar -Jcf "${file}-${CURL_VERSION}.tar.xz" curl trurl && rm -f curl trurl;
+            sha256sum trurl >> SHA256SUMS;
+            XZ_OPT=-9 tar -Jcf "${file}-${CURL_VERSION}.tar.xz" curl trurl SHA256SUMS && rm -f curl trurl;
         else
-            XZ_OPT=-9 tar -Jcf "${file}-${CURL_VERSION}.tar.xz" curl && rm -f curl
+            XZ_OPT=-9 tar -Jcf "${file}-${CURL_VERSION}.tar.xz" curl SHA256SUMS && rm -f curl;
         fi
     done
 
     for file in curl-*.exe; do
         mv "${file}" curl.exe;
-        filename="${file%.exe}"
+        sha256sum curl.exe > SHA256SUMS;
+        filename="${file%.exe}";
 
         trurl_filename=$(echo "${file}" | sed 's#curl-#trurl-#g')
         if [ -f "${trurl_filename}" ]; then
             mv "${trurl_filename}" trurl.exe;
-            XZ_OPT=-9 tar -Jcf "${filename}-${CURL_VERSION}.tar.xz" curl.exe trurl.exe curl-ca-bundle.crt && rm -f curl.exe trurl.exe;
+            sha256sum trurl.exe >> SHA256SUMS;
+            XZ_OPT=-9 tar -Jcf "${filename}-${CURL_VERSION}.tar.xz" curl.exe trurl.exe curl-ca-bundle.crt SHA256SUMS && rm -f curl.exe trurl.exe;
         else
-            XZ_OPT=-9 tar -Jcf "${filename}-${CURL_VERSION}.tar.xz" curl.exe curl-ca-bundle.crt && rm -f curl.exe;
+            XZ_OPT=-9 tar -Jcf "${filename}-${CURL_VERSION}.tar.xz" curl.exe curl-ca-bundle.crt SHA256SUMS && rm -f curl.exe;
         fi
     done
-    rm -f curl-ca-bundle.crt;
+    rm -f curl-ca-bundle.crt SHA256SUMS;
 }
 
 init_env;
