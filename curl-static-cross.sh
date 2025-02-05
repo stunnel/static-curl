@@ -141,7 +141,7 @@ install_cross_compile() {
 
     browser_download_url=$(jq -r '.' "github-qbt-musl-cross-make.json" \
         | grep browser_download_url \
-        | grep -i "${arch_alt}-" \
+        | grep -i "x86_64-${arch_alt}-" \
         | head -1)
     url=$(printf "%s" "${browser_download_url}" | awk '{print $2}' | sed 's/"//g')
     download_and_extract "${url}"
@@ -224,7 +224,7 @@ arch_variants() {
     case "${ARCH}" in
         x86_64)         qemu_arch="x86_64"
                         EC_NISTP_64_GCC_128="enable-ec_nistp_64_gcc_128"
-                        if [ "${ID}" = "alpine" ] && [ "${ARCH}" != "${ARCH_HOST}" ]; then
+                        if [ "${ID}" = "alpine" ] && [ "${ARCH}" != "${ARCH_HOST}" ] || [ "${LIBC}" = "musl" ]; then
                             OPENSSL_ARCH="linux-x86_64";
                         else
                             OPENSSL_ARCH="linux-x86_64-clang";
