@@ -587,30 +587,8 @@ _patch_openssl() {
         return
     fi
 
-    cat > openssl_riscv.patch <<'EOF'
---- a/crypto/riscvcap.c
-+++ b/crypto/riscvcap.c
-@@ -1,3 +1,8 @@
-+#ifndef __NR_riscv_hwprobe
-+/* RISC-V specific syscall number for hwprobe */
-+#define __NR_riscv_hwprobe 258
-+#endif
-+
-EOF
-
-    file_path="crypto/riscvcap.c"
-    patch_file="openssl_riscv.patch"
-
-    if [ -f "${file_path}" ]; then
-        if patch --dry-run "${file_path}" < "${patch_file}" >/dev/null 2>&1; then
-            patch "${file_path}" < "${patch_file}"
-            echo "Patch applied successfully."
-        else
-            echo "Patch already applied or failed to apply."
-        fi
-    else
-        echo "File ${file_path} not found."
-    fi
+    sed -i '1i#ifndef __NR_riscv_hwprobe\n/* RISC-V specific syscall number for hwprobe */\n#define __NR_riscv_hwprobe 258\n#endif\n' \
+        crypto/riscvcap.c
 }
 
 compile_libssh2() {
