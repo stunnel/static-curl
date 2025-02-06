@@ -255,6 +255,8 @@ arch_variants() {
                         OPENSSL_ARCH="linux-ppc64le" ;;
         powerpc)        qemu_arch="ppc"
                         OPENSSL_ARCH="linux-ppc" ;;
+        loongarch64)    qemu_arch="loongarch64"
+                        OPENSSL_ARCH="linux64-loongarch64" ;;
     esac
 
     unset LD STRIP LDFLAGS
@@ -853,7 +855,10 @@ _arch_match() {
 }
 
 _arch_valid() {
-    local arch_x86_64="x86_64 aarch64 armv5 armv7 armv7l riscv64 s390x mips64 mips64el powerpc64le mipsel i686 mips powerpc"
+    # Mapping of supported target architectures for different host platforms:
+    # - When host is x86_64: supports building for x86_64, aarch64, i686, etc.
+    # - When host is aarch64: supports building for x86_64, aarch64, etc.
+    local arch_x86_64="x86_64 aarch64 armv5 armv7 armv7l riscv64 s390x mips64 mips64el powerpc64le mipsel i686 mips powerpc loongarch64"
     local arch_aarch64="x86_64 aarch64 armv5 armv7 armv7l riscv64 s390x mips64 mips64el powerpc64le mipsel"
 
     if [ "${ARCH_HOST}" = "x86_64" ]; then
