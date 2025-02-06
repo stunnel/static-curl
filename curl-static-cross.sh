@@ -153,7 +153,7 @@ install_cross_compile() {
 
     export CC="${DIR}/${SOURCE_DIR}/bin/${SOURCE_DIR}-cc" \
            CXX="${DIR}/${SOURCE_DIR}/bin/${SOURCE_DIR}-c++" \
-           CFLAGS="-O3 -Wno-error=unknown-pragmas -Wno-error=sign-compare -Wno-error=cast-align -Wno-maybe-uninitialized" \
+           CFLAGS="-O3 -Wno-error=unknown-pragmas -Wno-error=sign-compare -Wno-error=cast-align -Wno-maybe-uninitialized -Wno-error=null-dereference" \
            STRIP="${DIR}/${SOURCE_DIR}/bin/${SOURCE_DIR}-strip" \
            PATH="${DIR}/${SOURCE_DIR}/bin":"${DIR}/${SOURCE_DIR}/${SOURCE_DIR}/bin":"$PATH"
 }
