@@ -586,19 +586,30 @@ _patch_openssl() {
     if [ "${TLS_LIB}" != "openssl" ] || [ "${LIBC}" != "musl" ] || [ "${OPENSSL_VERSION}" != "3.4.0" ] || [ "${ARCH}" != "riscv64" ]; then
         return
     fi
-    content=$(cat << EOF
-#ifndef __NR_riscv_hwprobe
-/* RISC-V specific syscall number for hwprobe */
-#define __NR_riscv_hwprobe 258
-#endif
+
+    cat > openssl_riscv.patch <<'EOF'
+--- a/crypto/riscvcap.c
++++ b/crypto/riscvcap.c
+@@ -1,3 +1,8 @@
++#ifndef __NR_riscv_hwprobe
++/* RISC-V specific syscall number for hwprobe */
++#define __NR_riscv_hwprobe 258
++#endif
++
 EOF
-    )
 
     file_path="crypto/riscvcap.c"
-    if [ -f "$file_path" ]; then
-        echo -e "$content\n\n$(cat $file_path)" > "$file_path"
+    patch_file="openssl_riscv.patch"
+
+    if [ -f "${file_path}" ]; then
+        if patch --dry-run "${file_path}" < "${patch_file}" >/dev/null 2>&1; then
+            patch "${file_path}" < "${patch_file}"
+            echo "Patch applied successfully."
+        else
+            echo "Patch already applied or failed to apply."
+        fi
     else
-        echo "File $file_path not found"
+        echo "File ${file_path} not found."
     fi
 }
 
