@@ -784,7 +784,8 @@ curl_config() {
             --with-ca-bundle=/etc/ssl/certs/ca-certificates.crt \
             --with-ca-path=/etc/ssl/certs \
             --with-ca-fallback --enable-ares \
-            --disable-ldap --disable-ldaps "${ENABLE_DEBUG}";
+            --disable-ldap --disable-ldaps --enable-ssls-export \
+            "${ENABLE_DEBUG}";
 }
 
 compile_curl() {

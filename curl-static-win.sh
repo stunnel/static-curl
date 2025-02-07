@@ -642,7 +642,8 @@ curl_config() {
             --enable-get-easy-options --enable-progress-meter \
             --without-ca-bundle --without-ca-path \
             --without-ca-fallback --enable-ares \
-            --disable-ldap --disable-ldaps "${ENABLE_DEBUG}";
+            --disable-ldap --disable-ldaps --enable-ssls-export \
+            "${ENABLE_DEBUG}";
 }
 
 compile_curl() {
