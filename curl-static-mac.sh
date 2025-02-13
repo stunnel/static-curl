@@ -537,7 +537,8 @@ curl_config() {
             --with-ca-path=/etc/ssl/certs \
             --with-ca-fallback --enable-ares \
             --disable-ldap --disable-ldaps --disable-rtsp \
-            --disable-rtmp --disable-rtmps "${ENABLE_DEBUG}" \
+            --disable-rtmp --disable-rtmps --enable-ssls-export \
+            "${ENABLE_DEBUG}" \
             CFLAGS="-I${PREFIX}/include" \
             CPPFLAGS="-I${PREFIX}/include";
 }
