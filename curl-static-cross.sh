@@ -561,8 +561,6 @@ compile_tls() {
         no_hw_padlock="no-hw-padlock"
     fi
 
-    _patch_openssl;
-
     ./Configure \
         ${OPENSSL_ARCH} \
         -fPIC \
@@ -582,15 +580,6 @@ compile_tls() {
     make install_sw;
 
     _copy_license LICENSE.txt openssl;
-}
-
-_patch_openssl() {
-    if [ "${TLS_LIB}" != "openssl" ] || [ "${LIBC}" != "musl" ] || [ "${OPENSSL_VERSION}" != "3.4.0" ] || [ "${ARCH}" != "riscv64" ]; then
-        return
-    fi
-
-    sed -i '1i#ifndef __NR_riscv_hwprobe\n/* RISC-V specific syscall number for hwprobe */\n#define __NR_riscv_hwprobe 258\n#endif\n' \
-        crypto/riscvcap.c
 }
 
 compile_libssh2() {
