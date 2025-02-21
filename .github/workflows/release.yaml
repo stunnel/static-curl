@@ -35,7 +35,6 @@ jobs:
           ENABLE_TRURL: ${{ vars.ENABLE_TRURL }}
           TRURL_VERSION: ${{ vars.TRURL_VERSION }}
           LIBC: glibc
-          STATIC_LIBRARY: 1
           CONTAINER_IMAGE: debian:latest
           TOKEN_READ: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -57,7 +56,6 @@ jobs:
           ENABLE_TRURL=${ENABLE_TRURL}
           TRURL_VERSION=${TRURL_VERSION}
           LIBC=${LIBC}
-          STATIC_LIBRARY=${STATIC_LIBRARY}
           CONTAINER_IMAGE=${CONTAINER_IMAGE}
           TOKEN_READ=${TOKEN_READ}
           sh curl-static-cross.sh
@@ -115,6 +113,7 @@ jobs:
           ENABLE_TRURL: ${{ vars.ENABLE_TRURL_MUSL }}
           TRURL_VERSION: ${{ vars.TRURL_VERSION_MUSL }}
           LIBC: musl
+          STATIC_LIBRARY: 1
           CONTAINER_IMAGE: debian:latest
           TOKEN_READ: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -136,6 +135,7 @@ jobs:
           ENABLE_TRURL=${ENABLE_TRURL}
           TRURL_VERSION=${TRURL_VERSION}
           LIBC=${LIBC}
+          STATIC_LIBRARY=${STATIC_LIBRARY}
           CONTAINER_IMAGE=${CONTAINER_IMAGE}
           TOKEN_READ=${TOKEN_READ}
           sh curl-static-cross.sh
