@@ -641,7 +641,7 @@ curl_config() {
             --enable-bearer-auth --enable-tls-srp --enable-dnsshuffle \
             --enable-get-easy-options --enable-progress-meter \
             --without-ca-bundle --without-ca-path \
-            --without-ca-fallback --enable-ares \
+            --without-ca-fallback --enable-ares --enable-ipfs \
             --disable-ldap --disable-ldaps --enable-ssls-export \
             "${ENABLE_DEBUG}";
 }
