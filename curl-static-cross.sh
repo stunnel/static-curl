@@ -268,8 +268,7 @@ arch_variants() {
         # If the architecture is not the same as the host, or it is Alpine, then cross compile
         install_qemu "${qemu_arch}";
 
-        if [ "${LIBC}" = "musl" ] || [ "${ID}" = "alpine" ] || [ "${ARCH}" = "mips" ] || [ "${ARCH}" = "i686" ]; then
-            # Cross-compilation failed with atomic using clang in MIPS and i686.
+        if [ "${LIBC}" = "musl" ] || [ "${ID}" = "alpine" ]; then
             # Alpine does not have a GCC cross-compile toolchain.
             # Therefore, musl-cross-make is used for compilation.
             install_cross_compile;
