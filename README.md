@@ -35,7 +35,7 @@ The binary is built with GitHub Actions.
 
 - `curl-linux-ARCH-musl-VERSION`: binaries for Linux, linked with `musl`
 - `curl-linux-ARCH-glibc-VERSION`: binaries for Linux, linked with `glibc`, these binaries may have compatibility issues in certain system environments
-- `curl-linux-ARCH-dev-VERSION`: binaries, headers and static library archives for Linux, linked with `glibc`
+- `curl-linux-ARCH-dev-VERSION`: binaries, headers and static library archives for Linux, linked with `musl`(after curl v8.2.1)
 - `curl-macOS-ARCH-VERSION`: binaries for macOS
 - `curl-macOS-ARCH-dev-VERSION`: binaries, headers and static library archives for macOS
 - `curl-windows-ARCH-VERSION`: binaries for Windows
@@ -55,7 +55,7 @@ This script utilizes `clang`(glibc) and [qbt-musl-cross-make](https://github.com
   - aarch64(glibc and musl)
   - armv7(glibc and musl)
   - armv5(glibc and musl)
-  - i686(musl)
+  - i686(glibc)
   - riscv64(glibc and musl)
   - s390x(glibc and musl)
   - mips64(glibc and musl)
@@ -82,11 +82,15 @@ This script utilizes `clang`(glibc) and [qbt-musl-cross-make](https://github.com
 `sh curl-static-cross.sh`  
 script will create a container and compile the host architecture cURL only.  
 
+libc and its supported architectures  
+- libc: `glibc`, ARCHES: `"x86_64 aarch64 armv7 armv5 riscv64 s390x mips64 mips64el mipsel powerpc64le powerpc i686"`
+- libc: `musl`, ARCHES: `"x86_64 aarch64 armv7 armv5 riscv64 s390x mips64 mips64el mipsel powerpc64le powerpc mips loongarch64"`
+
 - To compile in docker, run:  
   ```shell
   docker run --network host --rm -v $(pwd):/mnt -w /mnt \
       --name "build-curl-$(date +%Y%m%d-%H%M)" \
-      -e ARCHES="x86_64 aarch64 armv7 armv5 i686 riscv64 s390x mips64 mips64el mips mipsel powerpc64le powerpc" \
+      -e ARCHES="x86_64 aarch64 armv7 armv5 riscv64 s390x mips64 mips64el mipsel powerpc64le powerpc i686" \
       -e TLS_LIB="openssl" \
       -e LIBC="glibc" \
       -e CURL_VERSION="" \
