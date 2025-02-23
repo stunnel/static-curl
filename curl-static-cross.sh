@@ -141,7 +141,7 @@ install_cross_compile() {
 
     browser_download_url=$(jq -r '.' "github-qbt-musl-cross-make.json" \
         | grep browser_download_url \
-        | grep -i "x86_64-${arch_alt}-" \
+        | grep -i "${ARCH_HOST}-${arch_alt}-" \
         | head -1)
     url=$(printf "%s" "${browser_download_url}" | awk '{print $2}' | sed 's/"//g')
     download_and_extract "${url}"
@@ -848,11 +848,11 @@ _arch_valid() {
     # - When host is x86_64: supports building for x86_64, aarch64, i686, etc.
     # - When host is aarch64: supports building for x86_64, aarch64, etc.
     local arch_x86_64="x86_64 aarch64 armv5 armv7 armv7l riscv64 s390x mips64 mips64el powerpc64le mipsel i686 mips powerpc loongarch64"
-    local arch_aarch64="x86_64 aarch64 armv5 armv7 armv7l riscv64 s390x mips64 mips64el powerpc64le mipsel"
+    local arch_aarch64="x86_64 aarch64 armv5 armv7 armv7l riscv64 s390x mips64 mips64el powerpc64le mipsel i686 mips powerpc loongarch64"
 
     if [ "${ARCH_HOST}" = "x86_64" ]; then
         result=$(_arch_match "${ARCH}" "${arch_x86_64}")
-    elif [ "${ARCH_HOST}" = "aarch64" ] && [ "${ID}" = "debian" ]; then
+    elif [ "${ARCH_HOST}" = "aarch64" ]; then
         result=$(_arch_match "${ARCH}" "${arch_aarch64}")
     else
         result=1
