@@ -30,6 +30,7 @@
 #     -e ENABLE_TRURL="" \
 #     -e TRURL_VERSION="" \
 #     -e LIBC="" \
+#     -e QBT_MUSL_CROSS_MAKE_VERSION="" \
 #     -e STATIC_LIBRARY=1 \
 #     -e CONTAINER_IMAGE=debian:latest \
 #     debian:latest sh curl-static-cross.sh
@@ -69,6 +70,8 @@ init_env() {
     echo "libssh2 version: ${LIBSSH2_VERSION}"
     echo "c-ares version: ${ARES_VERSION}"
     echo "trurl version: ${TRURL_VERSION}"
+    echo "libc: ${LIBC}"
+    echo "qbt musl cross make version: ${QBT_MUSL_CROSS_MAKE_VERSION}"
 
     export PKG_CONFIG_PATH="${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig";
 
@@ -126,8 +129,16 @@ install_cross_compile() {
 
     if [ ! -f "github-qbt-musl-cross-make.json" ]; then
         # GitHub API has a limit of 60 requests per hour, cache the results.
-        curl --retry 5 --retry-max-time 120 -s \
-            "https://api.github.com/repos/userdocs/qbt-musl-cross-make/releases" -o "github-qbt-musl-cross-make.json"
+        # if the variable is set, get the specific version
+        if [ -n "${QBT_MUSL_CROSS_MAKE_VERSION}" ]; then
+            curl --retry 5 --retry-max-time 120 -s \
+                "https://api.github.com/repos/userdocs/qbt-musl-cross-make/releases/tags/${QBT_MUSL_CROSS_MAKE_VERSION}" \
+                -o "github-qbt-musl-cross-make.json"
+        else
+            curl --retry 5 --retry-max-time 120 -s \
+                "https://api.github.com/repos/userdocs/qbt-musl-cross-make/releases" \
+                -o "github-qbt-musl-cross-make.json"
+        fi
     fi
 
     case "${ARCH}" in
@@ -903,6 +914,7 @@ _build_in_docker() {
         -e ENABLE_TRURL="${ENABLE_TRURL}" \
         -e TRURL_VERSION="${TRURL_VERSION}" \
         -e LIBC="${LIBC}" \
+        -e QBT_MUSL_CROSS_MAKE_VERSION="${QBT_MUSL_CROSS_MAKE_VERSION}" \
         -e STATIC_LIBRARY="${STATIC_LIBRARY}" \
         "${container_image}" sh "${RELEASE_DIR}/${base_name}" 2>&1 | tee -a "${container_name}.log"
 
