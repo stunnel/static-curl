@@ -35,6 +35,7 @@ jobs:
           ENABLE_TRURL: ${{ vars.ENABLE_TRURL }}
           TRURL_VERSION: ${{ vars.TRURL_VERSION }}
           LIBC: glibc
+          QBT_MUSL_CROSS_MAKE_VERSION: ${{ vars.QBT_MUSL_CROSS_MAKE_VERSION }}
           CONTAINER_IMAGE: debian:latest
           TOKEN_READ: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -56,6 +57,7 @@ jobs:
           ENABLE_TRURL=${ENABLE_TRURL}
           TRURL_VERSION=${TRURL_VERSION}
           LIBC=${LIBC}
+          QBT_MUSL_CROSS_MAKE_VERSION=${QBT_MUSL_CROSS_MAKE_VERSION}
           CONTAINER_IMAGE=${CONTAINER_IMAGE}
           TOKEN_READ=${TOKEN_READ}
           sh curl-static-cross.sh
@@ -113,6 +115,7 @@ jobs:
           ENABLE_TRURL: ${{ vars.ENABLE_TRURL_MUSL }}
           TRURL_VERSION: ${{ vars.TRURL_VERSION_MUSL }}
           LIBC: musl
+          QBT_MUSL_CROSS_MAKE_VERSION: ${{ vars.QBT_MUSL_CROSS_MAKE_VERSION }}
           STATIC_LIBRARY: 1
           CONTAINER_IMAGE: debian:latest
           TOKEN_READ: ${{ secrets.GITHUB_TOKEN }}
@@ -135,6 +138,7 @@ jobs:
           ENABLE_TRURL=${ENABLE_TRURL}
           TRURL_VERSION=${TRURL_VERSION}
           LIBC=${LIBC}
+          QBT_MUSL_CROSS_MAKE_VERSION=${QBT_MUSL_CROSS_MAKE_VERSION}
           STATIC_LIBRARY=${STATIC_LIBRARY}
           CONTAINER_IMAGE=${CONTAINER_IMAGE}
           TOKEN_READ=${TOKEN_READ}
