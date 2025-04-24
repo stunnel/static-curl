@@ -170,7 +170,7 @@ For all `VERSION` variables, leaving them blank will automatically fetch the lat
 - `ARCHES`: The list of architectures to compile. You can set one or multiple architectures from the following options: [Compile](#Compile)
 - `TLS_LIB`: The TLS library. `openssl`(default, requires openssl 3.2.0+ and curl 8.6.0+) or `quictls`.
 - `LIBC`: The libc. `glibc`(default) or `musl`, only affects Linux.
-- `QBT_MUSL_CROSS_MAKE_VERSION`: The version of qbt-musl-cross-make, only affects Linux. Version `2508` and `2509` are not working. the latest working version is `2507`. Check the releases on [qbt-musl-cross-make/releases](https://github.com/userdocs/qbt-musl-cross-make/releases)
+- `QBT_MUSL_CROSS_MAKE_VERSION`: The version of qbt-musl-cross-make, only affects Linux. The latest version `2516` is working fine. Check the releases on [qbt-musl-cross-make/releases](https://github.com/userdocs/qbt-musl-cross-make/releases)
 - `CURL_VERSION`: The version of cURL. If set to `dev`, will clone the latest source code from GitHub.
 - `QUICTLS_VERSION`: The version of quictls.
 - `OPENSSL_VERSION`: The version of OpenSSL.
