@@ -310,8 +310,8 @@ compile_libunistring() {
     download_and_extract "${url}"
 
     ./configure --host "${TARGET}" --prefix="${PREFIX}" --disable-rpath --disable-shared;
-    make -j "$(nproc)";
-    make install;
+    make -C lib -j "$(nproc)";
+    make install -C lib;
 
     _copy_license COPYING libunistring;
 }
@@ -641,7 +641,7 @@ curl_config() {
             --enable-bearer-auth --enable-tls-srp --enable-dnsshuffle \
             --enable-get-easy-options --enable-progress-meter \
             --without-ca-bundle --without-ca-path \
-            --without-ca-fallback --enable-ares --enable-ipfs \
+            --without-ca-fallback --enable-ares --enable-httpsrr --enable-ipfs \
             --disable-ldap --disable-ldaps --enable-ssls-export \
             "${ENABLE_DEBUG}";
 }
