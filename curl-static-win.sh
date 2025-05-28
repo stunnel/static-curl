@@ -309,7 +309,7 @@ compile_libunistring() {
     url="https://mirrors.kernel.org/gnu/libunistring/libunistring-${LIBUNISTRING_VERSION}.tar.xz"
     download_and_extract "${url}"
 
-    ./configure --host "${TARGET}" --prefix="${PREFIX}" --disable-rpath --disable-shared;
+    ./configure --host "${TARGET}" --prefix="${PREFIX}" --disable-rpath --disable-shared --disable-tests;
     make -j "$(nproc)";
     make install;
 
