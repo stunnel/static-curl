@@ -535,7 +535,7 @@ curl_config() {
             --enable-get-easy-options --enable-progress-meter \
             --with-ca-bundle=/etc/ssl/cert.pem \
             --with-ca-path=/etc/ssl/certs \
-            --with-ca-fallback --curl-static-mac.sh  --enable-httpsrr --enable-ipfs \
+            --with-ca-fallback --enable-ares --enable-httpsrr --enable-ipfs \
             --disable-ldap --disable-ldaps --disable-rtsp \
             --disable-rtmp --disable-rtmps --enable-ssls-export \
             "${ENABLE_DEBUG}" \
