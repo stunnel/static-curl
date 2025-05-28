@@ -782,7 +782,7 @@ curl_config() {
             --enable-get-easy-options --enable-progress-meter \
             --with-ca-bundle=/etc/ssl/certs/ca-certificates.crt \
             --with-ca-path=/etc/ssl/certs \
-            --with-ca-fallback --enable-ares --enable-ipfs \
+            --with-ca-fallback --enable-ares --enable-httpsrr --enable-ipfs \
             --disable-ldap --disable-ldaps --enable-ssls-export \
             "${ENABLE_DEBUG}";
 }
