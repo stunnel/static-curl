@@ -23,7 +23,7 @@ Simply execute it to compile the most recent version.
 
 `curl -V`
 - Protocols: dict file ftp ftps gopher gophers http https imap imaps mqtt pop3 pop3s rtsp scp sftp smb smbs smtp smtps telnet tftp ws wss
-- Features: alt-svc AsynchDNS brotli HSTS HTTP2 HTTP3 HTTPS-proxy IDN IPv6 Largefile libz NTLM PSL SSL SSLS-EXPORT threadsafe TLS-SRP TrackMemory UnixSockets zstd
+- Features: alt-svc asyn-rr AsynchDNS brotli HSTS HTTP2 HTTP3 HTTPS-proxy HTTPSRR IDN IPv6 Largefile libz NTLM PSL SSL SSLS-EXPORT threadsafe TLS-SRP TrackMemory UnixSockets zstd
 
 ## Usage
 
@@ -80,7 +80,7 @@ This script utilizes `clang`(glibc) and [qbt-musl-cross-make](https://github.com
 
 - To compile locally, install Docker, clone the Git repository, navigate to the repository directory, and then execute the following command:  
 `sh curl-static-cross.sh`  
-script will create a container and compile the host architecture cURL only.  
+The script will create a container and compile the host architecture cURL only.  
 
 libc and its supported architectures  
 - libc: `glibc`, ARCHES: `"x86_64 aarch64 armv7 armv5 riscv64 s390x mips64 mips64el mipsel powerpc64le powerpc i686"`
@@ -186,7 +186,7 @@ For all `VERSION` variables, leaving them blank will automatically fetch the lat
 - `LIBPSL_VERSION`: The version of libpsl.
 - `ARES_VERSION`: The version of c-ares.
 - `TRURL_VERSION`: The version of trurl.
-- `ENABLE_TRURL`: Compile trurl. Default is `false`, set to `true` or `yes` to enable it. NOT available for macOS.
-- `ENABLE_DEBUG`: Enable curl debug. Default is `false`, set to `true` or `yes` to enable it.
+- `ENABLE_TRURL`: Compile trurl. The default is `false`, set to `true` or `yes` to enable it. NOT available for macOS.
+- `ENABLE_DEBUG`: Enable curl debug. The default is `false`, set to `true` or `yes` to enable it.
 
 The compiled files will be saved in the current `release` directory.
