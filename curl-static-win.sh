@@ -310,8 +310,8 @@ compile_libunistring() {
     download_and_extract "${url}"
 
     ./configure --host "${TARGET}" --prefix="${PREFIX}" --disable-rpath --disable-shared;
-    make -C lib -j "$(nproc)";
-    make install -C lib;
+    make -C lib -j "$(nproc)";  # use `-C lib` to skip tests
+    make -C lib install;
 
     _copy_license COPYING libunistring;
 }
