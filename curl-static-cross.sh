@@ -159,8 +159,10 @@ install_cross_compile() {
 
     ln -s "${DIR}/${SOURCE_DIR}/${SOURCE_DIR}" "/${SOURCE_DIR}"
     cd "/${SOURCE_DIR}/lib/"
-    mv libatomic.so libatomic.so.bak
-    ln -s libatomic.a libatomic.so
+    if [ -f "libatomic.so" ]; then
+        mv libatomic.so libatomic.so.bak
+        ln -s libatomic.a libatomic.so
+    fi
 
     export CC="${DIR}/${SOURCE_DIR}/bin/${SOURCE_DIR}-cc" \
            CXX="${DIR}/${SOURCE_DIR}/bin/${SOURCE_DIR}-c++" \
