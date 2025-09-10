@@ -132,11 +132,11 @@ install_cross_compile() {
         # if the variable is set, get the specific version
         if [ -n "${QBT_MUSL_CROSS_MAKE_VERSION}" ]; then
             curl --retry 5 --retry-max-time 120 -s \
-                "https://api.github.com/repos/userdocs/qbt-musl-cross-make/releases/tags/${QBT_MUSL_CROSS_MAKE_VERSION}" \
+                "https://api.github.com/repos/userdocs/qbt-musl-cross-make-test/releases/tags/${QBT_MUSL_CROSS_MAKE_VERSION}" \
                 -o "github-qbt-musl-cross-make.json"
         else
             curl --retry 5 --retry-max-time 120 -s \
-                "https://api.github.com/repos/userdocs/qbt-musl-cross-make/releases" \
+                "https://api.github.com/repos/userdocs/qbt-musl-cross-make-test/releases" \
                 -o "github-qbt-musl-cross-make.json"
         fi
     fi
@@ -159,8 +159,10 @@ install_cross_compile() {
 
     ln -s "${DIR}/${SOURCE_DIR}/${SOURCE_DIR}" "/${SOURCE_DIR}"
     cd "/${SOURCE_DIR}/lib/"
-    mv libatomic.so libatomic.so.bak
-    ln -s libatomic.a libatomic.so
+    if [ -f "libatomic.so" ]; then
+        mv libatomic.so libatomic.so.bak
+        ln -s libatomic.a libatomic.so
+    fi
 
     export CC="${DIR}/${SOURCE_DIR}/bin/${SOURCE_DIR}-cc" \
            CXX="${DIR}/${SOURCE_DIR}/bin/${SOURCE_DIR}-c++" \
