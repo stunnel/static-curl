@@ -52,8 +52,8 @@ init_env() {
 
 install_packages() {
     # xcode-select --install 2>&1 || sudo xcodebuild -license accept; sudo xcode-select --install
-    brew install --quiet automake autoconf libtool binutils pkg-config coreutils homebrew/core/cmake make \
-         curl wget git jq xz ripgrep gnu-sed gawk gstat groff gnupg pcre2 cunit ca-certificates;
+    brew install --quiet automake autoconf libtool binutils pkg-config coreutils make \
+         curl wget git jq xz ripgrep gnu-sed gawk groff gnupg pcre2 cunit ca-certificates;
 }
 
 _clang_path() {
