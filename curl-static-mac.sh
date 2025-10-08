@@ -30,7 +30,6 @@ init_env() {
     echo "Release directory: ${RELEASE_DIR}"
     echo "cURL version: ${CURL_VERSION}"
     echo "TLS Library: ${TLS_LIB}"
-    echo "QuicTLS version: ${QUICTLS_VERSION}"
     echo "OpenSSL version: ${OPENSSL_VERSION}"
     echo "ngtcp2 version: ${NGTCP2_VERSION}"
     echo "nghttp3 version: ${NGHTTP3_VERSION}"
@@ -341,11 +340,7 @@ compile_tls() {
     local url
     change_dir;
 
-    if [ "${TLS_LIB}" = "quictls" ]; then
-        url_from_github quictls/openssl "${QUICTLS_VERSION}"
-    else
-        url_from_github openssl/openssl "${OPENSSL_VERSION}"
-    fi
+    url_from_github openssl/openssl "${OPENSSL_VERSION}"
 
     url="${URL}"
     download_and_extract "${url}"

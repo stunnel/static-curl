@@ -20,7 +20,6 @@ jobs:
           ARCHES: ${{ vars.ARCHES_LINUX_GLIBC }}
           CURL_VERSION: ${{ vars.CURL_VERSION }}
           TLS_LIB: ${{ vars.TLS_LIB }}
-          QUICTLS_VERSION: ${{ vars.QUICTLS_VERSION }}
           OPENSSL_VERSION: ${{ vars.OPENSSL_VERSION }}
           NGTCP2_VERSION: ${{ vars.NGTCP2_VERSION }}
           NGHTTP3_VERSION: ${{ vars.NGHTTP3_VERSION }}
@@ -42,7 +41,6 @@ jobs:
           ARCHES="${ARCHES}"
           CURL_VERSION=${CURL_VERSION}
           TLS_LIB=${TLS_LIB}
-          QUICTLS_VERSION=${QUICTLS_VERSION}
           OPENSSL_VERSION=${OPENSSL_VERSION}
           NGTCP2_VERSION=${NGTCP2_VERSION}
           NGHTTP3_VERSION=${NGHTTP3_VERSION}
@@ -100,7 +98,6 @@ jobs:
           ARCHES: ${{ vars.ARCHES_LINUX_MUSL }}
           CURL_VERSION: ${{ vars.CURL_VERSION }}
           TLS_LIB: ${{ vars.TLS_LIB }}
-          QUICTLS_VERSION: ${{ vars.QUICTLS_VERSION_MUSL }}
           OPENSSL_VERSION: ${{ vars.OPENSSL_VERSION_MUSL }}
           NGTCP2_VERSION: ${{ vars.NGTCP2_VERSION_MUSL }}
           NGHTTP3_VERSION: ${{ vars.NGHTTP3_VERSION_MUSL }}
@@ -123,7 +120,6 @@ jobs:
           ARCHES="${ARCHES}"
           CURL_VERSION=${CURL_VERSION}
           TLS_LIB=${TLS_LIB}
-          QUICTLS_VERSION=${QUICTLS_VERSION}
           OPENSSL_VERSION=${OPENSSL_VERSION}
           NGTCP2_VERSION=${NGTCP2_VERSION}
           NGHTTP3_VERSION=${NGHTTP3_VERSION}
@@ -182,7 +178,6 @@ jobs:
           ARCHES: ${{ vars.ARCHES_WINDOWS }}
           CURL_VERSION: ${{ vars.CURL_VERSION }}
           TLS_LIB: ${{ vars.TLS_LIB }}
-          QUICTLS_VERSION: ${{ vars.QUICTLS_VERSION }}
           OPENSSL_VERSION: ${{ vars.OPENSSL_VERSION }}
           NGTCP2_VERSION: ${{ vars.NGTCP2_VERSION }}
           NGHTTP3_VERSION: ${{ vars.NGHTTP3_VERSION }}
@@ -202,7 +197,6 @@ jobs:
           ARCHES="${ARCHES}"
           CURL_VERSION=${CURL_VERSION}
           TLS_LIB=${TLS_LIB}
-          QUICTLS_VERSION=${QUICTLS_VERSION}
           OPENSSL_VERSION=${OPENSSL_VERSION}
           NGTCP2_VERSION=${NGTCP2_VERSION}
           NGHTTP3_VERSION=${NGHTTP3_VERSION}
@@ -262,7 +256,6 @@ jobs:
           ARCHES: ${{ vars.ARCHES_MACOS }}
           CURL_VERSION: ${{ vars.CURL_VERSION }}
           TLS_LIB: ${{ vars.TLS_LIB }}
-          QUICTLS_VERSION: ${{ vars.QUICTLS_VERSION }}
           OPENSSL_VERSION: ${{ vars.OPENSSL_VERSION }}
           NGTCP2_VERSION: ${{ vars.NGTCP2_VERSION }}
           NGHTTP3_VERSION: ${{ vars.NGHTTP3_VERSION }}
@@ -279,7 +272,6 @@ jobs:
           ARCHES="${ARCHES}"
           CURL_VERSION=${CURL_VERSION}
           TLS_LIB=${TLS_LIB}
-          QUICTLS_VERSION=${QUICTLS_VERSION}
           OPENSSL_VERSION=${OPENSSL_VERSION}
           NGTCP2_VERSION=${NGTCP2_VERSION}
           NGHTTP3_VERSION=${NGHTTP3_VERSION}

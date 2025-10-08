@@ -8,7 +8,6 @@ Simply execute it to compile the most recent version.
 **Included components**
 
 - [openssl](https://www.openssl.org)
-- [quictls](https://github.com/quictls/openssl)
 - [libssh2](https://github.com/libssh2/libssh2)
 - [nghttp3](https://github.com/ngtcp2/nghttp3)
 - [ngtcp2](https://github.com/ngtcp2/ngtcp2)
@@ -95,7 +94,6 @@ libc and its supported architectures
       -e LIBC="glibc" \
       -e QBT_MUSL_CROSS_MAKE_VERSION="" \
       -e CURL_VERSION="" \
-      -e QUICTLS_VERSION="" \
       -e OPENSSL_VERSION="" \
       -e NGTCP2_VERSION="" \
       -e NGHTTP3_VERSION="" \
@@ -118,7 +116,6 @@ Run the following command to compile:
 ARCHES="x86_64 arm64" \
     TLS_LIB=openssl \
     CURL_VERSION="" \
-    QUICTLS_VERSION="" \
     OPENSSL_VERSION="" \
     NGTCP2_VERSION="" \
     NGHTTP3_VERSION="" \
@@ -147,7 +144,6 @@ ARCHES="x86_64 arm64" \
       -e ARCHES="x86_64 i686 aarch64 armv7" \
       -e TLS_LIB="openssl" \
       -e CURL_VERSION="" \
-      -e QUICTLS_VERSION="" \
       -e OPENSSL_VERSION="" \
       -e NGTCP2_VERSION="" \
       -e NGHTTP3_VERSION="" \
@@ -168,11 +164,10 @@ Supported Environment Variables list:
 For all `VERSION` variables, leaving them blank will automatically fetch the latest version.
 
 - `ARCHES`: The list of architectures to compile. You can set one or multiple architectures from the following options: [Compile](#Compile)
-- `TLS_LIB`: The TLS library. `openssl`(default, requires openssl 3.2.0+ and curl 8.6.0+) or `quictls`.
+- `TLS_LIB`: The TLS library. only support `openssl` for now.
 - `LIBC`: The libc. `glibc`(default) or `musl`, only affects Linux.
 - `QBT_MUSL_CROSS_MAKE_VERSION`: The version of qbt-musl-cross-make, only affects Linux. The latest version `2516` is working fine. Check the releases on [qbt-musl-cross-make/releases](https://github.com/userdocs/qbt-musl-cross-make/releases)
 - `CURL_VERSION`: The version of cURL. If set to `dev`, will clone the latest source code from GitHub.
-- `QUICTLS_VERSION`: The version of quictls.
 - `OPENSSL_VERSION`: The version of OpenSSL.
 - `NGTCP2_VERSION`: The version of ngtcp2.
 - `NGHTTP3_VERSION`: The version of nghttp3.
