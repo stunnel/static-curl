@@ -343,9 +343,16 @@ compile_tls() {
     change_dir;
 
     if [ "${OPENSSL_VERSION}" = "dev" ] && [ -n "${OPENSSL_BRANCH}" ]; then
-        git clone --depth 1 -b "${OPENSSL_BRANCH}" https://github.com/openssl/openssl.git openssl-dev;
-        cd openssl-dev;
-        make clean || true;
+        if [ -d "openssl-dev" ]; then
+            cd openssl-dev;
+            make clean || true;
+            git fetch origin "${OPENSSL_BRANCH}";
+            git checkout "${OPENSSL_BRANCH}";
+            git pull origin "${OPENSSL_BRANCH}";
+        else
+            git clone --depth 1 -b "${OPENSSL_BRANCH}" https://github.com/openssl/openssl.git openssl-dev;
+            cd openssl-dev;
+        fi
     else
         url_from_github openssl/openssl "${OPENSSL_VERSION}"
         url="${URL}"
