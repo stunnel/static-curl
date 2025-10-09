@@ -13,11 +13,7 @@ create_release_note() {
     local components protocols features output_sha256 markdown_table
     echo "Creating release note..."
 
-    if [ "${TLS_LIB}" = "quictls" ]; then
-        components=$(head -n 1 release/version-info.txt | sed 's#OpenSSL/#quictls/#g' | sed 's/ /\n/g' | grep '/' | sed 's#^#- #g' || true)
-    else
-        components=$(head -n 1 release/version-info.txt | sed 's/ /\n/g' | grep '/' | sed 's#^#- #g' || true)
-    fi
+    components=$(head -n 1 release/version-info.txt | sed 's/ /\n/g' | grep '/' | sed 's#^#- #g' || true)
     protocols=$(grep Protocols release/version-info.txt | cut -d":" -f2 | sed -e 's/^[[:space:]]*//')
     features=$(grep Features release/version-info.txt | cut -d":" -f2 | sed -e 's/^[[:space:]]*//')
 

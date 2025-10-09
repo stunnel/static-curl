@@ -2,7 +2,7 @@
 
 # To compile locally, install Docker, clone the Git repository, navigate to the repository directory,
 # and then execute the following command:
-# ARCHES="x86_64 aarch64" CURL_VERSION=8.6.0 TLS_LIB=openssl QUICTLS_VERSION=3.1.5 \
+# ARCHES="x86_64 aarch64" CURL_VERSION=8.6.0 TLS_LIB=openssl \
 #     ZLIB_VERSION= CONTAINER_IMAGE=debian:latest \
 #     sh curl-static-cross.sh
 # script will create a container and compile curl.
@@ -15,7 +15,6 @@
 #     -e ENABLE_DEBUG=0 \
 #     -e CURL_VERSION=8.6.0 \
 #     -e TLS_LIB=openssl \
-#     -e QUICTLS_VERSION=3.1.5 \
 #     -e OPENSSL_VERSION="" \
 #     -e NGTCP2_VERSION="" \
 #     -e NGHTTP3_VERSION="" \
@@ -56,7 +55,6 @@ init_env() {
     echo "Architecture list: ${ARCHES}"
     echo "cURL version: ${CURL_VERSION}"
     echo "TLS Library: ${TLS_LIB}"
-    echo "QuicTLS version: ${QUICTLS_VERSION}"
     echo "OpenSSL version: ${OPENSSL_VERSION}"
     echo "ngtcp2 version: ${NGTCP2_VERSION}"
     echo "nghttp3 version: ${NGHTTP3_VERSION}"
@@ -558,11 +556,7 @@ compile_tls() {
     local url
     change_dir;
 
-    if [ "${TLS_LIB}" = "quictls" ]; then
-        url_from_github quictls/openssl "${QUICTLS_VERSION}"
-    else
-        url_from_github openssl/openssl "${OPENSSL_VERSION}"
-    fi
+    url_from_github openssl/openssl "${OPENSSL_VERSION}"
 
     url="${URL}"
     download_and_extract "${url}"
@@ -902,7 +896,6 @@ _build_in_docker() {
         -e ENABLE_DEBUG="${ENABLE_DEBUG}" \
         -e CURL_VERSION="${CURL_VERSION}" \
         -e TLS_LIB="${TLS_LIB}" \
-        -e QUICTLS_VERSION="${QUICTLS_VERSION}" \
         -e OPENSSL_VERSION="${OPENSSL_VERSION}" \
         -e NGTCP2_VERSION="${NGTCP2_VERSION}" \
         -e NGHTTP3_VERSION="${NGHTTP3_VERSION}" \
