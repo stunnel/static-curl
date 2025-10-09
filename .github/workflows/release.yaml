@@ -3,6 +3,127 @@ name: build-and-release
 on:
   # run it manually
   workflow_dispatch:
+    inputs:
+      CURL_VERSION:
+        description: 'cURL Version'
+        required: false
+        default: ''
+        type: string
+      ENABLE_ECH:
+        description: 'Enable ECH Support'
+        required: false
+        default: 'false'
+        type: string
+      TLS_LIB:
+        description: 'TLS Library (only openssl is supported for now)'
+        required: false
+        default: 'openssl'
+        type: string
+
+      OPENSSL_VERSION:
+        description: 'OpenSSL Version'
+        required: false
+        default: ''
+        type: string
+      OPENSSL_BRANCH:
+        description: 'OpenSSL Branch'
+        required: false
+        default: 'feature/ech'
+        type: string
+
+      NGTCP2_VERSION:
+        description: 'NGTCP2 Version'
+        required: false
+        default: ''
+        type: string
+      NGHTTP3_VERSION:
+        description: 'NGHTTP3 Version'
+        required: false
+        default: ''
+        type: string
+      NGHTTP2_VERSION:
+        description: 'NGHTTP2 Version'
+        required: false
+        default: ''
+        type: string
+      LIBIDN2_VERSION:
+        description: 'LIBIDN2 Version'
+        required: false
+        default: ''
+        type: string
+      LIBUNISTRING_VERSION:
+        description: 'LIBUNISTRING Version'
+        required: false
+        default: ''
+        type: string
+      ZLIB_VERSION:
+        description: 'ZLIB Version'
+        required: false
+        default: ''
+        type: string
+      BROTLI_VERSION:
+        description: 'BROTLI Version'
+        required: false
+        default: ''
+        type: string
+      ZSTD_VERSION:
+        description: 'ZSTD Version'
+        required: false
+        default: ''
+        type: string
+      LIBSSH2_VERSION:
+        description: 'LIBSSH2 Version'
+        required: false
+        default: ''
+        type: string
+      ARES_VERSION:
+        description: 'C-ARES Version'
+        required: false
+        default: ''
+        type: string
+
+      ENABLE_TRURL:
+        description: 'Compile TRURL'
+        required: false
+        default: ''
+        type: string
+      TRURL_VERSION:
+        description: 'TRURL Version'
+        required: false
+        default: ''
+        type: string
+      ENABLE_TRURL_MUSL:
+        description: 'Compile TRURL with musl'
+        required: false
+        default: ''
+        type: string
+
+      ARCHES_LINUX_GLIBC:
+        description: 'Linux glibc Architecture List'
+        required: false
+        default: 'x86_64 aarch64 armv7 armv5 riscv64 s390x mips64 mips64el mipsel powerpc64le powerpc i686'
+        type: string
+      ARCHES_LINUX_MUSL:
+        description: 'Linux musl Architecture List'
+        required: false
+        default: 'x86_64 aarch64 armv7 armv5 riscv64 s390x mips64 mips64el mips mipsel powerpc64le powerpc loongarch64'
+        type: string
+      ARCHES_WINDOWS:
+        description: 'Windows Architecture List'
+        required: false
+        default: 'x86_64 aarch64 armv7 i686'
+        type: string
+      ARCHES_MACOS:
+        description: 'macOS Architecture List'
+        required: false
+        default: 'x86_64 arm64'
+        type: string
+
+      QBT_MUSL_CROSS_MAKE_VERSION:
+        description: 'QBT musl cross make Version'
+        required: false
+        default: ''
+        type: string
 
 jobs:
   build-Linux:
@@ -15,50 +136,34 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Cross Build Static cURL
-        env:
-          ARCHES: ${{ vars.ARCHES_LINUX_GLIBC }}
-          CURL_VERSION: ${{ vars.CURL_VERSION }}
-          TLS_LIB: ${{ vars.TLS_LIB }}
-          OPENSSL_VERSION: ${{ vars.OPENSSL_VERSION }}
-          NGTCP2_VERSION: ${{ vars.NGTCP2_VERSION }}
-          NGHTTP3_VERSION: ${{ vars.NGHTTP3_VERSION }}
-          NGHTTP2_VERSION: ${{ vars.NGHTTP2_VERSION }}
-          LIBIDN2_VERSION: ${{ vars.LIBIDN2_VERSION }}
-          LIBUNISTRING_VERSION: ${{ vars.LIBUNISTRING_VERSION }}
-          ZLIB_VERSION: ${{ vars.ZLIB_VERSION }}
-          BROTLI_VERSION: ${{ vars.BROTLI_VERSION }}
-          ZSTD_VERSION: ${{ vars.ZSTD_VERSION }}
-          LIBSSH2_VERSION: ${{ vars.LIBSSH2_VERSION }}
-          ARES_VERSION: ${{ vars.ARES_VERSION }}
-          ENABLE_TRURL: ${{ vars.ENABLE_TRURL }}
-          TRURL_VERSION: ${{ vars.TRURL_VERSION }}
-          LIBC: glibc
-          QBT_MUSL_CROSS_MAKE_VERSION: ${{ vars.QBT_MUSL_CROSS_MAKE_VERSION }}
-          CONTAINER_IMAGE: debian:latest
-          TOKEN_READ: ${{ secrets.GITHUB_TOKEN }}
+      - name: Set build variables
         run: |
-          ARCHES="${ARCHES}"
-          CURL_VERSION=${CURL_VERSION}
-          TLS_LIB=${TLS_LIB}
-          OPENSSL_VERSION=${OPENSSL_VERSION}
-          NGTCP2_VERSION=${NGTCP2_VERSION}
-          NGHTTP3_VERSION=${NGHTTP3_VERSION}
-          NGHTTP2_VERSION=${NGHTTP2_VERSION}
-          LIBIDN2_VERSION=${LIBIDN2_VERSION}
-          LIBUNISTRING_VERSION=${LIBUNISTRING_VERSION}
-          ZLIB_VERSION=${ZLIB_VERSION}
-          BROTLI_VERSION=${BROTLI_VERSION}
-          ZSTD_VERSION=${ZSTD_VERSION}
-          LIBSSH2_VERSION=${LIBSSH2_VERSION}
-          ARES_VERSION=${ARES_VERSION}
-          ENABLE_TRURL=${ENABLE_TRURL}
-          TRURL_VERSION=${TRURL_VERSION}
-          LIBC=${LIBC}
-          QBT_MUSL_CROSS_MAKE_VERSION=${QBT_MUSL_CROSS_MAKE_VERSION}
-          CONTAINER_IMAGE=${CONTAINER_IMAGE}
-          TOKEN_READ=${TOKEN_READ}
-          sh curl-static-cross.sh
+          # Set all build variables with fallback logic
+          echo "ARCHES=${{ inputs.ARCHES_LINUX_GLIBC != '' && inputs.ARCHES_LINUX_GLIBC || vars.ARCHES_LINUX_GLIBC }}" >> $GITHUB_ENV
+          echo "CURL_VERSION=${{ inputs.CURL_VERSION != '' && inputs.CURL_VERSION || vars.CURL_VERSION }}" >> $GITHUB_ENV
+          echo "ENABLE_ECH=${{ inputs.ENABLE_ECH != '' && inputs.ENABLE_ECH || vars.ENABLE_ECH }}" >> $GITHUB_ENV
+          echo "TLS_LIB=${{ inputs.TLS_LIB != '' && inputs.TLS_LIB || vars.TLS_LIB }}" >> $GITHUB_ENV
+          echo "OPENSSL_VERSION=${{ inputs.OPENSSL_VERSION != '' && inputs.OPENSSL_VERSION || vars.OPENSSL_VERSION }}" >> $GITHUB_ENV
+          echo "OPENSSL_BRANCH=${{ inputs.OPENSSL_BRANCH != '' && inputs.OPENSSL_BRANCH || vars.OPENSSL_BRANCH }}" >> $GITHUB_ENV
+          echo "NGTCP2_VERSION=${{ inputs.NGTCP2_VERSION != '' && inputs.NGTCP2_VERSION || vars.NGTCP2_VERSION }}" >> $GITHUB_ENV
+          echo "NGHTTP3_VERSION=${{ inputs.NGHTTP3_VERSION != '' && inputs.NGHTTP3_VERSION || vars.NGHTTP3_VERSION }}" >> $GITHUB_ENV
+          echo "NGHTTP2_VERSION=${{ inputs.NGHTTP2_VERSION != '' && inputs.NGHTTP2_VERSION || vars.NGHTTP2_VERSION }}" >> $GITHUB_ENV
+          echo "LIBIDN2_VERSION=${{ inputs.LIBIDN2_VERSION != '' && inputs.LIBIDN2_VERSION || vars.LIBIDN2_VERSION }}" >> $GITHUB_ENV
+          echo "LIBUNISTRING_VERSION=${{ inputs.LIBUNISTRING_VERSION != '' && inputs.LIBUNISTRING_VERSION || vars.LIBUNISTRING_VERSION }}" >> $GITHUB_ENV
+          echo "ZLIB_VERSION=${{ inputs.ZLIB_VERSION != '' && inputs.ZLIB_VERSION || vars.ZLIB_VERSION }}" >> $GITHUB_ENV
+          echo "BROTLI_VERSION=${{ inputs.BROTLI_VERSION != '' && inputs.BROTLI_VERSION || vars.BROTLI_VERSION }}" >> $GITHUB_ENV
+          echo "ZSTD_VERSION=${{ inputs.ZSTD_VERSION != '' && inputs.ZSTD_VERSION || vars.ZSTD_VERSION }}" >> $GITHUB_ENV
+          echo "LIBSSH2_VERSION=${{ inputs.LIBSSH2_VERSION != '' && inputs.LIBSSH2_VERSION || vars.LIBSSH2_VERSION }}" >> $GITHUB_ENV
+          echo "ARES_VERSION=${{ inputs.ARES_VERSION != '' && inputs.ARES_VERSION || vars.ARES_VERSION }}" >> $GITHUB_ENV
+          echo "ENABLE_TRURL=${{ inputs.ENABLE_TRURL != '' && inputs.ENABLE_TRURL || vars.ENABLE_TRURL }}" >> $GITHUB_ENV
+          echo "TRURL_VERSION=${{ inputs.TRURL_VERSION != '' && inputs.TRURL_VERSION || vars.TRURL_VERSION }}" >> $GITHUB_ENV
+          echo "LIBC=glibc" >> $GITHUB_ENV
+          echo "QBT_MUSL_CROSS_MAKE_VERSION=${{ inputs.QBT_MUSL_CROSS_MAKE_VERSION != '' && inputs.QBT_MUSL_CROSS_MAKE_VERSION || vars.QBT_MUSL_CROSS_MAKE_VERSION }}" >> $GITHUB_ENV
+          echo "CONTAINER_IMAGE=debian:latest" >> $GITHUB_ENV
+          echo "TOKEN_READ=${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV
+
+      - name: Cross Build Static cURL
+        run: sh curl-static-cross.sh
 
       - name: Set up environment
         run: |
@@ -93,52 +198,35 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Cross Build Static cURL
-        env:
-          ARCHES: ${{ vars.ARCHES_LINUX_MUSL }}
-          CURL_VERSION: ${{ vars.CURL_VERSION }}
-          TLS_LIB: ${{ vars.TLS_LIB }}
-          OPENSSL_VERSION: ${{ vars.OPENSSL_VERSION_MUSL }}
-          NGTCP2_VERSION: ${{ vars.NGTCP2_VERSION_MUSL }}
-          NGHTTP3_VERSION: ${{ vars.NGHTTP3_VERSION_MUSL }}
-          NGHTTP2_VERSION: ${{ vars.NGHTTP2_VERSION_MUSL }}
-          LIBIDN2_VERSION: ${{ vars.LIBIDN2_VERSION_MUSL }}
-          LIBUNISTRING_VERSION: ${{ vars.LIBUNISTRING_VERSION_MUSL }}
-          ZLIB_VERSION: ${{ vars.ZLIB_VERSION_MUSL }}
-          BROTLI_VERSION: ${{ vars.BROTLI_VERSION_MUSL }}
-          ZSTD_VERSION: ${{ vars.ZSTD_VERSION_MUSL }}
-          LIBSSH2_VERSION: ${{ vars.LIBSSH2_VERSION_MUSL }}
-          ARES_VERSION: ${{ vars.ARES_VERSION_MUSL }}
-          ENABLE_TRURL: ${{ vars.ENABLE_TRURL_MUSL }}
-          TRURL_VERSION: ${{ vars.TRURL_VERSION_MUSL }}
-          LIBC: musl
-          QBT_MUSL_CROSS_MAKE_VERSION: ${{ vars.QBT_MUSL_CROSS_MAKE_VERSION }}
-          STATIC_LIBRARY: 1
-          CONTAINER_IMAGE: debian:latest
-          TOKEN_READ: ${{ secrets.GITHUB_TOKEN }}
+      - name: Set build variables
         run: |
-          ARCHES="${ARCHES}"
-          CURL_VERSION=${CURL_VERSION}
-          TLS_LIB=${TLS_LIB}
-          OPENSSL_VERSION=${OPENSSL_VERSION}
-          NGTCP2_VERSION=${NGTCP2_VERSION}
-          NGHTTP3_VERSION=${NGHTTP3_VERSION}
-          NGHTTP2_VERSION=${NGHTTP2_VERSION}
-          LIBIDN2_VERSION=${LIBIDN2_VERSION}
-          LIBUNISTRING_VERSION=${LIBUNISTRING_VERSION}
-          ZLIB_VERSION=${ZLIB_VERSION}
-          BROTLI_VERSION=${BROTLI_VERSION}
-          ZSTD_VERSION=${ZSTD_VERSION}
-          LIBSSH2_VERSION=${LIBSSH2_VERSION}
-          ARES_VERSION=${ARES_VERSION}
-          ENABLE_TRURL=${ENABLE_TRURL}
-          TRURL_VERSION=${TRURL_VERSION}
-          LIBC=${LIBC}
-          QBT_MUSL_CROSS_MAKE_VERSION=${QBT_MUSL_CROSS_MAKE_VERSION}
-          STATIC_LIBRARY=${STATIC_LIBRARY}
-          CONTAINER_IMAGE=${CONTAINER_IMAGE}
-          TOKEN_READ=${TOKEN_READ}
-          sh curl-static-cross.sh
+          # Set all build variables with fallback logic
+          echo "ARCHES=${{ inputs.ARCHES_LINUX_MUSL != '' && inputs.ARCHES_LINUX_MUSL || vars.ARCHES_LINUX_MUSL }}" >> $GITHUB_ENV
+          echo "CURL_VERSION=${{ inputs.CURL_VERSION != '' && inputs.CURL_VERSION || vars.CURL_VERSION }}" >> $GITHUB_ENV
+          echo "ENABLE_ECH=${{ inputs.ENABLE_ECH != '' && inputs.ENABLE_ECH || vars.ENABLE_ECH }}" >> $GITHUB_ENV
+          echo "TLS_LIB=${{ inputs.TLS_LIB != '' && inputs.TLS_LIB || vars.TLS_LIB }}" >> $GITHUB_ENV
+          echo "OPENSSL_VERSION=${{ inputs.OPENSSL_VERSION != '' && inputs.OPENSSL_VERSION || vars.OPENSSL_VERSION }}" >> $GITHUB_ENV
+          echo "OPENSSL_BRANCH=${{ inputs.OPENSSL_BRANCH != '' && inputs.OPENSSL_BRANCH || vars.OPENSSL_BRANCH }}" >> $GITHUB_ENV
+          echo "NGTCP2_VERSION=${{ inputs.NGTCP2_VERSION != '' && inputs.NGTCP2_VERSION || vars.NGTCP2_VERSION }}" >> $GITHUB_ENV
+          echo "NGHTTP3_VERSION=${{ inputs.NGHTTP3_VERSION != '' && inputs.NGHTTP3_VERSION || vars.NGHTTP3_VERSION }}" >> $GITHUB_ENV
+          echo "NGHTTP2_VERSION=${{ inputs.NGHTTP2_VERSION != '' && inputs.NGHTTP2_VERSION || vars.NGHTTP2_VERSION }}" >> $GITHUB_ENV
+          echo "LIBIDN2_VERSION=${{ inputs.LIBIDN2_VERSION != '' && inputs.LIBIDN2_VERSION || vars.LIBIDN2_VERSION }}" >> $GITHUB_ENV
+          echo "LIBUNISTRING_VERSION=${{ inputs.LIBUNISTRING_VERSION != '' && inputs.LIBUNISTRING_VERSION || vars.LIBUNISTRING_VERSION }}" >> $GITHUB_ENV
+          echo "ZLIB_VERSION=${{ inputs.ZLIB_VERSION != '' && inputs.ZLIB_VERSION || vars.ZLIB_VERSION }}" >> $GITHUB_ENV
+          echo "BROTLI_VERSION=${{ inputs.BROTLI_VERSION != '' && inputs.BROTLI_VERSION || vars.BROTLI_VERSION }}" >> $GITHUB_ENV
+          echo "ZSTD_VERSION=${{ inputs.ZSTD_VERSION != '' && inputs.ZSTD_VERSION || vars.ZSTD_VERSION }}" >> $GITHUB_ENV
+          echo "LIBSSH2_VERSION=${{ inputs.LIBSSH2_VERSION != '' && inputs.LIBSSH2_VERSION || vars.LIBSSH2_VERSION }}" >> $GITHUB_ENV
+          echo "ARES_VERSION=${{ inputs.ARES_VERSION != '' && inputs.ARES_VERSION || vars.ARES_VERSION }}" >> $GITHUB_ENV
+          echo "ENABLE_TRURL=${{ inputs.ENABLE_TRURL_MUSL != '' && inputs.ENABLE_TRURL_MUSL || vars.ENABLE_TRURL_MUSL }}" >> $GITHUB_ENV
+          echo "TRURL_VERSION=${{ inputs.TRURL_VERSION != '' && inputs.TRURL_VERSION || vars.TRURL_VERSION }}" >> $GITHUB_ENV
+          echo "LIBC=musl" >> $GITHUB_ENV
+          echo "QBT_MUSL_CROSS_MAKE_VERSION=${{ inputs.QBT_MUSL_CROSS_MAKE_VERSION != '' && inputs.QBT_MUSL_CROSS_MAKE_VERSION || vars.QBT_MUSL_CROSS_MAKE_VERSION }}" >> $GITHUB_ENV
+          echo "STATIC_LIBRARY=1" >> $GITHUB_ENV
+          echo "CONTAINER_IMAGE=debian:latest" >> $GITHUB_ENV
+          echo "TOKEN_READ=${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV
+
+      - name: Cross Build Static cURL
+        run: sh curl-static-cross.sh
 
       - name: Set up environment
         run: |
@@ -173,46 +261,32 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Cross Build Static cURL
-        env:
-          ARCHES: ${{ vars.ARCHES_WINDOWS }}
-          CURL_VERSION: ${{ vars.CURL_VERSION }}
-          TLS_LIB: ${{ vars.TLS_LIB }}
-          OPENSSL_VERSION: ${{ vars.OPENSSL_VERSION }}
-          NGTCP2_VERSION: ${{ vars.NGTCP2_VERSION }}
-          NGHTTP3_VERSION: ${{ vars.NGHTTP3_VERSION }}
-          NGHTTP2_VERSION: ${{ vars.NGHTTP2_VERSION }}
-          LIBIDN2_VERSION: ${{ vars.LIBIDN2_VERSION }}
-          LIBUNISTRING_VERSION: ${{ vars.LIBUNISTRING_VERSION }}
-          ZLIB_VERSION: ${{ vars.ZLIB_VERSION }}
-          BROTLI_VERSION: ${{ vars.BROTLI_VERSION }}
-          ZSTD_VERSION: ${{ vars.ZSTD_VERSION }}
-          LIBSSH2_VERSION: ${{ vars.LIBSSH2_VERSION }}
-          ARES_VERSION: ${{ vars.ARES_VERSION }}
-          ENABLE_TRURL: ${{ vars.ENABLE_TRURL }}
-          TRURL_VERSION: ${{ vars.TRURL_VERSION }}
-          CONTAINER_IMAGE: mstorsjo/llvm-mingw:latest
-          TOKEN_READ: ${{ secrets.GITHUB_TOKEN }}
+      - name: Set build variables
         run: |
-          ARCHES="${ARCHES}"
-          CURL_VERSION=${CURL_VERSION}
-          TLS_LIB=${TLS_LIB}
-          OPENSSL_VERSION=${OPENSSL_VERSION}
-          NGTCP2_VERSION=${NGTCP2_VERSION}
-          NGHTTP3_VERSION=${NGHTTP3_VERSION}
-          NGHTTP2_VERSION=${NGHTTP2_VERSION}
-          LIBIDN2_VERSION=${LIBIDN2_VERSION}
-          LIBUNISTRING_VERSION=${LIBUNISTRING_VERSION}
-          ZLIB_VERSION=${ZLIB_VERSION}
-          BROTLI_VERSION=${BROTLI_VERSION}
-          ZSTD_VERSION=${ZSTD_VERSION}
-          LIBSSH2_VERSION=${LIBSSH2_VERSION}
-          ARES_VERSION=${ARES_VERSION}
-          ENABLE_TRURL=${ENABLE_TRURL}
-          TRURL_VERSION=${TRURL_VERSION}
-          CONTAINER_IMAGE=${CONTAINER_IMAGE}
-          TOKEN_READ=${TOKEN_READ}
-          sh curl-static-win.sh
+          # Set all build variables with fallback logic
+          echo "ARCHES=${{ inputs.ARCHES_WINDOWS != '' && inputs.ARCHES_WINDOWS || vars.ARCHES_WINDOWS }}" >> $GITHUB_ENV
+          echo "CURL_VERSION=${{ inputs.CURL_VERSION != '' && inputs.CURL_VERSION || vars.CURL_VERSION }}" >> $GITHUB_ENV
+          echo "ENABLE_ECH=${{ inputs.ENABLE_ECH != '' && inputs.ENABLE_ECH || vars.ENABLE_ECH }}" >> $GITHUB_ENV
+          echo "TLS_LIB=${{ inputs.TLS_LIB != '' && inputs.TLS_LIB || vars.TLS_LIB }}" >> $GITHUB_ENV
+          echo "OPENSSL_VERSION=${{ inputs.OPENSSL_VERSION != '' && inputs.OPENSSL_VERSION || vars.OPENSSL_VERSION }}" >> $GITHUB_ENV
+          echo "OPENSSL_BRANCH=${{ inputs.OPENSSL_BRANCH != '' && inputs.OPENSSL_BRANCH || vars.OPENSSL_BRANCH }}" >> $GITHUB_ENV
+          echo "NGTCP2_VERSION=${{ inputs.NGTCP2_VERSION != '' && inputs.NGTCP2_VERSION || vars.NGTCP2_VERSION }}" >> $GITHUB_ENV
+          echo "NGHTTP3_VERSION=${{ inputs.NGHTTP3_VERSION != '' && inputs.NGHTTP3_VERSION || vars.NGHTTP3_VERSION }}" >> $GITHUB_ENV
+          echo "NGHTTP2_VERSION=${{ inputs.NGHTTP2_VERSION != '' && inputs.NGHTTP2_VERSION || vars.NGHTTP2_VERSION }}" >> $GITHUB_ENV
+          echo "LIBIDN2_VERSION=${{ inputs.LIBIDN2_VERSION != '' && inputs.LIBIDN2_VERSION || vars.LIBIDN2_VERSION }}" >> $GITHUB_ENV
+          echo "LIBUNISTRING_VERSION=${{ inputs.LIBUNISTRING_VERSION != '' && inputs.LIBUNISTRING_VERSION || vars.LIBUNISTRING_VERSION }}" >> $GITHUB_ENV
+          echo "ZLIB_VERSION=${{ inputs.ZLIB_VERSION != '' && inputs.ZLIB_VERSION || vars.ZLIB_VERSION }}" >> $GITHUB_ENV
+          echo "BROTLI_VERSION=${{ inputs.BROTLI_VERSION != '' && inputs.BROTLI_VERSION || vars.BROTLI_VERSION }}" >> $GITHUB_ENV
+          echo "ZSTD_VERSION=${{ inputs.ZSTD_VERSION != '' && inputs.ZSTD_VERSION || vars.ZSTD_VERSION }}" >> $GITHUB_ENV
+          echo "LIBSSH2_VERSION=${{ inputs.LIBSSH2_VERSION != '' && inputs.LIBSSH2_VERSION || vars.LIBSSH2_VERSION }}" >> $GITHUB_ENV
+          echo "ARES_VERSION=${{ inputs.ARES_VERSION != '' && inputs.ARES_VERSION || vars.ARES_VERSION }}" >> $GITHUB_ENV
+          echo "ENABLE_TRURL=${{ inputs.ENABLE_TRURL != '' && inputs.ENABLE_TRURL || vars.ENABLE_TRURL }}" >> $GITHUB_ENV
+          echo "TRURL_VERSION=${{ inputs.TRURL_VERSION != '' && inputs.TRURL_VERSION || vars.TRURL_VERSION }}" >> $GITHUB_ENV
+          echo "CONTAINER_IMAGE=mstorsjo/llvm-mingw:latest" >> $GITHUB_ENV
+          echo "TOKEN_READ=${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV
+
+      - name: Cross Build Static cURL
+        run: sh curl-static-win.sh
 
       - name: Set up environment
         run: |
@@ -251,40 +325,29 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Build Static cURL on macOS
-        env:
-          ARCHES: ${{ vars.ARCHES_MACOS }}
-          CURL_VERSION: ${{ vars.CURL_VERSION }}
-          TLS_LIB: ${{ vars.TLS_LIB }}
-          OPENSSL_VERSION: ${{ vars.OPENSSL_VERSION }}
-          NGTCP2_VERSION: ${{ vars.NGTCP2_VERSION }}
-          NGHTTP3_VERSION: ${{ vars.NGHTTP3_VERSION }}
-          NGHTTP2_VERSION: ${{ vars.NGHTTP2_VERSION }}
-          LIBIDN2_VERSION: ${{ vars.LIBIDN2_VERSION }}
-          LIBUNISTRING_VERSION: ${{ vars.LIBUNISTRING_VERSION }}
-          ZLIB_VERSION: ${{ vars.ZLIB_VERSION }}
-          BROTLI_VERSION: ${{ vars.BROTLI_VERSION }}
-          ZSTD_VERSION: ${{ vars.ZSTD_VERSION }}
-          LIBSSH2_VERSION: ${{ vars.LIBSSH2_VERSION }}
-          ARES_VERSION: ${{ vars.ARES_VERSION }}
-          TOKEN_READ: ${{ secrets.GITHUB_TOKEN }}
+      - name: Set build variables
         run: |
-          ARCHES="${ARCHES}"
-          CURL_VERSION=${CURL_VERSION}
-          TLS_LIB=${TLS_LIB}
-          OPENSSL_VERSION=${OPENSSL_VERSION}
-          NGTCP2_VERSION=${NGTCP2_VERSION}
-          NGHTTP3_VERSION=${NGHTTP3_VERSION}
-          NGHTTP2_VERSION=${NGHTTP2_VERSION}
-          LIBIDN2_VERSION=${LIBIDN2_VERSION}
-          LIBUNISTRING_VERSION=${LIBUNISTRING_VERSION}
-          ZLIB_VERSION=${ZLIB_VERSION}
-          BROTLI_VERSION=${BROTLI_VERSION}
-          ZSTD_VERSION=${ZSTD_VERSION}
-          LIBSSH2_VERSION=${LIBSSH2_VERSION}
-          ARES_VERSION=${ARES_VERSION}
-          TOKEN_READ=${TOKEN_READ}
-          bash curl-static-mac.sh
+          # Set all build variables with fallback logic
+          echo "ARCHES=${{ inputs.ARCHES_MACOS != '' && inputs.ARCHES_MACOS || vars.ARCHES_MACOS }}" >> $GITHUB_ENV
+          echo "CURL_VERSION=${{ inputs.CURL_VERSION != '' && inputs.CURL_VERSION || vars.CURL_VERSION }}" >> $GITHUB_ENV
+          echo "ENABLE_ECH=${{ inputs.ENABLE_ECH != '' && inputs.ENABLE_ECH || vars.ENABLE_ECH }}" >> $GITHUB_ENV
+          echo "TLS_LIB=${{ inputs.TLS_LIB != '' && inputs.TLS_LIB || vars.TLS_LIB }}" >> $GITHUB_ENV
+          echo "OPENSSL_VERSION=${{ inputs.OPENSSL_VERSION != '' && inputs.OPENSSL_VERSION || vars.OPENSSL_VERSION }}" >> $GITHUB_ENV
+          echo "OPENSSL_BRANCH=${{ inputs.OPENSSL_BRANCH != '' && inputs.OPENSSL_BRANCH || vars.OPENSSL_BRANCH }}" >> $GITHUB_ENV
+          echo "NGTCP2_VERSION=${{ inputs.NGTCP2_VERSION != '' && inputs.NGTCP2_VERSION || vars.NGTCP2_VERSION }}" >> $GITHUB_ENV
+          echo "NGHTTP3_VERSION=${{ inputs.NGHTTP3_VERSION != '' && inputs.NGHTTP3_VERSION || vars.NGHTTP3_VERSION }}" >> $GITHUB_ENV
+          echo "NGHTTP2_VERSION=${{ inputs.NGHTTP2_VERSION != '' && inputs.NGHTTP2_VERSION || vars.NGHTTP2_VERSION }}" >> $GITHUB_ENV
+          echo "LIBIDN2_VERSION=${{ inputs.LIBIDN2_VERSION != '' && inputs.LIBIDN2_VERSION || vars.LIBIDN2_VERSION }}" >> $GITHUB_ENV
+          echo "LIBUNISTRING_VERSION=${{ inputs.LIBUNISTRING_VERSION != '' && inputs.LIBUNISTRING_VERSION || vars.LIBUNISTRING_VERSION }}" >> $GITHUB_ENV
+          echo "ZLIB_VERSION=${{ inputs.ZLIB_VERSION != '' && inputs.ZLIB_VERSION || vars.ZLIB_VERSION }}" >> $GITHUB_ENV
+          echo "BROTLI_VERSION=${{ inputs.BROTLI_VERSION != '' && inputs.BROTLI_VERSION || vars.BROTLI_VERSION }}" >> $GITHUB_ENV
+          echo "ZSTD_VERSION=${{ inputs.ZSTD_VERSION != '' && inputs.ZSTD_VERSION || vars.ZSTD_VERSION }}" >> $GITHUB_ENV
+          echo "LIBSSH2_VERSION=${{ inputs.LIBSSH2_VERSION != '' && inputs.LIBSSH2_VERSION || vars.LIBSSH2_VERSION }}" >> $GITHUB_ENV
+          echo "ARES_VERSION=${{ inputs.ARES_VERSION != '' && inputs.ARES_VERSION || vars.ARES_VERSION }}" >> $GITHUB_ENV
+          echo "TOKEN_READ=${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV
+
+      - name: Build Static cURL on macOS
+        run: bash curl-static-mac.sh
 
       - name: Set up environment
         run: |
