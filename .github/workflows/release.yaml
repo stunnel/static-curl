@@ -13,7 +13,10 @@ on:
         description: 'Enable ECH Support'
         required: false
         default: 'false'
-        type: string
+        type: choice
+        options:
+          - 'true'
+          - 'false'
       TLS_LIB:
         description: 'TLS Library (only openssl is supported for now)'
         required: false
@@ -85,8 +88,11 @@ on:
       ENABLE_TRURL:
         description: 'Compile TRURL'
         required: false
-        default: ''
-        type: string
+        default: 'false'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
       TRURL_VERSION:
         description: 'TRURL Version'
         required: false
@@ -95,8 +101,11 @@ on:
       ENABLE_TRURL_MUSL:
         description: 'Compile TRURL with musl'
         required: false
-        default: ''
-        type: string
+        default: 'true'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
 
       ARCHES_LINUX_GLIBC:
         description: 'Linux glibc Architecture List'
