@@ -75,8 +75,6 @@ init_env() {
     echo "libc: ${LIBC}"
     echo "qbt musl cross make version: ${QBT_MUSL_CROSS_MAKE_VERSION}"
 
-    export PKG_CONFIG_PATH="${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig";
-
     . /etc/os-release;  # get the ID variable
     mkdir -p "${RELEASE_DIR}/release/bin/"
 }
@@ -232,6 +230,13 @@ install_qemu() {
 arch_variants() {
     echo "Setting up the ARCH and OpenSSL arch, Arch: ${ARCH}"
     local qemu_arch
+
+    export PREFIX="${DIR}/curl-${ARCH}"
+    export PKG_CONFIG_PATH="${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig"
+    export PKG_CONFIG="pkg-config --static";
+
+    echo "Architecture: ${ARCH}"
+    echo "Prefix directory: ${PREFIX}"
 
     EC_NISTP_64_GCC_128=""
     OPENSSL_ARCH=""
@@ -506,7 +511,6 @@ compile_libidn2() {
     url="https://mirrors.kernel.org/gnu/libidn/libidn2-${LIBIDN2_VERSION}.tar.gz"
     download_and_extract "${url}"
 
-    PKG_CONFIG="pkg-config --static --with-path=${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig" \
     LDFLAGS="${LDFLAGS} --static" \
     ./configure \
         --host "${TARGET}" \
@@ -528,7 +532,6 @@ compile_libpsl() {
     url="${URL}"
     download_and_extract "${url}"
 
-    PKG_CONFIG="pkg-config --static --with-path=${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig" \
     LDFLAGS="${LDFLAGS} --static" \
       ./configure --host="${TARGET}" --prefix="${PREFIX}" \
         --enable-static --enable-shared=no --enable-builtin --disable-runtime;
@@ -615,10 +618,9 @@ compile_libssh2() {
     download_and_extract "${url}"
 
     autoreconf -fi
-    PKG_CONFIG="pkg-config --static --with-path=${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig" \
-        ./configure --host="${TARGET}" --prefix="${PREFIX}" --enable-static --enable-shared=no \
-            --with-crypto=openssl --with-libssl-prefix="${PREFIX}" \
-            --disable-examples-build;
+    ./configure --host="${TARGET}" --prefix="${PREFIX}" --enable-static --enable-shared=no \
+        --with-crypto=openssl --with-libssl-prefix="${PREFIX}" \
+        --disable-examples-build;
     make -j "$(nproc)";
     make install;
 
@@ -635,9 +637,8 @@ compile_nghttp2() {
     download_and_extract "${url}"
 
     autoreconf -i --force
-    PKG_CONFIG="pkg-config --static --with-path=${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig" \
-        ./configure --host="${TARGET}" --prefix="${PREFIX}" --enable-static --enable-http3 \
-            --enable-lib-only --enable-shared=no;
+    ./configure --host="${TARGET}" --prefix="${PREFIX}" --enable-static --enable-http3 \
+        --enable-lib-only --enable-shared=no;
     make -j "$(nproc)";
     make install;
 
@@ -658,9 +659,8 @@ compile_ngtcp2() {
     download_and_extract "${url}"
 
     autoreconf -i --force
-    PKG_CONFIG="pkg-config --static --with-path=${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig" \
-        ./configure --host="${TARGET}" --prefix="${PREFIX}" --enable-static --with-openssl="${PREFIX}" \
-            --with-libnghttp3="${PREFIX}" --enable-lib-only --enable-shared=no;
+    ./configure --host="${TARGET}" --prefix="${PREFIX}" --enable-static --with-openssl="${PREFIX}" \
+        --with-libnghttp3="${PREFIX}" --enable-lib-only --enable-shared=no;
 
     make -j "$(nproc)";
     make install;
@@ -678,8 +678,7 @@ compile_nghttp3() {
     download_and_extract "${url}"
 
     autoreconf -i --force
-    PKG_CONFIG="pkg-config --static --with-path=${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig" \
-        ./configure --host="${TARGET}" --prefix="${PREFIX}" --enable-static --enable-shared=no --enable-lib-only;
+    ./configure --host="${TARGET}" --prefix="${PREFIX}" --enable-static --enable-shared=no --enable-lib-only;
     make -j "$(nproc)";
     make install;
 
@@ -773,35 +772,34 @@ curl_config() {
         autoreconf -fi;
     fi
 
-    PKG_CONFIG="pkg-config --static" \
-        ./configure \
-            --host="${TARGET}" \
-            --prefix="${PREFIX}" \
-            --enable-static --disable-shared \
-            --with-openssl "${with_openssl_quic}" --with-brotli --with-zstd \
-            --with-nghttp2 --with-nghttp3 \
-            --with-libidn2 --with-libssh2 \
-            "${with_ech}" \
-            --enable-hsts --enable-mime --enable-cookies \
-            --enable-http-auth --enable-manual \
-            --enable-proxy --enable-file --enable-http \
-            --enable-ftp --enable-telnet --enable-tftp \
-            --enable-pop3 --enable-imap --enable-smtp \
-            --enable-gopher --enable-mqtt \
-            --enable-doh --enable-dateparse --enable-verbose \
-            --enable-alt-svc --enable-websockets \
-            --enable-ipv6 --enable-unix-sockets --enable-socketpair \
-            --enable-headers-api --enable-versioned-symbols \
-            --enable-threaded-resolver --enable-optimize --enable-pthreads \
-            --enable-warnings --enable-werror \
-            --enable-curldebug --enable-dict --enable-netrc \
-            --enable-bearer-auth --enable-tls-srp --enable-dnsshuffle \
-            --enable-get-easy-options --enable-progress-meter \
-            --with-ca-bundle=/etc/ssl/certs/ca-certificates.crt \
-            --with-ca-path=/etc/ssl/certs \
-            --with-ca-fallback --enable-ares --enable-httpsrr --enable-ipfs \
-            --disable-ldap --disable-ldaps --enable-ssls-export \
-            "${ENABLE_DEBUG}";
+    ./configure \
+        --host="${TARGET}" \
+        --prefix="${PREFIX}" \
+        --enable-static --disable-shared \
+        --with-openssl "${with_openssl_quic}" --with-brotli --with-zstd \
+        --with-nghttp2 --with-nghttp3 \
+        --with-libidn2 --with-libssh2 \
+        "${with_ech}" \
+        --enable-hsts --enable-mime --enable-cookies \
+        --enable-http-auth --enable-manual \
+        --enable-proxy --enable-file --enable-http \
+        --enable-ftp --enable-telnet --enable-tftp \
+        --enable-pop3 --enable-imap --enable-smtp \
+        --enable-gopher --enable-mqtt \
+        --enable-doh --enable-dateparse --enable-verbose \
+        --enable-alt-svc --enable-websockets \
+        --enable-ipv6 --enable-unix-sockets --enable-socketpair \
+        --enable-headers-api --enable-versioned-symbols \
+        --enable-threaded-resolver --enable-optimize --enable-pthreads \
+        --enable-warnings --enable-werror \
+        --enable-curldebug --enable-dict --enable-netrc \
+        --enable-bearer-auth --enable-tls-srp --enable-dnsshuffle \
+        --enable-get-easy-options --enable-progress-meter \
+        --with-ca-bundle=/etc/ssl/certs/ca-certificates.crt \
+        --with-ca-path=/etc/ssl/certs \
+        --with-ca-fallback --enable-ares --enable-httpsrr --enable-ipfs \
+        --disable-ldap --disable-ldaps --enable-ssls-export \
+        "${ENABLE_DEBUG}";
 }
 
 compile_curl() {
@@ -984,13 +982,8 @@ main() {
 
     echo "Compiling for all ARCHes: ${ARCHES}"
     for arch_temp in ${ARCHES}; do
-        # Set the ARCH, PREFIX and PKG_CONFIG_PATH env variables
-        export ARCH=${arch_temp}
-        export PREFIX="${DIR}/curl-${ARCH}"
-        export PKG_CONFIG_PATH="${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig"
-
-        echo "Architecture: ${ARCH}"
-        echo "Prefix directory: ${PREFIX}"
+        # Set the ARCH env variables
+        export ARCH="${arch_temp}"
 
         if _arch_valid; then
             compile;
