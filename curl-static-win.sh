@@ -2,7 +2,7 @@
 
 # To compile locally, install Docker, clone the Git repository, navigate to the repository directory,
 # and then execute the following command:
-# ARCHES="x86_64 i686" CURL_VERSION=8.6.0 TLS_LIB=openssl \
+# ARCHES="x86_64 i686" CURL_VERSION=8.16.0 TLS_LIB=openssl \
 #     ZLIB_VERSION= CONTAINER_IMAGE=mstorsjo/llvm-mingw:latest \
 #     sh curl-static-win.sh
 # script will create a container and compile curl.
@@ -13,9 +13,11 @@
 #     -e RELEASE_DIR=/mnt \
 #     -e ARCHES="x86_64 i686 aarch64 armv7" \
 #     -e ENABLE_DEBUG=0 \
-#     -e CURL_VERSION=8.6.0 \
+#     -e CURL_VERSION=8.16.0 \
+#     -e ENABLE_ECH="" \
 #     -e TLS_LIB=openssl \
 #     -e OPENSSL_VERSION="" \
+#     -e OPENSSL_BRANCH="" \
 #     -e NGTCP2_VERSION="" \
 #     -e NGHTTP3_VERSION="" \
 #     -e NGHTTP2_VERSION="" \
@@ -49,8 +51,10 @@ init_env() {
     echo "Host Architecture: ${ARCH_HOST}"
     echo "Architecture list: ${ARCHES}"
     echo "cURL version: ${CURL_VERSION}"
+    echo "enable ECH: ${ENABLE_ECH}"
     echo "TLS Library: ${TLS_LIB}"
     echo "OpenSSL version: ${OPENSSL_VERSION}"
+    echo "OpenSSL branch: ${OPENSSL_BRANCH}"
     echo "ngtcp2 version: ${NGTCP2_VERSION}"
     echo "nghttp3 version: ${NGHTTP3_VERSION}"
     echo "nghttp2 version: ${NGHTTP2_VERSION}"
@@ -377,10 +381,15 @@ compile_tls() {
     local url openssl_arch ec_nistp_64_gcc_128
     change_dir;
 
-    url_from_github openssl/openssl "${OPENSSL_VERSION}"
-
-    url="${URL}"
-    download_and_extract "${url}"
+    if [ "${OPENSSL_VERSION}" = "dev" ] && [ -n "${OPENSSL_BRANCH}" ]; then
+        git clone --depth 1 -b "${OPENSSL_BRANCH}" https://github.com/openssl/openssl.git openssl-dev;
+        cd openssl-dev;
+        make clean || true;
+    else
+        url_from_github openssl/openssl "${OPENSSL_VERSION}"
+        url="${URL}"
+        download_and_extract "${url}"
+    fi
 
     case "${ARCH}" in
         x86_64)     ec_nistp_64_gcc_128="enable-ec_nistp_64_gcc_128"
@@ -588,15 +597,19 @@ compile_trurl() {
 
 curl_config() {
     echo "Configuring curl, Arch: ${ARCH}" | tee "${RELEASE_DIR}/running"
-    local with_openssl_quic with_idn
+    local with_openssl_quic with_idn with_ech
 
     # --with-openssl-quic and --with-ngtcp2 are mutually exclusive
-    with_openssl_quic=""
     if [ "${TLS_LIB}" = "openssl" ]; then
         with_openssl_quic="--with-openssl-quic"
     else
         with_openssl_quic="--with-ngtcp2"
     fi
+
+    case "${ENABLE_ECH}" in
+        true|yes|y|Y)
+            with_ech="--enable-ech" ;;
+    esac
 
     # it's possible to use libidn2 instead of winidn
     with_idn="--with-winidn"
@@ -619,6 +632,7 @@ curl_config() {
             --with-openssl "${with_openssl_quic}" --with-brotli --with-zstd \
             --with-nghttp2 --with-nghttp3 \
             "${with_idn}" --with-libssh2 \
+            "${with_ech}" \
             --enable-hsts --enable-mime --enable-cookies \
             --enable-http-auth --enable-manual \
             --enable-proxy --enable-file --enable-http \
@@ -756,8 +770,10 @@ _build_in_docker() {
         -e ARCHES="${ARCHES}" \
         -e ENABLE_DEBUG="${ENABLE_DEBUG}" \
         -e CURL_VERSION="${CURL_VERSION}" \
+        -e ENABLE_ECH="${ENABLE_ECH}" \
         -e TLS_LIB="${TLS_LIB}" \
         -e OPENSSL_VERSION="${OPENSSL_VERSION}" \
+        -e OPENSSL_BRANCH="${OPENSSL_BRANCH}" \
         -e NGTCP2_VERSION="${NGTCP2_VERSION}" \
         -e NGHTTP3_VERSION="${NGHTTP3_VERSION}" \
         -e NGHTTP2_VERSION="${NGHTTP2_VERSION}" \

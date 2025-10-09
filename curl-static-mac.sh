@@ -2,7 +2,7 @@
 
 # To compile locally, clone the Git repository, navigate to the repository directory,
 # and then execute the following command:
-# ARCHES="x86_64 arm64" CURL_VERSION=8.11.1 TLS_LIB=openssl OPENSSL_VERSION=3.4.0 bash curl-static-mac.sh
+# ARCHES="x86_64 arm64" CURL_VERSION=8.16.0 TLS_LIB=openssl OPENSSL_VERSION=3.5.4 bash curl-static-mac.sh
 
 
 shopt -s expand_aliases;
@@ -29,8 +29,10 @@ init_env() {
     echo "Source directory: ${DIR}"
     echo "Release directory: ${RELEASE_DIR}"
     echo "cURL version: ${CURL_VERSION}"
+    echo "enable ECH: ${ENABLE_ECH}"
     echo "TLS Library: ${TLS_LIB}"
     echo "OpenSSL version: ${OPENSSL_VERSION}"
+    echo "OpenSSL branch: ${OPENSSL_BRANCH}"
     echo "ngtcp2 version: ${NGTCP2_VERSION}"
     echo "nghttp3 version: ${NGHTTP3_VERSION}"
     echo "nghttp2 version: ${NGHTTP2_VERSION}"
@@ -340,10 +342,15 @@ compile_tls() {
     local url
     change_dir;
 
-    url_from_github openssl/openssl "${OPENSSL_VERSION}"
-
-    url="${URL}"
-    download_and_extract "${url}"
+    if [ "${OPENSSL_VERSION}" = "dev" ] && [ -n "${OPENSSL_BRANCH}" ]; then
+        git clone --depth 1 -b "${OPENSSL_BRANCH}" https://github.com/openssl/openssl.git openssl-dev;
+        cd openssl-dev;
+        make clean || true;
+    else
+        url_from_github openssl/openssl "${OPENSSL_VERSION}"
+        url="${URL}"
+        download_and_extract "${url}"
+    fi
 
     ./Configure \
         ${OPENSSL_ARCH} \
@@ -491,15 +498,19 @@ compile_zstd() {
 
 curl_config() {
     echo "Configuring curl, Arch: ${ARCH}" | tee "${RELEASE_DIR}/running"
-    local with_openssl_quic
+    local with_openssl_quic with_ech
 
     # --with-openssl-quic and --with-ngtcp2 are mutually exclusive
-    with_openssl_quic=""
     if [ "${TLS_LIB}" = "openssl" ]; then
         with_openssl_quic="--with-openssl-quic"
     else
         with_openssl_quic="--with-ngtcp2"
     fi
+
+    case "${ENABLE_ECH}" in
+        true|yes|y|Y)
+            with_ech="--enable-ech" ;;
+    esac
 
     if [ ! -f configure ]; then
         autoreconf -fi;
@@ -513,6 +524,7 @@ curl_config() {
             --with-openssl "${with_openssl_quic}" --with-brotli --with-zstd \
             --with-nghttp2 --with-nghttp3 \
             --with-libidn2 --with-libssh2 \
+            "${with_ech}" \
             --enable-hsts --enable-mime --enable-cookies \
             --enable-http-auth --enable-manual \
             --enable-proxy --enable-file --enable-http \
