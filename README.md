@@ -77,7 +77,7 @@ This script utilizes `clang`(glibc) and [qbt-musl-cross-make](https://github.com
 
 #### Linux
 
-- To compile locally, install Docker, clone the Git repository, navigate to the repository directory, and then execute the following command:  
+- To compile locally, install Docker, clone this Git repository, navigate to the repository directory, and then execute the following command:  
 `sh curl-static-cross.sh`  
 The script will create a container and compile the host architecture cURL only.  
 
@@ -85,7 +85,7 @@ libc and its supported architectures
 - libc: `glibc`, ARCHES: `"x86_64 aarch64 armv7 armv5 riscv64 s390x mips64 mips64el mipsel powerpc64le powerpc i686"`
 - libc: `musl`, ARCHES: `"x86_64 aarch64 armv7 armv5 riscv64 s390x mips64 mips64el mipsel powerpc64le powerpc mips loongarch64"`
 
-- To compile in docker, run:  
+- If you need to specify more parameters, run:  
   ```shell
   docker run --network host --rm -v $(pwd):/mnt -w /mnt \
       --name "build-curl-$(date +%Y%m%d-%H%M)" \
@@ -133,11 +133,11 @@ ARCHES="x86_64 arm64" \
 
 #### Windows
 
-- To compile locally, install Docker, clone the Git repository, navigate to the repository directory, and then execute the following command:  
+- To compile locally, install Docker, clone this Git repository, navigate to the repository directory, and then execute the following command:  
   `ARCHES="x86_64 i686 aarch64 armv7" sh curl-static-win.sh`  
   script will create a Linux container and cross-compile cURL via [LLVM MinGW toolchain](https://github.com/mstorsjo/llvm-mingw).
 
-- To compile in docker, run:
+- If you need to specify more parameters, run:
   ```shell
   docker run --network host --rm -v $(pwd):/mnt -w /mnt \
       --name "build-curl-$(date +%Y%m%d-%H%M)" \
@@ -164,11 +164,13 @@ Supported Environment Variables list:
 For all `VERSION` variables, leaving them blank will automatically fetch the latest version.
 
 - `ARCHES`: The list of architectures to compile. You can set one or multiple architectures from the following options: [Compile](#Compile)
-- `TLS_LIB`: The TLS library. only support `openssl` for now.
+- `TLS_LIB`: The TLS library. Only `openssl` for now.
 - `LIBC`: The libc. `glibc`(default) or `musl`, only affects Linux.
-- `QBT_MUSL_CROSS_MAKE_VERSION`: The version of qbt-musl-cross-make, only affects Linux. The latest version `2516` is working fine. Check the releases on [qbt-musl-cross-make/releases](https://github.com/userdocs/qbt-musl-cross-make/releases)
-- `CURL_VERSION`: The version of cURL. If set to `dev`, will clone the latest source code from GitHub.
-- `OPENSSL_VERSION`: The version of OpenSSL.
+- `QBT_MUSL_CROSS_MAKE_VERSION`: The version of qbt-musl-cross-make, only affects `musl`. Check the releases on [qbt-musl-cross-make/releases](https://github.com/userdocs/qbt-musl-cross-make/releases)
+- `CURL_VERSION`: The version of cURL. If set to `dev`, will fetch the latest source code of branch `master` from GitHub.
+- `ENABLE_ECH`: Enable ECH support in cURL. The default value is `false`, set to `true` to enable this feature. Currently released OpenSSL versions do not support ECH. You must use OpenSSL's `feature/ech` branch; see the `OPENSSL_VERSION` and `OPENSSL_BRANCH` settings below. Current releases `static-curl` do not enable this feature, you have to compile by yourself if you need it.
+- `OPENSSL_VERSION`: The version of OpenSSL. If set to `dev`, will fetch the branch `OPENSSL_BRANCH` from GitHub.
+- `OPENSSL_BRANCH`: The branch that fetch from GitHub, this variable will be ignored if `OPENSSL_VERSION` is not set to `dev`.
 - `NGTCP2_VERSION`: The version of ngtcp2.
 - `NGHTTP3_VERSION`: The version of nghttp3.
 - `NGHTTP2_VERSION`: The version of nghttp2.
@@ -181,7 +183,11 @@ For all `VERSION` variables, leaving them blank will automatically fetch the lat
 - `LIBPSL_VERSION`: The version of libpsl.
 - `ARES_VERSION`: The version of c-ares.
 - `TRURL_VERSION`: The version of trurl.
-- `ENABLE_TRURL`: Compile trurl. The default is `false`, set to `true` or `yes` to enable it. NOT available for macOS.
-- `ENABLE_DEBUG`: Enable curl debug. The default is `false`, set to `true` or `yes` to enable it.
+- `ENABLE_TRURL`: Compile trurl. The default value is `false`, set it to `true` to enable. NOT available for macOS.
+- `ENABLE_DEBUG`: Enable curl debugging. The default value is `false`, set it to `true` to enable. This setting appends `--enable-debug` to the curl compilation options.
 
 The compiled files will be saved in the current `release` directory.
+
+### ECH Support
+
+see [Environment Variables](#environment-variables)
