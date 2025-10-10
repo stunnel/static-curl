@@ -2,7 +2,7 @@
 
 # To compile locally, clone the Git repository, navigate to the repository directory,
 # and then execute the following command:
-# ARCHES="x86_64 arm64" CURL_VERSION=8.11.1 TLS_LIB=openssl OPENSSL_VERSION=3.4.0 bash curl-static-mac.sh
+# ARCHES="x86_64 arm64" CURL_VERSION=8.16.0 TLS_LIB=openssl OPENSSL_VERSION=3.5.4 bash curl-static-mac.sh
 
 
 shopt -s expand_aliases;
@@ -29,8 +29,10 @@ init_env() {
     echo "Source directory: ${DIR}"
     echo "Release directory: ${RELEASE_DIR}"
     echo "cURL version: ${CURL_VERSION}"
+    echo "enable ECH: ${ENABLE_ECH}"
     echo "TLS Library: ${TLS_LIB}"
     echo "OpenSSL version: ${OPENSSL_VERSION}"
+    echo "OpenSSL branch: ${OPENSSL_BRANCH}"
     echo "ngtcp2 version: ${NGTCP2_VERSION}"
     echo "nghttp3 version: ${NGHTTP3_VERSION}"
     echo "nghttp2 version: ${NGHTTP2_VERSION}"
@@ -42,9 +44,6 @@ init_env() {
     echo "zstd version: ${ZSTD_VERSION}"
     echo "libssh2 version: ${LIBSSH2_VERSION}"
     echo "c-ares version: ${ARES_VERSION}"
-
-    export LDFLAGS="-framework CoreFoundation -framework SystemConfiguration"
-    export PKG_CONFIG_PATH="${PREFIX}/lib/pkgconfig"
 
     mkdir -p "${DIR}"
 }
@@ -68,6 +67,14 @@ _clang_path() {
 
 arch_variants() {
     echo "Setting up the ARCH and OpenSSL arch"
+    export LDFLAGS="-framework CoreFoundation -framework SystemConfiguration"
+    export PREFIX="${DIR}/curl-${ARCH}"
+    export PKG_CONFIG_PATH="${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig"
+    export PKG_CONFIG="pkg-config --static"
+
+    echo "Architecture: ${ARCH}"
+    echo "Prefix directory: ${PREFIX}"
+
     _clang_path;
     [ -z "${ARCH}" ] && ARCH="$(uname -m)"
     case "${ARCH}" in
@@ -288,7 +295,6 @@ compile_libidn2() {
     url="https://mirrors.kernel.org/gnu/libidn/libidn2-${LIBIDN2_VERSION}.tar.gz"
     download_and_extract "${url}"
 
-    PKG_CONFIG="pkg-config --static" \
     ./configure \
         --host="${TARGET}" \
         --with-libunistring-prefix="${PREFIX}" \
@@ -309,8 +315,7 @@ compile_libpsl() {
     url="${URL}"
     download_and_extract "${url}"
 
-    PKG_CONFIG="pkg-config --static --with-path=${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig" \
-      LDFLAGS="-L${PREFIX}/lib -L${PREFIX}/lib64 ${LDFLAGS}" \
+    LDFLAGS="-L${PREFIX}/lib -L${PREFIX}/lib64 ${LDFLAGS}" \
       ./configure --host="${TARGET}" --prefix="${PREFIX}" \
         --enable-static --enable-shared=no --enable-builtin --disable-runtime;
     make -j "${CPU_CORES}";
@@ -340,10 +345,22 @@ compile_tls() {
     local url
     change_dir;
 
-    url_from_github openssl/openssl "${OPENSSL_VERSION}"
-
-    url="${URL}"
-    download_and_extract "${url}"
+    if [ "${OPENSSL_VERSION}" = "dev" ] && [ -n "${OPENSSL_BRANCH}" ]; then
+        if [ -d "openssl-dev" ]; then
+            cd openssl-dev;
+            make clean || true;
+            git fetch origin "${OPENSSL_BRANCH}";
+            git checkout "${OPENSSL_BRANCH}";
+            git pull origin "${OPENSSL_BRANCH}";
+        else
+            git clone --depth 1 -b "${OPENSSL_BRANCH}" https://github.com/openssl/openssl.git openssl-dev;
+            cd openssl-dev;
+        fi
+    else
+        url_from_github openssl/openssl "${OPENSSL_VERSION}"
+        url="${URL}"
+        download_and_extract "${url}"
+    fi
 
     ./Configure \
         ${OPENSSL_ARCH} \
@@ -375,8 +392,7 @@ compile_libssh2() {
 
     autoreconf -fi
 
-    PKG_CONFIG="pkg-config --static" \
-        LDFLAGS="-L${PREFIX}/lib ${LDFLAGS}" CFLAGS="-O3" \
+    LDFLAGS="-L${PREFIX}/lib ${LDFLAGS}" CFLAGS="-O3" \
         ./configure --host="${TARGET}" --prefix="${PREFIX}" --enable-static --enable-shared=no \
             --with-crypto=openssl --with-libssl-prefix="${PREFIX}";
     make -j "${CPU_CORES}";
@@ -395,9 +411,8 @@ compile_nghttp2() {
     download_and_extract "${url}"
 
     autoreconf -i --force
-    PKG_CONFIG="pkg-config --static" \
-        ./configure --host="${TARGET}" --prefix="${PREFIX}" --enable-static --enable-http3 \
-            --enable-lib-only --enable-shared=no;
+    ./configure --host="${TARGET}" --prefix="${PREFIX}" --enable-static --enable-http3 \
+        --enable-lib-only --enable-shared=no;
     make -j "${CPU_CORES}";
     make install;
 
@@ -417,9 +432,8 @@ compile_ngtcp2() {
     download_and_extract "${url}"
 
     autoreconf -i --force
-    PKG_CONFIG="pkg-config --static" \
-        ./configure --host="${TARGET}" --prefix="${PREFIX}" --enable-static --with-openssl="${PREFIX}" \
-            --with-libnghttp3="${PREFIX}" --enable-lib-only --enable-shared=no;
+    ./configure --host="${TARGET}" --prefix="${PREFIX}" --enable-static --with-openssl="${PREFIX}" \
+        --with-libnghttp3="${PREFIX}" --enable-lib-only --enable-shared=no;
 
     make -j "${CPU_CORES}";
     make install;
@@ -439,8 +453,7 @@ compile_nghttp3() {
     download_and_extract "${url}"
 
     autoreconf -i --force
-    PKG_CONFIG="pkg-config --static" \
-        ./configure --host="${TARGET}" --prefix="${PREFIX}" --enable-static --enable-shared=no \
+    ./configure --host="${TARGET}" --prefix="${PREFIX}" --enable-static --enable-shared=no \
         --enable-lib-only --disable-dependency-tracking;
     make -j "${CPU_CORES}";
     make install;
@@ -491,51 +504,55 @@ compile_zstd() {
 
 curl_config() {
     echo "Configuring curl, Arch: ${ARCH}" | tee "${RELEASE_DIR}/running"
-    local with_openssl_quic
+    local with_openssl_quic with_ech
 
     # --with-openssl-quic and --with-ngtcp2 are mutually exclusive
-    with_openssl_quic=""
     if [ "${TLS_LIB}" = "openssl" ]; then
         with_openssl_quic="--with-openssl-quic"
     else
         with_openssl_quic="--with-ngtcp2"
     fi
 
+    case "${ENABLE_ECH}" in
+        true|yes|y|Y)
+            with_ech="--enable-ech" ;;
+    esac
+
     if [ ! -f configure ]; then
         autoreconf -fi;
     fi
 
-    PKG_CONFIG="pkg-config --static" \
-        ./configure \
-            --host="${ARCH}-apple-darwin" \
-            --prefix="${PREFIX}" \
-            --disable-shared --enable-static \
-            --with-openssl "${with_openssl_quic}" --with-brotli --with-zstd \
-            --with-nghttp2 --with-nghttp3 \
-            --with-libidn2 --with-libssh2 \
-            --enable-hsts --enable-mime --enable-cookies \
-            --enable-http-auth --enable-manual \
-            --enable-proxy --enable-file --enable-http \
-            --enable-ftp --enable-telnet --enable-tftp \
-            --enable-pop3 --enable-imap --enable-smtp \
-            --enable-gopher --enable-mqtt \
-            --enable-doh --enable-dateparse --enable-verbose \
-            --enable-alt-svc --enable-websockets \
-            --enable-ipv6 --enable-unix-sockets --enable-socketpair \
-            --enable-headers-api --enable-versioned-symbols \
-            --enable-threaded-resolver --enable-optimize --enable-pthreads \
-            --enable-warnings --enable-werror \
-            --enable-curldebug --enable-dict --enable-netrc \
-            --enable-bearer-auth --enable-tls-srp --enable-dnsshuffle \
-            --enable-get-easy-options --enable-progress-meter \
-            --with-ca-bundle=/etc/ssl/cert.pem \
-            --with-ca-path=/etc/ssl/certs \
-            --with-ca-fallback --enable-ares --enable-httpsrr --enable-ipfs \
-            --disable-ldap --disable-ldaps --disable-rtsp \
-            --disable-rtmp --disable-rtmps --enable-ssls-export \
-            "${ENABLE_DEBUG}" \
-            CFLAGS="-I${PREFIX}/include" \
-            CPPFLAGS="-I${PREFIX}/include";
+    ./configure \
+        --host="${ARCH}-apple-darwin" \
+        --prefix="${PREFIX}" \
+        --disable-shared --enable-static \
+        --with-openssl "${with_openssl_quic}" --with-brotli --with-zstd \
+        --with-nghttp2 --with-nghttp3 \
+        --with-libidn2 --with-libssh2 \
+        "${with_ech}" \
+        --enable-hsts --enable-mime --enable-cookies \
+        --enable-http-auth --enable-manual \
+        --enable-proxy --enable-file --enable-http \
+        --enable-ftp --enable-telnet --enable-tftp \
+        --enable-pop3 --enable-imap --enable-smtp \
+        --enable-gopher --enable-mqtt \
+        --enable-doh --enable-dateparse --enable-verbose \
+        --enable-alt-svc --enable-websockets \
+        --enable-ipv6 --enable-unix-sockets --enable-socketpair \
+        --enable-headers-api --enable-versioned-symbols \
+        --enable-threaded-resolver --enable-optimize --enable-pthreads \
+        --enable-warnings --enable-werror \
+        --enable-curldebug --enable-dict --enable-netrc \
+        --enable-bearer-auth --enable-tls-srp --enable-dnsshuffle \
+        --enable-get-easy-options --enable-progress-meter \
+        --with-ca-bundle=/etc/ssl/cert.pem \
+        --with-ca-path=/etc/ssl/certs \
+        --with-ca-fallback --enable-ares --enable-httpsrr --enable-ipfs \
+        --disable-ldap --disable-ldaps --disable-rtsp \
+        --disable-rtmp --disable-rtmps --enable-ssls-export \
+        "${ENABLE_DEBUG}" \
+        CFLAGS="-I${PREFIX}/include" \
+        CPPFLAGS="-I${PREFIX}/include";
 }
 
 compile_curl() {
@@ -641,13 +658,8 @@ main() {
 
     echo "Compiling for all ARCHes: ${ARCHES}"
     for arch_temp in ${ARCHES}; do
-        # Set the ARCH, PREFIX and PKG_CONFIG_PATH env variables
+        # Set the ARCH env variables
         export ARCH=${arch_temp}
-        export PREFIX="${DIR}/curl-${ARCH}"
-        export PKG_CONFIG_PATH="${PREFIX}/lib/pkgconfig"
-
-        echo "Architecture: ${ARCH}"
-        echo "Prefix directory: ${PREFIX}"
 
         if _arch_valid; then
             compile;

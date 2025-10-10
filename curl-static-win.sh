@@ -2,7 +2,7 @@
 
 # To compile locally, install Docker, clone the Git repository, navigate to the repository directory,
 # and then execute the following command:
-# ARCHES="x86_64 i686" CURL_VERSION=8.6.0 TLS_LIB=openssl \
+# ARCHES="x86_64 i686" CURL_VERSION=8.16.0 TLS_LIB=openssl \
 #     ZLIB_VERSION= CONTAINER_IMAGE=mstorsjo/llvm-mingw:latest \
 #     sh curl-static-win.sh
 # script will create a container and compile curl.
@@ -13,15 +13,17 @@
 #     -e RELEASE_DIR=/mnt \
 #     -e ARCHES="x86_64 i686 aarch64 armv7" \
 #     -e ENABLE_DEBUG=0 \
-#     -e CURL_VERSION=8.6.0 \
+#     -e CURL_VERSION=8.16.0 \
+#     -e ENABLE_ECH="" \
 #     -e TLS_LIB=openssl \
 #     -e OPENSSL_VERSION="" \
+#     -e OPENSSL_BRANCH="" \
 #     -e NGTCP2_VERSION="" \
 #     -e NGHTTP3_VERSION="" \
 #     -e NGHTTP2_VERSION="" \
 #     -e ZLIB_VERSION="" \
-#     -e LIBUNISTRING_VERSION=1.1 \
-#     -e LIBIDN2_VERSION=2.3.4 \
+#     -e LIBUNISTRING_VERSION="" \
+#     -e LIBIDN2_VERSION="" \
 #     -e LIBPSL_VERSION="" \
 #     -e BROTLI_VERSION="" \
 #     -e ZSTD_VERSION="" \
@@ -49,8 +51,10 @@ init_env() {
     echo "Host Architecture: ${ARCH_HOST}"
     echo "Architecture list: ${ARCHES}"
     echo "cURL version: ${CURL_VERSION}"
+    echo "enable ECH: ${ENABLE_ECH}"
     echo "TLS Library: ${TLS_LIB}"
     echo "OpenSSL version: ${OPENSSL_VERSION}"
+    echo "OpenSSL branch: ${OPENSSL_BRANCH}"
     echo "ngtcp2 version: ${NGTCP2_VERSION}"
     echo "nghttp3 version: ${NGHTTP3_VERSION}"
     echo "nghttp2 version: ${NGHTTP2_VERSION}"
@@ -63,8 +67,6 @@ init_env() {
     echo "libssh2 version: ${LIBSSH2_VERSION}"
     echo "c-ares version: ${ARES_VERSION}"
     echo "trurl version: ${TRURL_VERSION}"
-
-    export PKG_CONFIG_PATH="${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig";
 
     . /etc/os-release;  # get the ID variable
     mkdir -p "${RELEASE_DIR}/release/bin/"
@@ -99,7 +101,7 @@ configure_toolchain() {
            LD="${mingw_path}/bin/${ARCH}-w64-mingw32-ld" \
            STRIP="${mingw_path}/bin/${ARCH}-w64-mingw32-strip" \
            CFLAGS="-O3" \
-           CPPFLAGS="-I${mingw_path}/${ARCH}-w64-mingw32/include" \
+           CPPFLAGS="-I${mingw_path}/${ARCH}-w64-mingw32/include ${CPPFLAGS}" \
            CPPFLAGS="-I${mingw_path}/generic-w64-mingw32/include ${CPPFLAGS}" \
            LDFLAGS="--ld-path=${mingw_path}/bin/${ARCH}-w64-mingw32-ld ${LDFLAGS}" \
            LDFLAGS="-L${mingw_path}/${ARCH}-w64-mingw32/lib ${LDFLAGS}";
@@ -109,8 +111,25 @@ arch_variants() {
     echo "Setting up the ARCH and OpenSSL arch, Arch: ${ARCH}"
 
     TARGET="${ARCH}-w64-mingw32"
-    unset LD STRIP LDFLAGS
-    export LDFLAGS="-L${PREFIX}/lib -L${PREFIX}/lib64" ;
+    unset LD STRIP LDFLAGS CPPFLAGS PKG_CONFIG_PATH
+
+    suffix=""
+    case "${ARCH}" in
+        x86_64)
+            suffix="64";;
+        aarch64)
+            suffix="-arm64";;
+    esac
+
+    export PREFIX="${DIR}/curl-${ARCH}"
+    export CPPFLAGS="-I${PREFIX}/include";
+    export LDFLAGS="-L${PREFIX}/lib";
+    export PKG_CONFIG="pkg-config --static";
+    export PKG_CONFIG_PATH="${PREFIX}/lib/pkgconfig";
+    if [ "${suffix}" != "" ]; then
+        export LDFLAGS="-L${PREFIX}/lib${suffix} ${LDFLAGS}";
+        export PKG_CONFIG_PATH="${PREFIX}/lib${suffix}/pkgconfig:${PKG_CONFIG_PATH}";
+    fi
 
     configure_toolchain;
 }
@@ -289,10 +308,10 @@ compile_zlib() {
     mkdir -p out
     cd out/
 
-    PKG_CONFIG="pkg-config --static --with-path=${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig" \
+    PKG_CONFIG="pkg-config --static" \
             cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_SYSTEM_NAME=Windows -DBUILD_SHARED_LIBS=OFF \
                   -DCMAKE_INSTALL_PREFIX="${PREFIX}" .. ;
-    PKG_CONFIG="pkg-config --static --with-path=${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig" \
+    PKG_CONFIG="pkg-config --static" \
         cmake --build . --config Release --target install;
 
     _copy_license ../LICENSE zlib;
@@ -323,7 +342,6 @@ compile_libidn2() {
     url="https://mirrors.kernel.org/gnu/libidn/libidn2-${LIBIDN2_VERSION}.tar.gz"
     download_and_extract "${url}"
 
-    PKG_CONFIG="pkg-config --static --with-path=${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig" \
     LDFLAGS="${LDFLAGS} --static" \
     ./configure \
         --host "${TARGET}" \
@@ -345,7 +363,6 @@ compile_libpsl() {
     url="${URL}"
     download_and_extract "${url}"
 
-    PKG_CONFIG="pkg-config --static --with-path=${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig" \
     LDFLAGS="${LDFLAGS} --static" \
       ./configure --host="${TARGET}" --prefix="${PREFIX}" \
         --enable-static --enable-shared=no --enable-builtin --disable-runtime;
@@ -377,36 +394,54 @@ compile_tls() {
     local url openssl_arch ec_nistp_64_gcc_128
     change_dir;
 
-    url_from_github openssl/openssl "${OPENSSL_VERSION}"
-
-    url="${URL}"
-    download_and_extract "${url}"
+    if [ "${OPENSSL_VERSION}" = "dev" ] && [ -n "${OPENSSL_BRANCH}" ]; then
+        if [ -d "openssl-dev" ]; then
+            cd openssl-dev;
+            make clean || true;
+            git fetch origin "${OPENSSL_BRANCH}";
+            git checkout "${OPENSSL_BRANCH}";
+            git pull origin "${OPENSSL_BRANCH}";
+        else
+            git clone --depth 1 -b "${OPENSSL_BRANCH}" https://github.com/openssl/openssl.git openssl-dev;
+            cd openssl-dev;
+        fi
+    else
+        url_from_github openssl/openssl "${OPENSSL_VERSION}"
+        url="${URL}"
+        download_and_extract "${url}"
+    fi
 
     case "${ARCH}" in
         x86_64)     ec_nistp_64_gcc_128="enable-ec_nistp_64_gcc_128"
                     openssl_arch="mingw64";;
         aarch64)    openssl_arch="mingwarm64"
-                    echo '## -*- mode: perl; -*-
-                        my %targets = (
-                            "mingwarm64" => {
-                                inherit_from     => [ "mingw-common" ],
-                                bn_ops           => add("SIXTY_FOUR_BIT"),
-                                asm_arch         => "aarch64",
-                                perlasm_scheme   => "win64",
-                                multilib         => "64",
-                            }
-                        );' > Configurations/11-curl-mingwarm.conf;;
+                    if ! grep -nr '"mingwarm64" =>' Configurations/; then
+                        echo '## -*- mode: perl; -*-
+                            my %targets = (
+                                "mingwarm64" => {
+                                    inherit_from     => [ "mingw-common" ],
+                                    bn_ops           => add("SIXTY_FOUR_BIT"),
+                                    asm_arch         => "aarch64",
+                                    perlasm_scheme   => "win64",
+                                    multilib         => "64",
+                                }
+                            );' > Configurations/11-curl-mingwarm.conf;
+                    fi
+                    ;;
         armv7)      openssl_arch="mingwarm"
-                    echo '## -*- mode: perl; -*-
-                        my %targets = (
-                            "mingwarm" => {
-                                inherit_from     => [ "mingw-common" ],
-                                bn_ops           => add("BN_LLONG"),
-                                asm_arch         => "armv7",
-                                perlasm_scheme   => "coff",
-                                multilib         => "",
-                            }
-                        );' > Configurations/11-curl-mingwarm.conf;;
+                    if ! grep -nr '"mingwarm" =>' Configurations/; then
+                        echo '## -*- mode: perl; -*-
+                                my %targets = (
+                                    "mingwarm" => {
+                                        inherit_from     => [ "mingw-common" ],
+                                        bn_ops           => add("BN_LLONG"),
+                                        asm_arch         => "armv7",
+                                        perlasm_scheme   => "coff",
+                                        multilib         => "",
+                                    }
+                                );' > Configurations/11-curl-mingwarm.conf;
+                    fi
+                    ;;
         i686)       openssl_arch="mingw" ;;
     esac
 
@@ -442,10 +477,10 @@ compile_libssh2() {
     download_and_extract "${url}"
 
     autoreconf -fi
-    PKG_CONFIG="pkg-config --static --with-path=${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig" \
-        ./configure --host="${TARGET}" --prefix="${PREFIX}" --enable-static --enable-shared=no \
-            --with-crypto=openssl --with-libssl-prefix="${PREFIX}" \
-            --disable-examples-build;
+    ./configure --host="${TARGET}" --prefix="${PREFIX}" --enable-static --enable-shared=no \
+        --with-crypto=openssl --with-libssl-prefix="${PREFIX}" \
+        --disable-examples-build;
+
     make -j "$(nproc)";
     make install;
 
@@ -462,9 +497,8 @@ compile_nghttp2() {
     download_and_extract "${url}"
 
     autoreconf -i --force
-    PKG_CONFIG="pkg-config --static --with-path=${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig" \
-        ./configure --host="${TARGET}" --prefix="${PREFIX}" --enable-static --enable-http3 \
-            --enable-lib-only --enable-shared=no;
+    ./configure --host="${TARGET}" --prefix="${PREFIX}" --enable-static --enable-http3 \
+        --enable-lib-only --enable-shared=no;
     make -j "$(nproc)";
     make install;
 
@@ -485,9 +519,8 @@ compile_ngtcp2() {
     download_and_extract "${url}"
 
     autoreconf -i --force
-    PKG_CONFIG="pkg-config --static --with-path=${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig" \
-        ./configure --host="${TARGET}" --prefix="${PREFIX}" --enable-static --with-openssl="${PREFIX}" \
-            --with-libnghttp3="${PREFIX}" --enable-lib-only --enable-shared=no;
+    ./configure --host="${TARGET}" --prefix="${PREFIX}" --enable-static --with-openssl="${PREFIX}" \
+        --with-libnghttp3="${PREFIX}" --enable-lib-only --enable-shared=no;
 
     make -j "$(nproc)";
     make install;
@@ -505,8 +538,7 @@ compile_nghttp3() {
     download_and_extract "${url}"
 
     autoreconf -i --force
-    PKG_CONFIG="pkg-config --static --with-path=${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig" \
-        ./configure --host="${TARGET}" --prefix="${PREFIX}" --enable-static --enable-shared=no --enable-lib-only;
+    ./configure --host="${TARGET}" --prefix="${PREFIX}" --enable-static --enable-shared=no --enable-lib-only;
     make -j "$(nproc)";
     make install;
 
@@ -588,15 +620,19 @@ compile_trurl() {
 
 curl_config() {
     echo "Configuring curl, Arch: ${ARCH}" | tee "${RELEASE_DIR}/running"
-    local with_openssl_quic with_idn
+    local with_openssl_quic with_idn with_ech
 
     # --with-openssl-quic and --with-ngtcp2 are mutually exclusive
-    with_openssl_quic=""
     if [ "${TLS_LIB}" = "openssl" ]; then
         with_openssl_quic="--with-openssl-quic"
     else
         with_openssl_quic="--with-ngtcp2"
     fi
+
+    case "${ENABLE_ECH}" in
+        true|yes|y|Y)
+            with_ech="--enable-ech" ;;
+    esac
 
     # it's possible to use libidn2 instead of winidn
     with_idn="--with-winidn"
@@ -611,33 +647,33 @@ curl_config() {
     CPPFLAGS="-DCURL_STATICLIB -DCARES_STATICLIB -DHAS_ALPN ${CPPFLAGS}"
     CPPFLAGS="-DNGHTTP2_STATICLIB -DNGHTTP3_STATICLIB -DNGTCP2_STATICLIB ${CPPFLAGS}"
 
-    PKG_CONFIG="pkg-config --static" \
-        ./configure \
-            --host="${TARGET}" \
-            --prefix="${PREFIX}" \
-            --enable-static --disable-shared \
-            --with-openssl "${with_openssl_quic}" --with-brotli --with-zstd \
-            --with-nghttp2 --with-nghttp3 \
-            "${with_idn}" --with-libssh2 \
-            --enable-hsts --enable-mime --enable-cookies \
-            --enable-http-auth --enable-manual \
-            --enable-proxy --enable-file --enable-http \
-            --enable-ftp --enable-telnet --enable-tftp \
-            --enable-pop3 --enable-imap --enable-smtp \
-            --enable-gopher --enable-mqtt \
-            --enable-doh --enable-dateparse --enable-verbose \
-            --enable-alt-svc --enable-websockets \
-            --enable-ipv6 --enable-unix-sockets --enable-socketpair \
-            --enable-headers-api --enable-versioned-symbols \
-            --enable-threaded-resolver --enable-optimize --enable-pthreads \
-            --enable-warnings --enable-werror \
-            --enable-curldebug --enable-dict --enable-netrc \
-            --enable-bearer-auth --enable-tls-srp --enable-dnsshuffle \
-            --enable-get-easy-options --enable-progress-meter \
-            --without-ca-bundle --without-ca-path \
-            --without-ca-fallback --enable-ares --enable-httpsrr --enable-ipfs \
-            --disable-ldap --disable-ldaps --enable-ssls-export \
-            "${ENABLE_DEBUG}";
+    ./configure \
+        --host="${TARGET}" \
+        --prefix="${PREFIX}" \
+        --enable-static --disable-shared \
+        --with-openssl "${with_openssl_quic}" --with-brotli --with-zstd \
+        --with-nghttp2 --with-nghttp3 \
+        "${with_idn}" --with-libssh2 \
+        "${with_ech}" \
+        --enable-hsts --enable-mime --enable-cookies \
+        --enable-http-auth --enable-manual \
+        --enable-proxy --enable-file --enable-http \
+        --enable-ftp --enable-telnet --enable-tftp \
+        --enable-pop3 --enable-imap --enable-smtp \
+        --enable-gopher --enable-mqtt \
+        --enable-doh --enable-dateparse --enable-verbose \
+        --enable-alt-svc --enable-websockets \
+        --enable-ipv6 --enable-unix-sockets --enable-socketpair \
+        --enable-headers-api --enable-versioned-symbols \
+        --enable-threaded-resolver --enable-optimize --enable-pthreads \
+        --enable-warnings --enable-werror \
+        --enable-curldebug --enable-dict --enable-netrc \
+        --enable-bearer-auth --enable-tls-srp --enable-dnsshuffle \
+        --enable-get-easy-options --enable-progress-meter \
+        --without-ca-bundle --without-ca-path \
+        --without-ca-fallback --enable-ares --enable-httpsrr --enable-ipfs \
+        --disable-ldap --disable-ldaps --enable-ssls-export \
+        "${ENABLE_DEBUG}";
 }
 
 compile_curl() {
@@ -756,8 +792,10 @@ _build_in_docker() {
         -e ARCHES="${ARCHES}" \
         -e ENABLE_DEBUG="${ENABLE_DEBUG}" \
         -e CURL_VERSION="${CURL_VERSION}" \
+        -e ENABLE_ECH="${ENABLE_ECH}" \
         -e TLS_LIB="${TLS_LIB}" \
         -e OPENSSL_VERSION="${OPENSSL_VERSION}" \
+        -e OPENSSL_BRANCH="${OPENSSL_BRANCH}" \
         -e NGTCP2_VERSION="${NGTCP2_VERSION}" \
         -e NGHTTP3_VERSION="${NGHTTP3_VERSION}" \
         -e NGHTTP2_VERSION="${NGHTTP2_VERSION}" \
@@ -819,11 +857,8 @@ main() {
 
     echo "Compiling for all ARCHes: ${ARCHES}"
     for arch_temp in ${ARCHES}; do
-        # Set the ARCH, PREFIX and PKG_CONFIG_PATH env variables
+        # Set the ARCH, PREFIX env variables
         export ARCH=${arch_temp}
-        export PREFIX="${DIR}/curl-${ARCH}"
-        export PKG_CONFIG_PATH="${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig"
-
         echo "Architecture: ${ARCH}"
         echo "Prefix directory: ${PREFIX}"
 
