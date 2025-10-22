@@ -12,11 +12,8 @@ on:
       ENABLE_ECH:
         description: 'Enable ECH Support'
         required: false
-        default: 'false'
-        type: choice
-        options:
-          - 'true'
-          - 'false'
+        default: false
+        type: boolean
       TLS_LIB:
         description: 'TLS Library (only openssl is supported for now)'
         required: false
@@ -69,7 +66,7 @@ jobs:
           # Set all build variables with fallback logic
           echo "ARCHES=${{ inputs.ARCHES_LINUX_GLIBC != '' && inputs.ARCHES_LINUX_GLIBC || vars.ARCHES_LINUX_GLIBC }}" >> $GITHUB_ENV
           echo "CURL_VERSION=${{ inputs.CURL_VERSION != '' && inputs.CURL_VERSION || vars.CURL_VERSION }}" >> $GITHUB_ENV
-          echo "ENABLE_ECH=${{ inputs.ENABLE_ECH != '' && inputs.ENABLE_ECH || vars.ENABLE_ECH }}" >> $GITHUB_ENV
+          echo "ENABLE_ECH=${{ inputs.ENABLE_ECH }}" >> $GITHUB_ENV
           echo "TLS_LIB=${{ inputs.TLS_LIB != '' && inputs.TLS_LIB || vars.TLS_LIB }}" >> $GITHUB_ENV
           echo "OPENSSL_VERSION=${{ inputs.OPENSSL_VERSION != '' && inputs.OPENSSL_VERSION || vars.OPENSSL_VERSION }}" >> $GITHUB_ENV
           echo "OPENSSL_BRANCH=${{ inputs.OPENSSL_BRANCH != '' && inputs.OPENSSL_BRANCH || vars.OPENSSL_BRANCH }}" >> $GITHUB_ENV
@@ -131,7 +128,7 @@ jobs:
           # Set all build variables with fallback logic
           echo "ARCHES=${{ inputs.ARCHES_LINUX_MUSL != '' && inputs.ARCHES_LINUX_MUSL || vars.ARCHES_LINUX_MUSL }}" >> $GITHUB_ENV
           echo "CURL_VERSION=${{ inputs.CURL_VERSION != '' && inputs.CURL_VERSION || vars.CURL_VERSION }}" >> $GITHUB_ENV
-          echo "ENABLE_ECH=${{ inputs.ENABLE_ECH != '' && inputs.ENABLE_ECH || vars.ENABLE_ECH }}" >> $GITHUB_ENV
+          echo "ENABLE_ECH=${{ inputs.ENABLE_ECH }}" >> $GITHUB_ENV
           echo "TLS_LIB=${{ inputs.TLS_LIB != '' && inputs.TLS_LIB || vars.TLS_LIB }}" >> $GITHUB_ENV
           echo "OPENSSL_VERSION=${{ inputs.OPENSSL_VERSION != '' && inputs.OPENSSL_VERSION || vars.OPENSSL_VERSION }}" >> $GITHUB_ENV
           echo "OPENSSL_BRANCH=${{ inputs.OPENSSL_BRANCH != '' && inputs.OPENSSL_BRANCH || vars.OPENSSL_BRANCH }}" >> $GITHUB_ENV
@@ -194,7 +191,7 @@ jobs:
           # Set all build variables with fallback logic
           echo "ARCHES=${{ inputs.ARCHES_WINDOWS != '' && inputs.ARCHES_WINDOWS || vars.ARCHES_WINDOWS }}" >> $GITHUB_ENV
           echo "CURL_VERSION=${{ inputs.CURL_VERSION != '' && inputs.CURL_VERSION || vars.CURL_VERSION }}" >> $GITHUB_ENV
-          echo "ENABLE_ECH=${{ inputs.ENABLE_ECH != '' && inputs.ENABLE_ECH || vars.ENABLE_ECH }}" >> $GITHUB_ENV
+          echo "ENABLE_ECH=${{ inputs.ENABLE_ECH }}" >> $GITHUB_ENV
           echo "TLS_LIB=${{ inputs.TLS_LIB != '' && inputs.TLS_LIB || vars.TLS_LIB }}" >> $GITHUB_ENV
           echo "OPENSSL_VERSION=${{ inputs.OPENSSL_VERSION != '' && inputs.OPENSSL_VERSION || vars.OPENSSL_VERSION }}" >> $GITHUB_ENV
           echo "OPENSSL_BRANCH=${{ inputs.OPENSSL_BRANCH != '' && inputs.OPENSSL_BRANCH || vars.OPENSSL_BRANCH }}" >> $GITHUB_ENV
@@ -258,7 +255,7 @@ jobs:
           # Set all build variables with fallback logic
           echo "ARCHES=${{ inputs.ARCHES_MACOS != '' && inputs.ARCHES_MACOS || vars.ARCHES_MACOS }}" >> $GITHUB_ENV
           echo "CURL_VERSION=${{ inputs.CURL_VERSION != '' && inputs.CURL_VERSION || vars.CURL_VERSION }}" >> $GITHUB_ENV
-          echo "ENABLE_ECH=${{ inputs.ENABLE_ECH != '' && inputs.ENABLE_ECH || vars.ENABLE_ECH }}" >> $GITHUB_ENV
+          echo "ENABLE_ECH=${{ inputs.ENABLE_ECH }}" >> $GITHUB_ENV
           echo "TLS_LIB=${{ inputs.TLS_LIB != '' && inputs.TLS_LIB || vars.TLS_LIB }}" >> $GITHUB_ENV
           echo "OPENSSL_VERSION=${{ inputs.OPENSSL_VERSION != '' && inputs.OPENSSL_VERSION || vars.OPENSSL_VERSION }}" >> $GITHUB_ENV
           echo "OPENSSL_BRANCH=${{ inputs.OPENSSL_BRANCH != '' && inputs.OPENSSL_BRANCH || vars.OPENSSL_BRANCH }}" >> $GITHUB_ENV
@@ -322,6 +319,16 @@ jobs:
           VERSION=`cat  curl-version/version.txt`
           echo "VERSION=$VERSION" >> $GITHUB_ENV
 
+      - name: Set RELEASE_TAG
+        run: |
+          if [ "${{ inputs.ENABLE_ECH }}" = "true" ]; then
+            RELEASE_TAG="${{ env.VERSION }}-ech"
+          else
+            RELEASE_TAG="${{ env.VERSION }}"
+          fi
+          echo "RELEASE_TAG=$RELEASE_TAG" >> $GITHUB_ENV
+          echo "Will release as: $RELEASE_TAG"
+
       - name: Download artifact (linux)
         uses: actions/download-artifact@v4
         with:
@@ -374,7 +381,8 @@ jobs:
             release/bin/curl-*.tar.xz
             release/curl-*.tar.xz
           body_path: release/release.md
-          tag_name: ${{ env.VERSION }}
+          tag_name: ${{ env.RELEASE_TAG }}
+          name: Release ${{ env.RELEASE_TAG }}
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload artifact
