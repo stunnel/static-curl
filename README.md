@@ -32,6 +32,8 @@ The binary is built with GitHub Actions.
 
 ### Release files
 
+Two versions of cURL will be released: one with ECH support (built with OpenSSL's branch feature/ecp) and one without, until OpenSSL's mainline supports ECH.
+
 - `curl-linux-ARCH-musl-VERSION`: binaries for Linux, linked with `musl`
 - `curl-linux-ARCH-glibc-VERSION`: binaries for Linux, linked with `glibc`, these binaries may have compatibility issues in certain system environments
 - `curl-linux-ARCH-dev-VERSION`: binaries, headers and static library archives for Linux, linked with `musl`(after curl v8.2.1)
@@ -189,7 +191,5 @@ For all `VERSION` variables, leaving them blank will automatically fetch the lat
 The compiled files will be saved in the current `release` directory.
 
 ### ECH Support
-
-Two versions of cURL will be released: one with ECH support (built with OpenSSL's branch feature/ecp) and one without, until OpenSSL's mainline supports ECH.
 
 see [Environment Variables](#environment-variables)
