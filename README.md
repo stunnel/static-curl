@@ -190,6 +190,6 @@ The compiled files will be saved in the current `release` directory.
 
 ### ECH Support
 
-Two versions of cURL will be released: one with ECH support and one without, until OpenSSL's mainline supports ECH.
+Two versions of cURL will be released: one with ECH support (built with OpenSSL's branch feature/ecp) and one without, until OpenSSL's mainline supports ECH.
 
 see [Environment Variables](#environment-variables)
