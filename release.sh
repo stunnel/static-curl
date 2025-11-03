@@ -2,10 +2,11 @@
 
 init_env() {
     current_dir=$(dirname "$(realpath "$0")")
-    export RELEASE_DIR=${current_dir};
+    export RELEASE_DIR="${current_dir}";
     cd "${RELEASE_DIR}" || exit
-    CURL_VERSION=$(head -n 1 release/version.txt)
-    export CURL_VERSION=${CURL_VERSION}
+    CURL_VERSION="${CURL_VERSION:-$(head -n 1 release/version.txt)}"
+    export CURL_VERSION="${CURL_VERSION}"
+    export RELEASE_TAG="${RELEASE_TAG:-${CURL_VERSION}}"
 }
 
 create_release_note() {
@@ -61,9 +62,9 @@ tar_curl() {
         if [ -f "${trurl_filename}" ]; then
             mv "${trurl_filename}" trurl;
             sha256sum trurl >> SHA256SUMS;
-            XZ_OPT=-9 tar -Jcf "${file}-${CURL_VERSION}.tar.xz" curl trurl SHA256SUMS && rm -f curl trurl;
+            XZ_OPT=-9 tar -Jcf "${file}-${RELEASE_TAG}.tar.xz" curl trurl SHA256SUMS && rm -f curl trurl;
         else
-            XZ_OPT=-9 tar -Jcf "${file}-${CURL_VERSION}.tar.xz" curl SHA256SUMS && rm -f curl;
+            XZ_OPT=-9 tar -Jcf "${file}-${RELEASE_TAG}.tar.xz" curl SHA256SUMS && rm -f curl;
         fi
     done
 
@@ -76,9 +77,9 @@ tar_curl() {
         if [ -f "${trurl_filename}" ]; then
             mv "${trurl_filename}" trurl.exe;
             sha256sum trurl.exe >> SHA256SUMS;
-            XZ_OPT=-9 tar -Jcf "${filename}-${CURL_VERSION}.tar.xz" curl.exe trurl.exe curl-ca-bundle.crt SHA256SUMS && rm -f curl.exe trurl.exe;
+            XZ_OPT=-9 tar -Jcf "${filename}-${RELEASE_TAG}.tar.xz" curl.exe trurl.exe curl-ca-bundle.crt SHA256SUMS && rm -f curl.exe trurl.exe;
         else
-            XZ_OPT=-9 tar -Jcf "${filename}-${CURL_VERSION}.tar.xz" curl.exe curl-ca-bundle.crt SHA256SUMS && rm -f curl.exe;
+            XZ_OPT=-9 tar -Jcf "${filename}-${RELEASE_TAG}.tar.xz" curl.exe curl-ca-bundle.crt SHA256SUMS && rm -f curl.exe;
         fi
     done
     rm -f curl-ca-bundle.crt SHA256SUMS;

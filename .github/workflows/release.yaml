@@ -366,8 +366,9 @@ jobs:
       - name: Compress and Create Release Note
         env:
           TLS_LIB: ${{ vars.TLS_LIB }}
+          CURL_VERSION: ${{ env.VERSION }}
+          RELEASE_TAG: ${{ env.RELEASE_TAG }}
         run: |
-          TLS_LIB=${TLS_LIB}
           bash release.sh
 
       - name: List compressed files
@@ -383,12 +384,13 @@ jobs:
           body_path: release/release.md
           tag_name: ${{ env.RELEASE_TAG }}
           name: Release ${{ env.RELEASE_TAG }}
+          make_latest: ${{ env.RELEASE_TAG == env.VERSION }}
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: curl-release-${{ env.VERSION }}
+          name: curl-release-${{ env.RELEASE_TAG }}
           path: release
           retention-days: 90
           if-no-files-found: error
