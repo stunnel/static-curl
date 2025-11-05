@@ -85,6 +85,20 @@ tar_curl() {
     rm -f curl-ca-bundle.crt SHA256SUMS;
 }
 
+rename_dev_package() {
+    if [ "${RELEASE_TAG}" = "${CURL_VERSION}" ]; then
+        return;
+    fi
+
+    cd "${RELEASE_DIR}/release" || exit
+    for file in curl*dev*.tar.xz; do
+        # rename CURL_VERSION with RELEASE_TAG
+        new_file=$(echo "${file}" | sed "s#${CURL_VERSION}#${RELEASE_TAG}#g");
+        mv "${file}" "${new_file}";
+    done
+}
+
 init_env;
 create_release_note;
 tar_curl;
+rename_dev_package;
