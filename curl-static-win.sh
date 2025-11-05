@@ -35,9 +35,9 @@
 # Supported architectures: x86_64 i686 aarch64 armv7
 
 init_env() {
-    export DIR=${DIR:-/data};
-    export RELEASE_DIR=${RELEASE_DIR:-/mnt};
-    export ARCH_HOST=$(uname -m)
+    export DIR="${DIR:-/data}";
+    export RELEASE_DIR="${RELEASE_DIR:-/mnt}";
+    export ARCH_HOST="$(uname -m)";
 
     case "${ENABLE_DEBUG}" in
         true|1|yes|on|y|Y)
@@ -101,10 +101,8 @@ configure_toolchain() {
            LD="${mingw_path}/bin/${ARCH}-w64-mingw32-ld" \
            STRIP="${mingw_path}/bin/${ARCH}-w64-mingw32-strip" \
            CFLAGS="-O3" \
-           CPPFLAGS="-I${mingw_path}/${ARCH}-w64-mingw32/include ${CPPFLAGS}" \
-           CPPFLAGS="-I${mingw_path}/generic-w64-mingw32/include ${CPPFLAGS}" \
-           LDFLAGS="--ld-path=${mingw_path}/bin/${ARCH}-w64-mingw32-ld ${LDFLAGS}" \
-           LDFLAGS="-L${mingw_path}/${ARCH}-w64-mingw32/lib ${LDFLAGS}";
+           CPPFLAGS="-I${mingw_path}/generic-w64-mingw32/include -I${mingw_path}/${ARCH}-w64-mingw32/include ${CPPFLAGS}" \
+           LDFLAGS="-L${mingw_path}/${ARCH}-w64-mingw32/lib --ld-path=${mingw_path}/bin/${ARCH}-w64-mingw32-ld ${LDFLAGS}";
 }
 
 arch_variants() {
@@ -125,7 +123,7 @@ arch_variants() {
     export CPPFLAGS="-I${PREFIX}/include";
     export LDFLAGS="-L${PREFIX}/lib";
     export PKG_CONFIG="pkg-config --static";
-    export PKG_CONFIG_PATH="${PREFIX}/lib/pkgconfig";
+    export PKG_CONFIG_PATH="${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig:${PREFIX}/share/pkgconfig";
     if [ "${suffix}" != "" ]; then
         export LDFLAGS="-L${PREFIX}/lib${suffix} ${LDFLAGS}";
         export PKG_CONFIG_PATH="${PREFIX}/lib${suffix}/pkgconfig:${PKG_CONFIG_PATH}";
@@ -665,7 +663,7 @@ curl_config() {
         --enable-alt-svc --enable-websockets \
         --enable-ipv6 --enable-unix-sockets --enable-socketpair \
         --enable-headers-api --enable-versioned-symbols \
-        --enable-threaded-resolver --enable-optimize --enable-pthreads \
+        --enable-threaded-resolver --enable-optimize \
         --enable-warnings --enable-werror \
         --enable-curldebug --enable-dict --enable-netrc \
         --enable-bearer-auth --enable-tls-srp --enable-dnsshuffle \
@@ -858,9 +856,8 @@ main() {
     echo "Compiling for all ARCHes: ${ARCHES}"
     for arch_temp in ${ARCHES}; do
         # Set the ARCH, PREFIX env variables
-        export ARCH=${arch_temp}
+        export ARCH="${arch_temp}"
         echo "Architecture: ${ARCH}"
-        echo "Prefix directory: ${PREFIX}"
 
         if _arch_valid; then
             compile;
