@@ -123,7 +123,7 @@ arch_variants() {
     export CPPFLAGS="-I${PREFIX}/include";
     export LDFLAGS="-L${PREFIX}/lib";
     export PKG_CONFIG="pkg-config --static";
-    export PKG_CONFIG_PATH="${PREFIX}/lib/pkgconfig:${PREFIX}/lib64/pkgconfig:${PREFIX}/share/pkgconfig";
+    export PKG_CONFIG_PATH="${PREFIX}/lib/pkgconfig";
     if [ "${suffix}" != "" ]; then
         export LDFLAGS="-L${PREFIX}/lib${suffix} ${LDFLAGS}";
         export PKG_CONFIG_PATH="${PREFIX}/lib${suffix}/pkgconfig:${PKG_CONFIG_PATH}";
@@ -307,10 +307,11 @@ compile_zlib() {
     cd out/
 
     PKG_CONFIG="pkg-config --static" \
-            cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_SYSTEM_NAME=Windows -DBUILD_SHARED_LIBS=OFF \
-                  -DCMAKE_INSTALL_PREFIX="${PREFIX}" .. ;
+        cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_SYSTEM_NAME=Windows -DBUILD_SHARED_LIBS=OFF \
+              -DCMAKE_INSTALL_PREFIX="${PREFIX}" .. ;
     PKG_CONFIG="pkg-config --static" \
         cmake --build . --config Release --target install;
+    ln -s -r "${PREFIX}/lib/libzlibstatic.a" "${PREFIX}/lib/libz.a";
 
     _copy_license ../LICENSE zlib;
 }
