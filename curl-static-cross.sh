@@ -560,7 +560,7 @@ compile_ares() {
 
 compile_tls() {
     echo "Compiling ${TLS_LIB}, Arch: ${ARCH}" | tee "${RELEASE_DIR}/running"
-    local url
+    local url no_hw_padlock no_pie_tests_asm
     change_dir;
 
     if [ "${OPENSSL_VERSION}" = "dev" ] && [ -n "${OPENSSL_BRANCH}" ]; then
@@ -581,9 +581,15 @@ compile_tls() {
     fi
 
     # issues/83 VIA padlock
-    no_hw_padlock=""
     if [ "${ARCH}" = "x86_64" ] || [ "${ARCH}" = "i686" ]; then
         no_hw_padlock="no-hw-padlock"
+    fi
+
+    # no-asm no-pie no-tests for i686 with musl libc
+    # gcc 15 and musl have more strict security checks, so need to disable the i686 asm, uses pure C code,
+    # It affects approximately 5% of performance.
+    if [ "${ARCH}" = "i686" ] && [ "${LIBC}" = "musl" ]; then
+        no_pie_tests_asm="no-pie no-tests no-asm"
     fi
 
     ./Configure \
@@ -592,9 +598,10 @@ compile_tls() {
         --prefix="${PREFIX}" \
         --openssldir=/etc/ssl \
         threads no-shared \
-        enable-ktls \
+        ${no_pie_tests_asm} \
         ${no_hw_padlock} \
         ${EC_NISTP_64_GCC_128} \
+        enable-ktls \
         enable-tls1_3 \
         enable-ssl3 enable-ssl3-method \
         enable-des enable-rc4 \
