@@ -592,7 +592,7 @@ compile_tls() {
         no_pie_tests_asm="no-pie no-tests no-asm"
     fi
 
-    # no-tsan for mips with glibc libc
+    # Workaround: Force-disable C11 atomics to fix clang MIPS cross-compile bug
     cflags="${CFLAGS}"
     if [ "${ARCH}" = "mips" ] && [ "${LIBC}" != "musl" ]; then
         cflags="${CFLAGS} -D__STDC_NO_ATOMICS__"
