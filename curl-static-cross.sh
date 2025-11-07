@@ -560,7 +560,7 @@ compile_ares() {
 
 compile_tls() {
     echo "Compiling ${TLS_LIB}, Arch: ${ARCH}" | tee "${RELEASE_DIR}/running"
-    local url no_hw_padlock no_pie_tests_asm
+    local url no_hw_padlock no_pie_tests_asm cflags
     change_dir;
 
     if [ "${OPENSSL_VERSION}" = "dev" ] && [ -n "${OPENSSL_BRANCH}" ]; then
@@ -592,6 +592,13 @@ compile_tls() {
         no_pie_tests_asm="no-pie no-tests no-asm"
     fi
 
+    # no-tsan for mips with glibc libc
+    cflags="${CFLAGS}"
+    if [ "${ARCH}" = "mips" ] && [ "${LIBC}" != "musl" ]; then
+        cflags="${CFLAGS} -D__STDC_NO_ATOMICS__"
+    fi
+
+    CFLAGS="${cflags}" \
     ./Configure \
         ${OPENSSL_ARCH} \
         -fPIC \
@@ -766,13 +773,17 @@ compile_trurl() {
 
 curl_config() {
     echo "Configuring curl, Arch: ${ARCH}" | tee "${RELEASE_DIR}/running"
-    local with_openssl_quic with_ech
+    local with_openssl_quic with_ech ac_cv_header_stdatomic_h
 
     # --with-openssl-quic and --with-ngtcp2 are mutually exclusive
     if [ "${TLS_LIB}" = "openssl" ]; then
         with_openssl_quic="--with-openssl-quic"
     else
         with_openssl_quic="--with-ngtcp2"
+    fi
+
+    if [ "${ARCH}" = "mips" ] && [ "${LIBC}" != "musl" ]; then
+        ac_cv_header_stdatomic_h="ac_cv_header_stdatomic_h=no"
     fi
 
     case "${ENABLE_ECH}" in
@@ -792,6 +803,7 @@ curl_config() {
         --with-nghttp2 --with-nghttp3 \
         --with-libidn2 --with-libssh2 \
         "${with_ech}" \
+        "${ac_cv_header_stdatomic_h}" \
         --enable-hsts --enable-mime --enable-cookies \
         --enable-http-auth --enable-manual \
         --enable-proxy --enable-file --enable-http \
@@ -885,7 +897,7 @@ _arch_valid() {
     # Mapping of supported target architectures for different host platforms:
     # - When host is x86_64: supports building for x86_64, aarch64, i686, etc.
     # - When host is aarch64: supports building for x86_64, aarch64, etc.
-    local arch_x86_64="x86_64 aarch64 armv5 armv7 armv7l riscv64 s390x mips64 mips64el powerpc64le mipsel i686 mips powerpc loongarch64"
+    local  arch_x86_64="x86_64 aarch64 armv5 armv7 armv7l riscv64 s390x mips64 mips64el powerpc64le mipsel i686 mips powerpc loongarch64"
     local arch_aarch64="x86_64 aarch64 armv5 armv7 armv7l riscv64 s390x mips64 mips64el powerpc64le mipsel i686 mips powerpc loongarch64"
 
     if [ "${ARCH_HOST}" = "x86_64" ]; then
