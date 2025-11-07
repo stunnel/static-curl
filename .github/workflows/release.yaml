@@ -32,7 +32,7 @@ on:
       ARCHES_LINUX_GLIBC:
         description: 'Linux glibc Architecture List'
         required: false
-        default: 'x86_64 aarch64 armv7 armv5 riscv64 s390x mips64 mips64el mips mipsel powerpc64le powerpc i686'
+        default: 'x86_64 aarch64 armv7 armv5 riscv64 s390x mips64 mips64el mips mipsel powerpc64le powerpc i686 loongarch64'
         type: string
       ARCHES_LINUX_MUSL:
         description: 'Linux musl Architecture List'

@@ -52,20 +52,20 @@ In this case, it is recommended to use the `musl` version.
 This script utilizes `clang`(glibc) and [qbt-musl-cross-make](https://github.com/userdocs/qbt-musl-cross-make)(musl) for cross-compilation on Linux, `mstorsjo/llvm-mingw` for cross-compilation for Windows, providing support for the following architectures:
 
 - Linux
-  - x86_64(glibc and musl)
-  - aarch64(glibc and musl)
-  - armv7(glibc and musl)
-  - armv5(glibc and musl)
-  - i686(glibc)
-  - riscv64(glibc and musl)
-  - s390x(glibc and musl)
-  - mips64(glibc and musl)
-  - mips64el(glibc and musl)
-  - mips(musl)
-  - mipsel(glibc and musl)
-  - powerpc64le(glibc and musl)
-  - powerpc(glibc and musl)
-  - loongarch64(musl)
+  - x86_64
+  - aarch64
+  - armv7
+  - armv5
+  - i686
+  - riscv64
+  - s390x
+  - mips64
+  - mips64el
+  - mips
+  - mipsel
+  - powerpc64le
+  - powerpc
+  - loongarch64
 - macOS
   - x86_64
   - aarch64
@@ -83,15 +83,14 @@ This script utilizes `clang`(glibc) and [qbt-musl-cross-make](https://github.com
 `sh curl-static-cross.sh`  
 The script will create a container and compile the host architecture cURL only.  
 
-libc and its supported architectures  
-- libc: `glibc`, ARCHES: `"x86_64 aarch64 armv7 armv5 riscv64 s390x mips64 mips64el mipsel powerpc64le powerpc i686"`
-- libc: `musl`, ARCHES: `"x86_64 aarch64 armv7 armv5 riscv64 s390x mips64 mips64el mipsel powerpc64le powerpc mips loongarch64"`
+supported architectures  
+- ARCHES: `"x86_64 aarch64 armv7 armv5 riscv64 s390x mips64 mips64el mips mipsel powerpc64le powerpc i686 loongarch64"`
 
 - If you need to specify more parameters, run:  
   ```shell
   docker run --network host --rm -v $(pwd):/mnt -w /mnt \
       --name "build-curl-$(date +%Y%m%d-%H%M)" \
-      -e ARCHES="x86_64 aarch64 armv7 armv5 riscv64 s390x mips64 mips64el mipsel powerpc64le powerpc i686" \
+      -e ARCHES="x86_64 aarch64 armv7 armv5 riscv64 s390x mips64 mips64el mips mipsel powerpc64le powerpc i686 loongarch64" \
       -e TLS_LIB="openssl" \
       -e LIBC="glibc" \
       -e QBT_MUSL_CROSS_MAKE_VERSION="" \
