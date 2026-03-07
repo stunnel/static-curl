@@ -53,11 +53,12 @@ on:
 jobs:
   build-Linux:
     name: build-Linux (${{ github.ref_name }})
+    if: inputs.ARCHES_LINUX_GLIBC != ''
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 1
 
@@ -115,11 +116,12 @@ jobs:
 
   build-Linux-musl:
     name: build-Linux-musl (${{ github.ref_name }})
+    if: inputs.ARCHES_LINUX_MUSL != ''
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 1
 
@@ -178,11 +180,12 @@ jobs:
 
   build-Windows:
     name: build-Windows (${{ github.ref_name }})
+    if: inputs.ARCHES_WINDOWS != ''
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 1
 
@@ -238,6 +241,7 @@ jobs:
 
   build-macOS:
     name: build-macOS (${{ github.ref_name }})
+    if: inputs.ARCHES_MACOS != ''
     runs-on: macos-latest
 
     steps:
@@ -246,7 +250,7 @@ jobs:
           echo "MACOS_RELEASE_DIR=${HOME}" >> $GITHUB_ENV
 
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 1
 
@@ -300,11 +304,17 @@ jobs:
   release:
     name: release curl (${{ github.ref_name }})
     needs: [build-Linux, build-Linux-musl, build-Windows, build-macOS]
+    if: >-
+      !cancelled() && !failure() &&
+      (needs.build-Linux.result == 'success' ||
+       needs.build-Linux-musl.result == 'success' ||
+       needs.build-Windows.result == 'success' ||
+       needs.build-macOS.result == 'success')
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 1
 
@@ -330,24 +340,28 @@ jobs:
           echo "Will release as: $RELEASE_TAG"
 
       - name: Download artifact (linux)
+        if: needs.build-Linux.result == 'success'
         uses: actions/download-artifact@v4
         with:
           name: curl-binary-linux-${{ env.VERSION }}
           path: release
 
       - name: Download artifact (linux-musl)
+        if: needs.build-Linux-musl.result == 'success'
         uses: actions/download-artifact@v4
         with:
           name: curl-binary-linux-musl-${{ env.VERSION }}
           path: release
 
       - name: Download artifact (macos)
+        if: needs.build-macOS.result == 'success'
         uses: actions/download-artifact@v4
         with:
           name: curl-binary-macos-${{ env.VERSION }}
           path: release
 
       - name: Download artifact (windows)
+        if: needs.build-Windows.result == 'success'
         uses: actions/download-artifact@v4
         with:
           name: curl-binary-windows-${{ env.VERSION }}
