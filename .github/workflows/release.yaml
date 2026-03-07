@@ -30,22 +30,22 @@ on:
         default: 'feature/ech'
         type: string
       ARCHES_LINUX_GLIBC:
-        description: 'Linux glibc Architecture List'
+        description: "Linux glibc Architecture List (set 'none' to skip)"
         required: false
         default: 'x86_64 aarch64 armv7 armv5 riscv64 s390x mips64 mips64el mips mipsel powerpc64le powerpc i686 loongarch64'
         type: string
       ARCHES_LINUX_MUSL:
-        description: 'Linux musl Architecture List'
+        description: "Linux musl Architecture List (set 'none' to skip)"
         required: false
         default: 'x86_64 aarch64 armv7 armv5 riscv64 s390x mips64 mips64el mips mipsel powerpc64le powerpc i686 loongarch64'
         type: string
       ARCHES_WINDOWS:
-        description: 'Windows Architecture List'
+        description: "Windows Architecture List (set 'none' to skip)"
         required: false
         default: 'x86_64 aarch64 armv7 i686'
         type: string
       ARCHES_MACOS:
-        description: 'macOS Architecture List'
+        description: "macOS Architecture List (set 'none' to skip)"
         required: false
         default: 'x86_64 arm64'
         type: string
@@ -53,7 +53,7 @@ on:
 jobs:
   build-Linux:
     name: build-Linux (${{ github.ref_name }})
-    if: inputs.ARCHES_LINUX_GLIBC != ''
+    if: inputs.ARCHES_LINUX_GLIBC != 'none'
     runs-on: ubuntu-latest
 
     steps:
@@ -81,7 +81,7 @@ jobs:
           echo "ZSTD_VERSION=${{ vars.ZSTD_VERSION }}" >> $GITHUB_ENV
           echo "LIBSSH2_VERSION=${{ vars.LIBSSH2_VERSION }}" >> $GITHUB_ENV
           echo "ARES_VERSION=${{ vars.ARES_VERSION }}" >> $GITHUB_ENV
-          echo "ENABLE_TRURL=${{ vars.ENABLE_TRURL }}" >> $GITHUB_ENV
+          echo "ENABLE_TRURL=${{ vars.ENABLE_TRURL_GLIBC }}" >> $GITHUB_ENV
           echo "TRURL_VERSION=${{ vars.TRURL_VERSION }}" >> $GITHUB_ENV
           echo "LIBC=glibc" >> $GITHUB_ENV
           echo "QBT_MUSL_CROSS_MAKE_VERSION=${{ vars.QBT_MUSL_CROSS_MAKE_VERSION }}" >> $GITHUB_ENV
@@ -116,7 +116,7 @@ jobs:
 
   build-Linux-musl:
     name: build-Linux-musl (${{ github.ref_name }})
-    if: inputs.ARCHES_LINUX_MUSL != ''
+    if: inputs.ARCHES_LINUX_MUSL != 'none'
     runs-on: ubuntu-latest
 
     steps:
@@ -180,7 +180,7 @@ jobs:
 
   build-Windows:
     name: build-Windows (${{ github.ref_name }})
-    if: inputs.ARCHES_WINDOWS != ''
+    if: inputs.ARCHES_WINDOWS != 'none'
     runs-on: ubuntu-latest
 
     steps:
@@ -208,7 +208,7 @@ jobs:
           echo "ZSTD_VERSION=${{ vars.ZSTD_VERSION }}" >> $GITHUB_ENV
           echo "LIBSSH2_VERSION=${{ vars.LIBSSH2_VERSION }}" >> $GITHUB_ENV
           echo "ARES_VERSION=${{ vars.ARES_VERSION }}" >> $GITHUB_ENV
-          echo "ENABLE_TRURL=${{ vars.ENABLE_TRURL }}" >> $GITHUB_ENV
+          echo "ENABLE_TRURL=${{ vars.ENABLE_TRURL_WINDOWS }}" >> $GITHUB_ENV
           echo "TRURL_VERSION=${{ vars.TRURL_VERSION }}" >> $GITHUB_ENV
           echo "CONTAINER_IMAGE=mstorsjo/llvm-mingw:latest" >> $GITHUB_ENV
           echo "TOKEN_READ=${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV
@@ -241,7 +241,7 @@ jobs:
 
   build-macOS:
     name: build-macOS (${{ github.ref_name }})
-    if: inputs.ARCHES_MACOS != ''
+    if: inputs.ARCHES_MACOS != 'none'
     runs-on: macos-latest
 
     steps:
@@ -273,6 +273,8 @@ jobs:
           echo "ZSTD_VERSION=${{ vars.ZSTD_VERSION }}" >> $GITHUB_ENV
           echo "LIBSSH2_VERSION=${{ vars.LIBSSH2_VERSION }}" >> $GITHUB_ENV
           echo "ARES_VERSION=${{ vars.ARES_VERSION }}" >> $GITHUB_ENV
+          echo "ENABLE_TRURL=${{ vars.ENABLE_TRURL_MACOS }}" >> $GITHUB_ENV
+          echo "TRURL_VERSION=${{ vars.TRURL_VERSION }}" >> $GITHUB_ENV
           echo "TOKEN_READ=${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_ENV
 
       - name: Build Static cURL on macOS
