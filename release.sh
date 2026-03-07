@@ -19,7 +19,7 @@ create_release_note() {
     features=$(grep Features release/version-info.txt | cut -d":" -f2 | sed -e 's/^[[:space:]]*//')
 
     echo "Creating checksum..."
-    output_sha256=$(sha256sum release/bin/curl-linux* release/bin/curl-macos* release/bin/curl-windows* \
+    output_sha256=$(sha256sum release/bin/curl-linux* release/bin/curl-macos* release/bin/curl-windows* 2>/dev/null \
         | sed 's#release/bin/##g' | sed 's#-# #g' | sed 's#.exe##g')
     markdown_table=$(printf "%s" "${output_sha256}" |
         awk 'BEGIN {print "| File | Platform | Arch | LibC | SHA256 |\n|------|------|------|--------|--------|"}
@@ -53,9 +53,10 @@ EOF
 
 tar_curl() {
     cd "${RELEASE_DIR}/release/bin" || exit
-    chmod +x curl-[lmw]* trurl-*;
+    chmod +x curl-[lmw]* trurl-* 2>/dev/null || true;
 
     for file in curl-linux-* curl-macos-*; do
+        [ -f "${file}" ] || continue;
         mv "${file}" curl;
         sha256sum curl > SHA256SUMS;
         trurl_filename=$(echo "${file}" | sed 's#curl-#trurl-#g');
@@ -69,6 +70,7 @@ tar_curl() {
     done
 
     for file in curl-*.exe; do
+        [ -f "${file}" ] || continue;
         mv "${file}" curl.exe;
         sha256sum curl.exe > SHA256SUMS;
         filename="${file%.exe}";
@@ -92,7 +94,7 @@ rename_dev_package() {
 
     cd "${RELEASE_DIR}/release" || exit
     for file in curl*dev*.tar.xz; do
-        # rename CURL_VERSION with RELEASE_TAG
+        [ -f "${file}" ] || continue;
         new_file=$(echo "${file}" | sed "s#${CURL_VERSION}#${RELEASE_TAG}#g");
         mv "${file}" "${new_file}";
     done
