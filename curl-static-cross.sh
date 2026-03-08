@@ -478,6 +478,19 @@ compile_zlib() {
     url="${URL}"
     download_and_extract "${url}"
 
+    cflags="${CFLAGS}"
+    if [ "${ARCH}" = "s390x" ]; then
+        # enable vector support for s390x
+        cflags="${cflags} -mvx -march=z13"
+        if [ "${LIBC}" = "musl" ]; then
+            # ensure compatibility with musl
+            cflags="${cflags} -DHWCAP_S390_VX=HWCAP_S390_VXRS"
+        else
+            cflags="${cflags} -fzvector"
+        fi
+    fi
+
+    CFLAGS="${cflags}" \
     ./configure --prefix="${PREFIX}" --static;
     make -j "$(nproc)";
     make install;
