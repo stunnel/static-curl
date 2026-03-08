@@ -375,7 +375,7 @@ jobs:
           echo
           file release/bin/curl-*
           echo
-          cat release/version-info.txt
+          cat release/version-info.txt 2>/dev/null || true
           echo
           sha256sum release/bin/curl-*
 

@@ -15,8 +15,8 @@ create_release_note() {
     echo "Creating release note..."
 
     components=$(head -n 1 release/version-info.txt | sed 's/ /\n/g' | grep '/' | sed 's#^#- #g' || true)
-    protocols=$(grep Protocols release/version-info.txt | cut -d":" -f2 | sed -e 's/^[[:space:]]*//')
-    features=$(grep Features release/version-info.txt | cut -d":" -f2 | sed -e 's/^[[:space:]]*//')
+    protocols=$(grep Protocols release/version-info.txt | cut -d":" -f2 | sed -e 's/^[[:space:]]*//' || true)
+    features=$(grep Features release/version-info.txt | cut -d":" -f2 | sed -e 's/^[[:space:]]*//' || true)
 
     echo "Creating checksum..."
     output_sha256=$(sha256sum release/bin/curl-linux* release/bin/curl-macos* release/bin/curl-windows* 2>/dev/null \
