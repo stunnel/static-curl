@@ -342,7 +342,7 @@ compile_ares() {
 
 compile_tls() {
     echo "Compiling ${TLS_LIB}, Arch: ${ARCH}" | tee "${RELEASE_DIR}/running"
-    local url
+    local url ssl3
     change_dir;
 
     if [ "${OPENSSL_VERSION}" = "dev" ] && [ -n "${OPENSSL_BRANCH}" ]; then
@@ -362,6 +362,14 @@ compile_tls() {
         download_and_extract "${url}"
     fi
 
+    # ssl3 is deprecated in 4.x
+    major_ver="${OPENSSL_VERSION%%.*}"
+    if [ "$OPENSSL_VERSION" = "dev" ] || { [ "$major_ver" -ge 4 ] 2>/dev/null; }; then
+        ssl3=""
+    else
+        ssl3="enable-ssl3 enable-ssl3-method"
+    fi
+
     ./Configure \
         ${OPENSSL_ARCH} \
         -fPIC \
@@ -371,7 +379,7 @@ compile_tls() {
         enable-ktls \
         enable-ec_nistp_64_gcc_128 \
         enable-tls1_3 \
-        enable-ssl3 enable-ssl3-method \
+        ${ssl3} \
         enable-des enable-rc4 \
         enable-weak-ssl-ciphers;
 

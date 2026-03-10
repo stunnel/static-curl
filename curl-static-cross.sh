@@ -573,7 +573,7 @@ compile_ares() {
 
 compile_tls() {
     echo "Compiling ${TLS_LIB}, Arch: ${ARCH}" | tee "${RELEASE_DIR}/running"
-    local url no_hw_padlock no_pie_tests_asm cflags
+    local url ssl3 no_hw_padlock no_pie_tests_asm cflags
     change_dir;
 
     if [ "${OPENSSL_VERSION}" = "dev" ] && [ -n "${OPENSSL_BRANCH}" ]; then
@@ -594,13 +594,22 @@ compile_tls() {
     fi
 
     # issues/83 VIA padlock
-    if [ "${ARCH}" = "x86_64" ] || [ "${ARCH}" = "i686" ]; then
-        no_hw_padlock="no-hw-padlock"
+    # ssl3 is deprecated in 4.x
+    major_ver="${OPENSSL_VERSION%%.*}"
+    if [ "$OPENSSL_VERSION" = "dev" ] || { [ "$major_ver" -ge 4 ] 2>/dev/null; }; then
+        ssl3=""
+        no_hw_padlock=""
+    else
+        ssl3="enable-ssl3 enable-ssl3-method"
+        case "$ARCH" in
+            x86_64|i686) no_hw_padlock="no-hw-padlock" ;;
+            *) no_hw_padlock="" ;;
+        esac
     fi
 
     # no-asm no-pie no-tests for i686 with musl libc
     # gcc 15 and musl have more strict security checks, so need to disable the i686 asm, uses pure C code,
-    # It affects approximately 5% of performance.
+    # it affects approximately 5% of performance.
     if [ "${ARCH}" = "i686" ] && [ "${LIBC}" = "musl" ]; then
         no_pie_tests_asm="no-pie no-tests no-asm"
     fi
@@ -623,7 +632,7 @@ compile_tls() {
         ${EC_NISTP_64_GCC_128} \
         enable-ktls \
         enable-tls1_3 \
-        enable-ssl3 enable-ssl3-method \
+        ${ssl3} \
         enable-des enable-rc4 \
         enable-weak-ssl-ciphers \
         --static -static;
