@@ -79,7 +79,7 @@ This script utilizes `clang`(glibc) and [qbt-musl-cross-make](https://github.com
 
 #### Linux
 
-- To compile locally, install Docker, clone this Git repository, navigate to the repository directory, and then execute the following command:  
+- Install Docker, clone this Git repository, navigate to the repository directory, and then execute the following command:  
 `sh curl-static-cross.sh`  
 The script will create a container and compile the host architecture cURL only.  
 
@@ -134,7 +134,7 @@ ARCHES="x86_64 arm64" \
 
 #### Windows
 
-- To compile locally, install Docker, clone this Git repository, navigate to the repository directory, and then execute the following command:  
+- Install Docker, clone this Git repository, navigate to the repository directory, and then execute the following command:  
   `ARCHES="x86_64 i686 aarch64 armv7" sh curl-static-win.sh`  
   script will create a Linux container and cross-compile cURL via [LLVM MinGW toolchain](https://github.com/mstorsjo/llvm-mingw).
 
@@ -169,7 +169,7 @@ For all `VERSION` variables, leaving them blank will automatically fetch the lat
 - `LIBC`: The libc. `glibc`(default) or `musl`, only affects Linux.
 - `QBT_MUSL_CROSS_MAKE_VERSION`: The version of qbt-musl-cross-make, only affects `musl`. Check the releases on [qbt-musl-cross-make/releases](https://github.com/userdocs/qbt-musl-cross-make/releases)
 - `CURL_VERSION`: The version of cURL. If set to `dev`, will fetch the latest source code of branch `master` from GitHub.
-- `ENABLE_ECH`: Enable ECH support in cURL. The default value is `false`, set to `true` to enable this feature. Currently released OpenSSL versions do not support ECH. You must use OpenSSL's `feature/ech` branch; see the `OPENSSL_VERSION` and `OPENSSL_BRANCH` settings below. Current releases `static-curl` do not enable this feature, you have to compile by yourself if you need it.
+- `ENABLE_ECH`: Enable ECH support in cURL. The default value is `false`, set to `true` to enable this feature.
 - `OPENSSL_VERSION`: The version of OpenSSL. If set to `dev`, will fetch the branch `OPENSSL_BRANCH` from GitHub.
 - `OPENSSL_BRANCH`: The branch that fetch from GitHub, this variable will be ignored if `OPENSSL_VERSION` is not set to `dev`.
 - `NGTCP2_VERSION`: The version of ngtcp2.
@@ -191,4 +191,8 @@ The compiled files will be saved in the current `release` directory.
 
 ### ECH Support
 
-see [Environment Variables](#environment-variables)
+We are currently providing two build variants for this release: one with ECH support and one without.
+
+- Standard Version: Built with the latest stable OpenSSL release (3.6.x) for optimal reliability.
+- ECH-enabled Version: Built with OpenSSL 4.0.0 alpha. Please note that this is an experimental build and may contain bugs or stability issues.
+- Future Roadmap: Upon the official release of OpenSSL 4.0, we will transition to providing only the ECH-enabled version.
