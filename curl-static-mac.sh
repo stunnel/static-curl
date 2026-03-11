@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
 # To compile locally, clone the Git repository, navigate to the repository directory,
 # and then execute the following command:
@@ -429,6 +429,9 @@ compile_nghttp2() {
 
 compile_ngtcp2() {
     echo "Compiling ngtcp2, Arch: ${ARCH}" | tee "${RELEASE_DIR}/running"
+    if [ "${TLS_LIB}" = "openssl" ]; then
+        return
+    fi
     local url
     change_dir;
 
@@ -442,8 +445,8 @@ compile_ngtcp2() {
 
     make -j "${CPU_CORES}";
     make install;
-    [[ ! -f "${PREFIX}/include/ngtcp2/ngtcp2_crypto.h" ]] && cp -a crypto/includes/ngtcp2/ngtcp2_crypto.h "${PREFIX}/include/ngtcp2/"
-    [[ ! -f "${PREFIX}/include/ngtcp2/ngtcp2_crypto_openssl.h" ]] && cp -a crypto/includes/ngtcp2/ngtcp2_crypto_quictls.h "${PREFIX}/include/ngtcp2/"
+    cp -a crypto/includes/ngtcp2/ngtcp2_crypto_quictls.h crypto/includes/ngtcp2/ngtcp2_crypto.h \
+        "${PREFIX}/include/ngtcp2/"
 
     _copy_license COPYING ngtcp2;
 }
@@ -486,9 +489,9 @@ compile_brotli() {
 
     _copy_license ../LICENSE brotli;
     cd "${PREFIX}/lib/"
-    [[ -f libbrotlidec-static.a && ! -f libbrotlidec.a ]] && ln -f libbrotlidec-static.a libbrotlidec.a
-    [[ -f libbrotlienc-static.a && ! -f libbrotlienc.a ]] && ln -f libbrotlienc-static.a libbrotlienc.a
-    [[ -f libbrotlicommon-static.a && ! -f libbrotlicommon.a ]] && ln -f libbrotlicommon-static.a libbrotlicommon.a
+    if [ -f libbrotlidec-static.a ] && [ ! -f libbrotlidec.a ]; then ln -f libbrotlidec-static.a libbrotlidec.a; fi
+    if [ -f libbrotlienc-static.a ] && [ ! -f libbrotlienc.a ]; then ln -f libbrotlienc-static.a libbrotlienc.a; fi
+    if [ -f libbrotlicommon-static.a ] && [ ! -f libbrotlicommon.a ]; then ln -f libbrotlicommon-static.a libbrotlicommon.a; fi
 }
 
 compile_zstd() {
@@ -509,7 +512,14 @@ compile_zstd() {
 
 curl_config() {
     echo "Configuring curl, Arch: ${ARCH}" | tee "${RELEASE_DIR}/running"
-    local with_ech
+    local with_openssl_quic with_ech
+
+    # --with-openssl-quic and --with-ngtcp2 are mutually exclusive
+    if [ "${TLS_LIB}" = "openssl" ]; then
+        with_openssl_quic="--with-openssl-quic"
+    else
+        with_openssl_quic="--with-ngtcp2"
+    fi
 
     case "${ENABLE_ECH}" in
         true|yes|y|Y)
@@ -536,8 +546,8 @@ curl_config() {
         --host="${ARCH}-apple-darwin" \
         --prefix="${PREFIX}" \
         --disable-shared --enable-static \
-        --with-openssl --with-brotli --with-zstd \
-        --with-nghttp2 --with-nghttp3 --with-ngtcp2 \
+        --with-openssl "${with_openssl_quic}" --with-brotli --with-zstd \
+        --with-nghttp2 --with-nghttp3 \
         --with-libidn2 --with-libssh2 \
         "${with_ech}" \
         --enable-hsts --enable-mime --enable-cookies \
@@ -550,9 +560,9 @@ curl_config() {
         --enable-alt-svc --enable-websockets \
         --enable-ipv6 --enable-unix-sockets --enable-socketpair \
         --enable-headers-api --enable-versioned-symbols \
-        --enable-threaded-resolver --enable-optimize \
+        --enable-threaded-resolver --enable-optimize --enable-pthreads \
         --enable-warnings \
-        --enable-dict --enable-netrc \
+        --enable-curldebug --enable-dict --enable-netrc \
         --enable-bearer-auth --enable-tls-srp --enable-dnsshuffle \
         --enable-get-easy-options --enable-progress-meter \
         --with-ca-bundle=/etc/ssl/cert.pem \
