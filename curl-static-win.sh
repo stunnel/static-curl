@@ -421,7 +421,7 @@ compile_tls() {
 
     # ssl3 is deprecated in 4.x
     major_ver="${OPENSSL_VERSION%%.*}"
-    if [ "$OPENSSL_VERSION" = "dev" ] || { [ "$major_ver" -ge 4 ] 2>/dev/null; }; then
+    if [ "${OPENSSL_VERSION}" = "dev" ] || { [ "${major_ver}" -ge 4 ] 2>/dev/null; }; then
         ssl3=""
     else
         ssl3="enable-ssl3 enable-ssl3-method"

@@ -596,12 +596,12 @@ compile_tls() {
     # issues/83 VIA padlock
     # ssl3 is deprecated in 4.x
     major_ver="${OPENSSL_VERSION%%.*}"
-    if [ "$OPENSSL_VERSION" = "dev" ] || { [ "$major_ver" -ge 4 ] 2>/dev/null; }; then
+    if [ "${OPENSSL_VERSION}" = "dev" ] || { [ "${major_ver}" -ge 4 ] 2>/dev/null; }; then
         ssl3=""
         no_hw_padlock=""
     else
         ssl3="enable-ssl3 enable-ssl3-method"
-        case "$ARCH" in
+        case "${ARCH}" in
             x86_64|i686) no_hw_padlock="no-hw-padlock" ;;
             *) no_hw_padlock="" ;;
         esac
@@ -812,6 +812,19 @@ curl_config() {
         true|yes|y|Y)
             with_ech="--enable-ech" ;;
     esac
+
+    # Resolve OpenSSL 4.x compatibility issues where API returns 'const' pointers.
+    # These flags prevent "discarded-qualifiers" warnings from being treated as errors 
+    # when -Werror is enabled.
+    # - GCC: -Wno-error=discarded-qualifiers
+    # - Clang: -Wno-error=incompatible-pointer-types-discards-qualifiers
+    major_ver="${OPENSSL_VERSION%%.*}"
+    if [ "${OPENSSL_VERSION}" = "dev" ] || { [ "${major_ver}" -ge 4 ] 2>/dev/null; }; then
+        export CFLAGS="${CFLAGS}
+            -Wno-error=incompatible-pointer-types-discards-qualifiers
+            -Wno-error=discarded-qualifiers
+            -Wno-error=cast-qual"
+    fi
 
     if [ ! -f configure ]; then
         autoreconf -fi;
