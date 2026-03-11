@@ -573,7 +573,7 @@ compile_ares() {
 
 compile_tls() {
     echo "Compiling ${TLS_LIB}, Arch: ${ARCH}" | tee "${RELEASE_DIR}/running"
-    local url ssl3 no_hw_padlock no_pie_tests_asm cflags
+    local url no_hw_padlock no_pie_tests_asm cflags
     change_dir;
 
     if [ "${OPENSSL_VERSION}" = "dev" ] && [ -n "${OPENSSL_BRANCH}" ]; then
@@ -594,22 +594,13 @@ compile_tls() {
     fi
 
     # issues/83 VIA padlock
-    # ssl3 is deprecated in 4.x
-    major_ver="${OPENSSL_VERSION%%.*}"
-    if [ "${OPENSSL_VERSION}" = "dev" ] || { [ "${major_ver}" -ge 4 ] 2>/dev/null; }; then
-        ssl3=""
-        no_hw_padlock=""
-    else
-        ssl3="enable-ssl3 enable-ssl3-method"
-        case "${ARCH}" in
-            x86_64|i686) no_hw_padlock="no-hw-padlock" ;;
-            *) no_hw_padlock="" ;;
-        esac
+    if [ "${ARCH}" = "x86_64" ] || [ "${ARCH}" = "i686" ]; then
+        no_hw_padlock="no-hw-padlock"
     fi
 
     # no-asm no-pie no-tests for i686 with musl libc
     # gcc 15 and musl have more strict security checks, so need to disable the i686 asm, uses pure C code,
-    # it affects approximately 5% of performance.
+    # It affects approximately 5% of performance.
     if [ "${ARCH}" = "i686" ] && [ "${LIBC}" = "musl" ]; then
         no_pie_tests_asm="no-pie no-tests no-asm"
     fi
@@ -632,7 +623,7 @@ compile_tls() {
         ${EC_NISTP_64_GCC_128} \
         enable-ktls \
         enable-tls1_3 \
-        ${ssl3} \
+        enable-ssl3 enable-ssl3-method \
         enable-des enable-rc4 \
         enable-weak-ssl-ciphers \
         --static -static;
@@ -682,11 +673,7 @@ compile_nghttp2() {
 }
 
 compile_ngtcp2() {
-    if [ "${TLS_LIB}" = "openssl" ]; then
-        return
-    fi
     echo "Compiling ngtcp2, Arch: ${ARCH}" | tee "${RELEASE_DIR}/running"
-
     local url
     change_dir;
 
@@ -795,14 +782,7 @@ compile_trurl() {
 
 curl_config() {
     echo "Configuring curl, Arch: ${ARCH}" | tee "${RELEASE_DIR}/running"
-    local with_openssl_quic with_ech ac_cv_header_stdatomic_h
-
-    # --with-openssl-quic and --with-ngtcp2 are mutually exclusive
-    if [ "${TLS_LIB}" = "openssl" ]; then
-        with_openssl_quic="--with-openssl-quic"
-    else
-        with_openssl_quic="--with-ngtcp2"
-    fi
+    local with_ech ac_cv_header_stdatomic_h
 
     if [ "${ARCH}" = "mips" ] && [ "${LIBC}" != "musl" ]; then
         ac_cv_header_stdatomic_h="ac_cv_header_stdatomic_h=no"
@@ -813,23 +793,6 @@ curl_config() {
             with_ech="--enable-ech" ;;
     esac
 
-    # Resolve OpenSSL 4.x compatibility issues where API returns 'const' pointers.
-    # These flags prevent "discarded-qualifiers" warnings from being treated as errors 
-    # when -Werror is enabled.
-    # - GCC: -Wno-error=discarded-qualifiers
-    # - Clang: -Wno-error=incompatible-pointer-types-discards-qualifiers
-    major_ver="${OPENSSL_VERSION%%.*}"
-    if [ "${OPENSSL_VERSION}" = "dev" ] || { [ "${major_ver}" -ge 4 ] 2>/dev/null; }; then
-        case "${CC}" in
-            clang*)
-                export CFLAGS="${CFLAGS} -Wno-error=incompatible-pointer-types-discards-qualifiers -Wno-error=cast-qual"
-                ;;
-            *)
-                export CFLAGS="${CFLAGS} -Wno-error=discarded-qualifiers -Wno-error=cast-qual"
-                ;;
-        esac
-    fi
-
     if [ ! -f configure ]; then
         autoreconf -fi;
     fi
@@ -838,8 +801,8 @@ curl_config() {
         --host="${TARGET}" \
         --prefix="${PREFIX}" \
         --enable-static --disable-shared \
-        --with-openssl "${with_openssl_quic}" --with-brotli --with-zstd \
-        --with-nghttp2 --with-nghttp3 \
+        --with-openssl --with-brotli --with-zstd \
+        --with-nghttp2 --with-nghttp3 --with-ngtcp2 \
         --with-libidn2 --with-libssh2 \
         "${with_ech}" \
         "${ac_cv_header_stdatomic_h}" \
@@ -853,9 +816,9 @@ curl_config() {
         --enable-alt-svc --enable-websockets \
         --enable-ipv6 --enable-unix-sockets --enable-socketpair \
         --enable-headers-api --enable-versioned-symbols \
-        --enable-threaded-resolver --enable-optimize --enable-pthreads \
-        --enable-warnings \
-        --enable-curldebug --enable-dict --enable-netrc \
+        --enable-threaded-resolver --enable-optimize \
+        --enable-warnings --enable-werror \
+        --enable-dict --enable-netrc \
         --enable-bearer-auth --enable-tls-srp --enable-dnsshuffle \
         --enable-get-easy-options --enable-progress-meter \
         --with-ca-bundle=/etc/ssl/certs/ca-certificates.crt \
