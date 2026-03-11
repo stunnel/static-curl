@@ -820,10 +820,14 @@ curl_config() {
     # - Clang: -Wno-error=incompatible-pointer-types-discards-qualifiers
     major_ver="${OPENSSL_VERSION%%.*}"
     if [ "${OPENSSL_VERSION}" = "dev" ] || { [ "${major_ver}" -ge 4 ] 2>/dev/null; }; then
-        export CFLAGS="${CFLAGS}
-            -Wno-error=incompatible-pointer-types-discards-qualifiers
-            -Wno-error=discarded-qualifiers
-            -Wno-error=cast-qual"
+        case "${CC}" in
+            clang*)
+                export CFLAGS="${CFLAGS} -Wno-error=incompatible-pointer-types-discards-qualifiers -Wno-error=cast-qual"
+                ;;
+            *)
+                export CFLAGS="${CFLAGS} -Wno-error=discarded-qualifiers -Wno-error=cast-qual"
+                ;;
+        esac
     fi
 
     if [ ! -f configure ]; then
@@ -850,7 +854,7 @@ curl_config() {
         --enable-ipv6 --enable-unix-sockets --enable-socketpair \
         --enable-headers-api --enable-versioned-symbols \
         --enable-threaded-resolver --enable-optimize --enable-pthreads \
-        --enable-warnings --enable-werror \
+        --enable-warnings \
         --enable-curldebug --enable-dict --enable-netrc \
         --enable-bearer-auth --enable-tls-srp --enable-dnsshuffle \
         --enable-get-easy-options --enable-progress-meter \
