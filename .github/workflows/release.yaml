@@ -384,6 +384,7 @@ jobs:
           TLS_LIB: ${{ vars.TLS_LIB }}
           CURL_VERSION: ${{ env.VERSION }}
           RELEASE_TAG: ${{ env.RELEASE_TAG }}
+          WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           bash release.sh
 
