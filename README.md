@@ -1,6 +1,6 @@
-# Static cURL with HTTP3 for Linux, macOS and Windows
+# Static cURL with latest features for Linux, macOS, and Windows
 
-Static cURL binary built with HTTP3, brotli, and zstd support.
+Static cURL binary built with the latest features, such as ECH, HTTP3, brotli, and zstd.
 
 The script will automatically retrieve the latest version of each component.  
 Simply execute it to compile the most recent version.
