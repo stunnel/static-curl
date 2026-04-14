@@ -2,7 +2,7 @@
 
 # To compile locally, clone the Git repository, navigate to the repository directory,
 # and then execute the following command:
-# ARCHES="x86_64 arm64" CURL_VERSION=8.16.0 TLS_LIB=openssl OPENSSL_VERSION=3.5.4 bash curl-static-mac.sh
+# ARCHES="x86_64 arm64" CURL_VERSION=8.19.0 TLS_LIB=openssl OPENSSL_VERSION=4.0.0 bash curl-static-mac.sh
 
 
 shopt -s expand_aliases;
@@ -29,7 +29,6 @@ init_env() {
     echo "Source directory: ${DIR}"
     echo "Release directory: ${RELEASE_DIR}"
     echo "cURL version: ${CURL_VERSION}"
-    echo "enable ECH: ${ENABLE_ECH}"
     echo "TLS Library: ${TLS_LIB}"
     echo "OpenSSL version: ${OPENSSL_VERSION}"
     echo "OpenSSL branch: ${OPENSSL_BRANCH}"
@@ -512,11 +511,6 @@ curl_config() {
     echo "Configuring curl, Arch: ${ARCH}" | tee "${RELEASE_DIR}/running"
     local with_ech
 
-    case "${ENABLE_ECH}" in
-        true|yes|y|Y)
-            with_ech="--enable-ech" ;;
-    esac
-
     # Resolve OpenSSL 4.x compatibility issues where API returns 'const' pointers.
     # These flags prevent "discarded-qualifiers" warnings from being treated as errors 
     # when -Werror is enabled.
@@ -524,6 +518,8 @@ curl_config() {
     # - Clang: -Wno-error=incompatible-pointer-types-discards-qualifiers
     major_ver="${OPENSSL_VERSION%%.*}"
     if [ "${OPENSSL_VERSION}" = "dev" ] || { [ "${major_ver}" -ge 4 ] 2>/dev/null; }; then
+        echo "OpenSSL 4.x detected, enabling ECH support"
+        with_ech="--enable-ech"
         export CFLAGS="${CFLAGS} \
             -Wno-error=incompatible-pointer-types-discards-qualifiers \
             -Wno-error=cast-qual"

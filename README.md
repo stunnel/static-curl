@@ -21,8 +21,8 @@ Simply execute it to compile the most recent version.
 - [trurl](https://curl.se/trurl/)
 
 `curl -V`
-- Protocols: dict file ftp ftps gopher gophers http https imap imaps mqtt pop3 pop3s rtsp scp sftp smb smbs smtp smtps telnet tftp ws wss
-- Features: alt-svc asyn-rr AsynchDNS brotli HSTS HTTP2 HTTP3 HTTPS-proxy HTTPSRR IDN IPv6 Largefile libz NTLM PSL SSL SSLS-EXPORT threadsafe TLS-SRP TrackMemory UnixSockets zstd
+- Protocols: dict file ftp ftps gopher gophers http https imap imaps ipfs ipns mqtt mqtts pop3 pop3s rtsp scp sftp smb smbs smtp smtps telnet tftp ws wss
+- Features: alt-svc asyn-rr AsynchDNS brotli ECH HSTS HTTP2 HTTP3 HTTPS-proxy HTTPSRR IDN IPv6 Largefile libz NTLM PSL SSL SSLS-EXPORT threadsafe TLS-SRP UnixSockets zstd
 
 ## Usage
 
@@ -32,7 +32,8 @@ The binary is built with GitHub Actions.
 
 ### Release files
 
-Two versions of cURL will be released: one with ECH support (built with OpenSSL's branch feature/ecp) and one without, until OpenSSL's mainline supports ECH.
+Starting from cURL 8.20.0, all builds use OpenSSL 4.x with ECH support enabled by default.  
+For older releases (before 8.20.0), two versions were provided: one with ECH support and one without.
 
 - `curl-linux-ARCH-musl-VERSION`: binaries for Linux, linked with `musl`
 - `curl-linux-ARCH-glibc-VERSION`: binaries for Linux, linked with `glibc`, these binaries may have compatibility issues in certain system environments
@@ -169,7 +170,6 @@ For all `VERSION` variables, leaving them blank will automatically fetch the lat
 - `LIBC`: The libc. `glibc`(default) or `musl`, only affects Linux.
 - `QBT_MUSL_CROSS_MAKE_VERSION`: The version of qbt-musl-cross-make, only affects `musl`. Check the releases on [qbt-musl-cross-make/releases](https://github.com/userdocs/qbt-musl-cross-make/releases)
 - `CURL_VERSION`: The version of cURL. If set to `dev`, will fetch the latest source code of branch `master` from GitHub.
-- `ENABLE_ECH`: Enable ECH support in cURL. The default value is `false`, set to `true` to enable this feature.
 - `OPENSSL_VERSION`: The version of OpenSSL. If set to `dev`, will fetch the branch `OPENSSL_BRANCH` from GitHub.
 - `OPENSSL_BRANCH`: The branch that fetch from GitHub, this variable will be ignored if `OPENSSL_VERSION` is not set to `dev`.
 - `NGTCP2_VERSION`: The version of ngtcp2.
@@ -191,8 +191,7 @@ The compiled files will be saved in the current `release` directory.
 
 ### ECH Support
 
-We are currently providing two build variants for this release: one with ECH support and one without.
+Starting from cURL 8.20.0, ECH (Encrypted Client Hello) support is enabled by default using OpenSSL 4.x.
 
-- Standard Version: Built with the latest stable OpenSSL release (3.6.x) for optimal reliability.
-- ECH-enabled Version: Built with OpenSSL 4.0.0 alpha. Please note that this is an experimental build and may contain bugs or stability issues.
-- Future Roadmap: Upon the official release of OpenSSL 4.0, we will transition to providing only the ECH-enabled version.
+- **cURL >= 8.20.0**: Built with OpenSSL 4.x, ECH enabled by default.
+- **cURL < 8.20.0**: Two build variants were provided (with and without ECH support). OpenSSL 3.x is still supported for compatibility.

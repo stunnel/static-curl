@@ -2,7 +2,7 @@
 
 # To compile locally, install Docker, clone the Git repository, navigate to the repository directory,
 # and then execute the following command:
-# ARCHES="x86_64 aarch64" CURL_VERSION=8.16.0 TLS_LIB=openssl \
+# ARCHES="x86_64 aarch64" CURL_VERSION=8.19.0 TLS_LIB=openssl \
 #     ZLIB_VERSION= CONTAINER_IMAGE=debian:latest \
 #     sh curl-static-cross.sh
 # script will create a container and compile curl.
@@ -13,8 +13,7 @@
 #     -e RELEASE_DIR=/mnt \
 #     -e ARCHES="x86_64 aarch64 armv7 i686 riscv64 s390x" \
 #     -e ENABLE_DEBUG=0 \
-#     -e CURL_VERSION=8.16.0 \
-#     -e ENABLE_ECH="" \
+#     -e CURL_VERSION=8.19.0 \
 #     -e TLS_LIB=openssl \
 #     -e OPENSSL_VERSION="" \
 #     -e OPENSSL_BRANCH="" \
@@ -56,7 +55,6 @@ init_env() {
     echo "Host Architecture: ${ARCH_HOST}"
     echo "Architecture list: ${ARCHES}"
     echo "cURL version: ${CURL_VERSION}"
-    echo "enable ECH: ${ENABLE_ECH}"
     echo "TLS Library: ${TLS_LIB}"
     echo "OpenSSL version: ${OPENSSL_VERSION}"
     echo "OpenSSL branch: ${OPENSSL_BRANCH}"
@@ -797,11 +795,6 @@ curl_config() {
         ac_cv_header_stdatomic_h="ac_cv_header_stdatomic_h=no"
     fi
 
-    case "${ENABLE_ECH}" in
-        true|yes|y|Y)
-            with_ech="--enable-ech" ;;
-    esac
-
     # Resolve OpenSSL 4.x compatibility issues where API returns 'const' pointers.
     # These flags prevent "discarded-qualifiers" warnings from being treated as errors 
     # when -Werror is enabled.
@@ -809,6 +802,8 @@ curl_config() {
     # - Clang: -Wno-error=incompatible-pointer-types-discards-qualifiers
     major_ver="${OPENSSL_VERSION%%.*}"
     if [ "${OPENSSL_VERSION}" = "dev" ] || { [ "${major_ver}" -ge 4 ] 2>/dev/null; }; then
+        echo "OpenSSL 4.x detected, enabling ECH support"
+        with_ech="--enable-ech"
         case "${CC}" in
             clang*)
                 export CFLAGS="${CFLAGS} -Wno-error=incompatible-pointer-types-discards-qualifiers -Wno-error=cast-qual"
@@ -966,7 +961,6 @@ _build_in_docker() {
         -e ARCHES="${ARCHES}" \
         -e ENABLE_DEBUG="${ENABLE_DEBUG}" \
         -e CURL_VERSION="${CURL_VERSION}" \
-        -e ENABLE_ECH="${ENABLE_ECH}" \
         -e TLS_LIB="${TLS_LIB}" \
         -e OPENSSL_VERSION="${OPENSSL_VERSION}" \
         -e OPENSSL_BRANCH="${OPENSSL_BRANCH}" \
