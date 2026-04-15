@@ -156,12 +156,6 @@ install_cross_compile() {
     download_and_extract "${url}"
 
     ln -s "${DIR}/${SOURCE_DIR}/${SOURCE_DIR}" "/${SOURCE_DIR}"
-    cd "/${SOURCE_DIR}/lib/"
-    if [ -f "libatomic.so" ]; then
-        mv libatomic.so libatomic.so.bak
-        ln -s libatomic.a libatomic.so
-    fi
-
     export CC="${DIR}/${SOURCE_DIR}/bin/${SOURCE_DIR}-cc" \
            CXX="${DIR}/${SOURCE_DIR}/bin/${SOURCE_DIR}-c++" \
            CFLAGS="-O3 -Wno-error=unknown-pragmas -Wno-error=sign-compare -Wno-error=cast-align -Wno-maybe-uninitialized -Wno-error=null-dereference" \
