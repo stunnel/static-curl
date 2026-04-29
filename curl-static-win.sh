@@ -249,6 +249,26 @@ url_from_github() {
     URL="${url}"
 }
 
+_set_openssl_version_from_url() {
+    local url candidate version
+    url=$1
+
+    [ -n "${OPENSSL_VERSION}" ] && return
+
+    candidate=$(printf "%s" "${url%%\?*}" \
+        | sed -E 's#/$##; s#^.*/##; s/\.(tar\.(xz|gz|bz2)|tgz|zip)$//; s/^[Oo]pen[Ss][Ss][Ll][-_]//; s/^[Oo]pen[Ss][Ss][Ll][-_]//; s/^[Vv]//' \
+        | tr '_' '.')
+    version=$(printf "%s" "${candidate}" | sed -n -E 's/^([0-9]+(\.[0-9]+)+[A-Za-z0-9._-]*).*/\1/p')
+
+    if [ -n "${version}" ]; then
+        OPENSSL_VERSION="${version}"
+        export OPENSSL_VERSION
+        echo "Resolved OpenSSL version: ${OPENSSL_VERSION}"
+    else
+        echo "WARNING. Failed to resolve OpenSSL version from URL: ${url}"
+    fi
+}
+
 download_and_extract() {
     echo "Downloading $1"
     local url
@@ -415,6 +435,7 @@ compile_tls() {
         url_from_github openssl/openssl "${OPENSSL_VERSION}"
         url="${URL}"
         download_and_extract "${url}"
+        _set_openssl_version_from_url "${url}"
     fi
 
     # ssl3 is deprecated in 4.x
