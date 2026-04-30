@@ -44,16 +44,17 @@ ${features}
 
 This binary includes various open-source software such as curl, openssl, zlib, brotli, zstd, libidn2, libssh2, nghttp2, ngtcp2, nghttp3. Their license information has been compiled and is included in the dev package.
 
+## Build Info
+
+${WORKFLOW_URL:+Built by [GitHub Actions](${WORKFLOW_URL})}
+
+### Checksums
 <details>
-<summary>Checksums</summary>
+<summary>Checksums of binaries</summary>
 
 ${markdown_table}
 
 </details>
-
-## Build Info
-
-${WORKFLOW_URL:+Built by [GitHub Actions](${WORKFLOW_URL})}
 
 EOF
 }
