@@ -1050,7 +1050,7 @@ curl_config() {
         --enable-ipv6 --enable-unix-sockets --enable-socketpair \
         --enable-headers-api --enable-versioned-symbols \
         --enable-threaded-resolver --enable-optimize \
-        --enable-warnings \
+        --enable-warnings --enable-libcurl-option \
         --enable-dict --enable-netrc \
         --enable-bearer-auth --enable-tls-srp --enable-dnsshuffle \
         --enable-get-easy-options --enable-progress-meter \
