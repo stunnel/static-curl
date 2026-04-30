@@ -770,6 +770,7 @@ curl_config() {
         --enable-dict --enable-netrc \
         --enable-bearer-auth --enable-tls-srp --enable-dnsshuffle \
         --enable-get-easy-options --enable-progress-meter \
+        --with-apple-sectrust --enable-ca-native \
         --with-ca-bundle=/etc/ssl/cert.pem \
         --with-ca-path=/etc/ssl/certs \
         --with-ca-fallback --enable-ares --enable-httpsrr --enable-ipfs \
