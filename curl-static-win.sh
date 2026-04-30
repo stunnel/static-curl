@@ -882,7 +882,7 @@ curl_config() {
         --enable-proxy --enable-file --enable-http \
         --enable-ftp --enable-telnet --enable-tftp \
         --enable-pop3 --enable-imap --enable-smtp \
-        --enable-gopher --enable-mqtt \
+        --enable-gopher --enable-mqtt --enable-smb --enable-ntlm \
         --enable-doh --enable-dateparse --enable-verbose \
         --enable-alt-svc --enable-websockets \
         --enable-ipv6 --enable-unix-sockets --enable-socketpair \
