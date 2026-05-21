@@ -2,7 +2,7 @@
 
 # To compile locally, install Docker, clone the Git repository, navigate to the repository directory,
 # and then execute the following command:
-# ARCHES="x86_64 aarch64" CURL_VERSION=8.19.0 TLS_LIB=openssl \
+# ARCHES="x86_64 aarch64" CURL_VERSION=8.20.0 TLS_LIB=openssl \
 #     ZLIB_VERSION= CONTAINER_IMAGE=debian:latest \
 #     sh curl-static-cross.sh
 # script will create a container and compile curl.
@@ -13,7 +13,7 @@
 #     -e RELEASE_DIR=/mnt \
 #     -e ARCHES="x86_64 aarch64 armv7 i686 riscv64 s390x" \
 #     -e ENABLE_DEBUG=0 \
-#     -e CURL_VERSION=8.19.0 \
+#     -e CURL_VERSION=8.20.0 \
 #     -e TLS_LIB=openssl \
 #     -e OPENSSL_VERSION="" \
 #     -e OPENSSL_BRANCH="" \
@@ -1230,7 +1230,7 @@ main() {
     fi
 
     # If not in docker, run the script in docker and exit
-    if [ ! -f /.dockerenv ]; then
+    if [ ! -f /.dockerenv ] && [ ! -f /run/.containerenv ]; then
         _build_in_docker;
     fi
 
