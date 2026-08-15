@@ -835,7 +835,7 @@ compile_tls() {
         ${OPENSSL_ARCH} \
         -fPIC \
         --prefix="${PREFIX}" \
-        --openssldir=/etc/ssl \
+        --openssldir=/opt/static-curl/ssl \
         threads no-shared \
         ${no_pie_tests_asm} \
         ${no_hw_padlock} \

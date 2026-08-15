@@ -591,7 +591,7 @@ compile_tls() {
         ${OPENSSL_ARCH} \
         -fPIC \
         --prefix="${PREFIX}" \
-        --openssldir=/etc/ssl \
+        --openssldir=/opt/static-curl/ssl \
         threads no-shared \
         enable-ktls \
         enable-ec_nistp_64_gcc_128 \
