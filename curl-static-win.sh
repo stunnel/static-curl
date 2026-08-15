@@ -513,6 +513,7 @@ prepare_cacert() {
     echo "Preparing CA certificate bundle" | tee "${RELEASE_DIR}/running"
     export CACERT_FILE="${DIR}/cacert.pem"
     export CACERT_LICENSE_FILE="${DIR}/cacert.pem.LICENSE"
+    mkdir -p "${DIR}"
 
     if [ ! -s "${CACERT_FILE}" ]; then
         (
