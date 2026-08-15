@@ -11,7 +11,7 @@ init_env() {
 
 create_release_note() {
     cd "${RELEASE_DIR}" || exit
-    local components protocols features output_sha256 markdown_table
+    local components protocols features output_sha256 markdown_table cacert_sha256
     echo "Creating release note..."
 
     components=$(head -n 1 release/version-info.txt | sed 's/ /\n/g' | grep '/' | sed 's#^#- #g' || true)
@@ -24,6 +24,7 @@ create_release_note() {
     markdown_table=$(printf "%s" "${output_sha256}" |
         awk 'BEGIN {print "| File | Platform | Arch | LibC | SHA256 |\n|------|------|------|--------|--------|"}
             {printf("| %s | %s | %s | %s | %s |\n", $2, $3, $4, $5, $1)}')
+    cacert_sha256=$(sha256sum release/cacert.pem 2>/dev/null | awk '{print $1}')
 
     cat > release/release.md<<EOF
 # Static cURL ${CURL_VERSION} with HTTP3
@@ -56,6 +57,12 @@ ${markdown_table}
 
 </details>
 
+### Embedded CA Bundle
+
+The binaries embed the [curl.se CA certificate bundle](https://curl.se/ca/cacert.pem) at build time via \`--with-ca-embed\`.
+
+- cacert.pem SHA256: \`${cacert_sha256}\`
+
 EOF
 }
 
@@ -87,12 +94,12 @@ tar_curl() {
         if [ -f "${trurl_filename}" ]; then
             mv "${trurl_filename}" trurl.exe;
             sha256sum trurl.exe >> SHA256SUMS;
-            XZ_OPT=-9 tar -Jcf "${filename}-${RELEASE_TAG}.tar.xz" curl.exe trurl.exe curl-ca-bundle.crt SHA256SUMS && rm -f curl.exe trurl.exe;
+            XZ_OPT=-9 tar -Jcf "${filename}-${RELEASE_TAG}.tar.xz" curl.exe trurl.exe SHA256SUMS && rm -f curl.exe trurl.exe;
         else
-            XZ_OPT=-9 tar -Jcf "${filename}-${RELEASE_TAG}.tar.xz" curl.exe curl-ca-bundle.crt SHA256SUMS && rm -f curl.exe;
+            XZ_OPT=-9 tar -Jcf "${filename}-${RELEASE_TAG}.tar.xz" curl.exe SHA256SUMS && rm -f curl.exe;
         fi
     done
-    rm -f curl-ca-bundle.crt SHA256SUMS;
+    rm -f SHA256SUMS;
 }
 
 rename_dev_package() {

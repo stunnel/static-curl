@@ -509,6 +509,31 @@ _copy_license() {
     cp -p "${1}" "${PREFIX}/licenses/${2}";
 }
 
+prepare_cacert() {
+    echo "Preparing CA certificate bundle" | tee "${RELEASE_DIR}/running"
+    export CACERT_FILE="${DIR}/cacert.pem"
+    export CACERT_LICENSE_FILE="${DIR}/cacert.pem.LICENSE"
+    mkdir -p "${DIR}"
+
+    if [ ! -s "${CACERT_FILE}" ]; then
+        (
+            cd "${DIR}" &&
+            curl --retry 5 --retry-max-time 120 -o cacert.pem https://curl.se/ca/cacert.pem &&
+            curl --retry 5 --retry-max-time 120 -o cacert.pem.sha256 https://curl.se/ca/cacert.pem.sha256 &&
+            sha256sum -c cacert.pem.sha256
+        )
+    fi
+
+    if [ ! -s "${CACERT_LICENSE_FILE}" ]; then
+        curl --retry 5 --retry-max-time 120 -o "${CACERT_LICENSE_FILE}" https://www.mozilla.org/media/MPL/2.0/index.txt
+    fi
+
+    mkdir -p "${RELEASE_DIR}/release"
+    if [ ! -f "${RELEASE_DIR}/release/cacert.pem" ]; then
+        cp -pf "${CACERT_FILE}" "${RELEASE_DIR}/release/cacert.pem"
+    fi
+}
+
 compile_zlib() {
     echo "Compiling zlib, Arch: ${ARCH}" | tee "${RELEASE_DIR}/running"
     local url
@@ -893,8 +918,8 @@ curl_config() {
         --enable-bearer-auth --enable-tls-srp --enable-dnsshuffle \
         --enable-get-easy-options --enable-progress-meter \
         --enable-sspi --enable-windows-unicode \
-        --enable-ca-native --without-ca-bundle --without-ca-path \
-        --without-ca-fallback --enable-ares --enable-httpsrr --enable-ipfs \
+        --with-ca-embed="${CACERT_FILE}" \
+        --enable-ares --enable-httpsrr --enable-ipfs \
         --disable-ldap --disable-ldaps --enable-ssls-export \
         "${ENABLE_DEBUG}";
 }
@@ -937,22 +962,6 @@ compile_curl() {
     make install;
 }
 
-prepare_certificates() {
-    echo "Preparing CA certificates" | tee "${RELEASE_DIR}/running"
-    local license_file="${PREFIX}/licenses/ca-bundle"
-    local ca_cert_file="${RELEASE_DIR}/release/bin/curl-ca-bundle.crt"
-
-    # add curl CA certificates
-    if [ ! -f "${ca_cert_file}" ]; then
-        curl --retry 5 --retry-max-time 120 -o "${ca_cert_file}" https://curl.se/ca/cacert.pem
-    fi
-
-    # add Mozilla source file license
-    if [ ! -f "${license_file}" ]; then
-        curl --retry 5 --retry-max-time 120 -o "${license_file}" https://www.mozilla.org/media/MPL/2.0/index.txt
-    fi
-}
-
 install_curl() {
     mkdir -p "${RELEASE_DIR}/release/bin/"
 
@@ -967,7 +976,8 @@ install_curl() {
         echo "${CURL_VERSION}" > "${RELEASE_DIR}/release/version.txt"
     fi
 
-    prepare_certificates;
+    cp -pf "${CACERT_FILE}" "${PREFIX}/cacert.pem";
+    _copy_license "${CACERT_LICENSE_FILE}" ca-bundle;
     XZ_OPT=-9 tar -Jcf "${RELEASE_DIR}/release/curl-windows-${ARCH}-dev-${CURL_VERSION}.tar.xz" -C "${DIR}" "curl-${ARCH}"
 }
 
@@ -1076,6 +1086,8 @@ main() {
     init_env;                    # Initialize the build env
     install_packages;            # Install dependencies
     set -o errexit -o xtrace;
+
+    prepare_cacert;               # Download & verify curl.se CA bundle once for all arches
 
     echo "Compiling for all ARCHes: ${ARCHES}"
     for arch_temp in ${ARCHES}; do
