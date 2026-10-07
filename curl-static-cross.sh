@@ -20,7 +20,9 @@
 #     -e NGTCP2_VERSION="" \
 #     -e NGHTTP3_VERSION="" \
 #     -e NGHTTP2_VERSION="" \
+#     -e ZLIB_LIB="zlib" \
 #     -e ZLIB_VERSION="" \
+#     -e ZLIB_NG_VERSION="" \
 #     -e LIBUNISTRING_VERSION="" \
 #     -e LIBIDN2_VERSION="" \
 #     -e LIBPSL_VERSION="" \
@@ -50,6 +52,17 @@ init_env() {
             ENABLE_DEBUG="" ;;
     esac
 
+    case "${ZLIB_LIB}" in
+        ""|zlib)
+            ZLIB_LIB="zlib" ;;
+        zlib-ng)
+            ;;
+        *)
+            echo "Unsupported ZLIB_LIB: ${ZLIB_LIB}, must be zlib or zlib-ng";
+            exit 1 ;;
+    esac
+    export ZLIB_LIB
+
     echo "Source directory: ${DIR}"
     echo "Release directory: ${RELEASE_DIR}"
     echo "Host Architecture: ${ARCH_HOST}"
@@ -61,7 +74,9 @@ init_env() {
     echo "ngtcp2 version: ${NGTCP2_VERSION}"
     echo "nghttp3 version: ${NGHTTP3_VERSION}"
     echo "nghttp2 version: ${NGHTTP2_VERSION}"
+    echo "zlib library: ${ZLIB_LIB}"
     echo "zlib version: ${ZLIB_VERSION}"
+    echo "zlib-ng version: ${ZLIB_NG_VERSION}"
     echo "libunistring version: ${LIBUNISTRING_VERSION}"
     echo "libidn2 version: ${LIBIDN2_VERSION}"
     echo "libpsl version: ${LIBPSL_VERSION}"
@@ -732,6 +747,30 @@ compile_zlib() {
     _copy_license LICENSE zlib;
 }
 
+compile_zlib_ng() {
+    echo "Compiling zlib-ng, Arch: ${ARCH}" | tee "${RELEASE_DIR}/running"
+    local url
+    change_dir;
+
+    url_from_github zlib-ng/zlib-ng "${ZLIB_NG_VERSION}"
+    url="${URL}"
+    download_and_extract "${url}"
+
+    mkdir -p out
+    cd out/
+
+    # curl only supports the zlib API, so build zlib-ng in zlib compatible mode (ZLIB_COMPAT),
+    # which installs libz.a, zlib.h and zlib.pc as a drop-in replacement for zlib.
+    # The target architecture is detected from the compiler (CMAKE_SYSTEM_PROCESSOR is the fallback),
+    # SIMD code paths are selected at runtime.
+    cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="${PREFIX}" -DCMAKE_INSTALL_LIBDIR=lib \
+        -DCMAKE_SYSTEM_PROCESSOR="${ARCH}" -DBUILD_SHARED_LIBS=OFF -DZLIB_COMPAT=ON -DBUILD_TESTING=OFF \
+        -DWITH_NATIVE_INSTRUCTIONS=OFF -DWITH_RUNTIME_CPU_DETECTION=ON ..;
+    cmake --build . --config Release --target install;
+
+    _copy_license ../LICENSE.md zlib-ng;
+}
+
 compile_libunistring() {
     echo "Compiling libunistring, Arch: ${ARCH}" | tee "${RELEASE_DIR}/running"
     local url
@@ -1205,7 +1244,9 @@ _build_in_docker() {
         -e NGTCP2_VERSION="${NGTCP2_VERSION}" \
         -e NGHTTP3_VERSION="${NGHTTP3_VERSION}" \
         -e NGHTTP2_VERSION="${NGHTTP2_VERSION}" \
+        -e ZLIB_LIB="${ZLIB_LIB}" \
         -e ZLIB_VERSION="${ZLIB_VERSION}" \
+        -e ZLIB_NG_VERSION="${ZLIB_NG_VERSION}" \
         -e ZSTD_VERSION="${ZSTD_VERSION}" \
         -e BROTLI_VERSION="${BROTLI_VERSION}" \
         -e LIBSSH2_VERSION="${LIBSSH2_VERSION}" \
@@ -1227,7 +1268,11 @@ compile() {
     arch_variants;
 
     compile_tls;
-    compile_zlib;
+    if [ "${ZLIB_LIB}" = "zlib-ng" ]; then
+        compile_zlib_ng;
+    else
+        compile_zlib;
+    fi
     compile_zstd;
     compile_libunistring;
     compile_libidn2;

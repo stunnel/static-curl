@@ -43,7 +43,7 @@ ${features}
 
 ## License
 
-This binary includes various open-source software such as curl, openssl, zlib, brotli, zstd, libidn2, libssh2, nghttp2, ngtcp2, nghttp3. Their license information has been compiled and is included in the dev package.
+This binary includes various open-source software such as curl, openssl, zlib (or zlib-ng), brotli, zstd, libidn2, libssh2, nghttp2, ngtcp2, nghttp3. Their license information has been compiled and is included in the dev package.
 
 ## Build Info
 
