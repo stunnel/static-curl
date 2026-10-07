@@ -789,7 +789,7 @@ compile_zstd() {
 
 curl_config() {
     echo "Configuring curl, Arch: ${ARCH}" | tee "${RELEASE_DIR}/running"
-    local with_ech
+    local with_ech enable_gssapi_apple
 
     # Resolve OpenSSL 4.x compatibility issues where API returns 'const' pointers.
     # These flags prevent "discarded-qualifiers" warnings from being treated as errors 
@@ -805,6 +805,12 @@ curl_config() {
             -Wno-error=cast-qual"
     fi
 
+    # if curl version >= 8.22.0, enable GSSAPI on Apple platforms
+    if [ "${CURL_VERSION}" = "dev" ] || { [ "$(printf '%s\n' "8.22.0" "${CURL_VERSION}" | sort -V | head -n1)" = "8.22.0" ]; }; then
+        echo "cURL version ${CURL_VERSION} supports GSSAPI on Apple platforms, enabling it"
+        enable_gssapi_apple="--enable-gssapi-apple"
+    fi
+
     if [ ! -f configure ]; then
         autoreconf -fi;
     fi
@@ -817,6 +823,7 @@ curl_config() {
         --with-nghttp2 --with-nghttp3 --with-ngtcp2 \
         --with-libidn2 --with-libssh2 \
         "${with_ech}" \
+        "${enable_gssapi_apple}" \
         --enable-hsts --enable-mime --enable-cookies \
         --enable-http-auth --enable-manual \
         --enable-proxy --enable-file --enable-http \
