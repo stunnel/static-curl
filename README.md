@@ -14,7 +14,7 @@ Simply execute it to compile the most recent version.
 - [nghttp2](https://github.com/nghttp2/nghttp2)
 - [brotli](https://github.com/google/brotli)
 - [zstd](https://github.com/facebook/zstd)
-- [zlib](https://zlib.net)
+- [zlib-ng](https://github.com/zlib-ng/zlib-ng) (default) or [zlib](https://zlib.net)
 - [libidn2](https://github.com/libidn/libidn2)
 - [c-ares](https://c-ares.haxx.se)
 - [libpsl](https://rockdaboot.github.io/libpsl/)
@@ -100,7 +100,9 @@ supported architectures
       -e NGTCP2_VERSION="" \
       -e NGHTTP3_VERSION="" \
       -e NGHTTP2_VERSION="" \
+      -e ZLIB_LIB="zlib-ng" \
       -e ZLIB_VERSION="" \
+      -e ZLIB_NG_VERSION="" \
       -e LIBUNISTRING_VERSION="" \
       -e LIBIDN2_VERSION="" \
       -e LIBPSL_VERSION="" \
@@ -124,7 +126,9 @@ ARCHES="x86_64 arm64" \
     NGHTTP2_VERSION="" \
     LIBIDN2_VERSION="" \
     LIBUNISTRING_VERSION="" \
+    ZLIB_LIB="zlib-ng" \
     ZLIB_VERSION="" \
+    ZLIB_NG_VERSION="" \
     BROTLI_VERSION="" \
     ZSTD_VERSION="" \
     LIBSSH2_VERSION="" \
@@ -150,7 +154,9 @@ ARCHES="x86_64 arm64" \
       -e NGTCP2_VERSION="" \
       -e NGHTTP3_VERSION="" \
       -e NGHTTP2_VERSION="" \
+      -e ZLIB_LIB="zlib-ng" \
       -e ZLIB_VERSION="" \
+      -e ZLIB_NG_VERSION="" \
       -e LIBUNISTRING_VERSION="" \
       -e LIBIDN2_VERSION="" \
       -e LIBPSL_VERSION="" \
@@ -178,7 +184,9 @@ For all `VERSION` variables, leaving them blank will automatically fetch the lat
 - `LIBUNISTRING_VERSION`: The version of libunistring.
 - `LIBIDN2_VERSION`: The version of libidn2.
 - `LIBSSH2_VERSION`: The version of libssh2.
-- `ZLIB_VERSION`: The version of zlib.
+- `ZLIB_LIB`: The zlib library. `zlib-ng`(default) or `zlib`. `zlib-ng` is built in zlib compatible mode (`ZLIB_COMPAT=ON`) as a drop-in replacement for zlib, with runtime CPU detection for SIMD optimizations.
+- `ZLIB_VERSION`: The version of zlib, only affects `ZLIB_LIB=zlib`.
+- `ZLIB_NG_VERSION`: The version of zlib-ng, only affects `ZLIB_LIB=zlib-ng`.
 - `BROTLI_VERSION`: The version of brotli.
 - `ZSTD_VERSION`: The version of zstd.
 - `LIBPSL_VERSION`: The version of libpsl.
@@ -204,6 +212,12 @@ The compiled files will be saved in the current `release` directory.
 - Windows builds no longer ship a separate `curl-ca-bundle.crt` file; they use the same embedded bundle.
 - `cacert.pem` is included in each `dev` package, and its SHA256 is recorded in the release notes.
 - You can still override the trust store at runtime with `--cacert` / `--capath` or the `CURL_CA_BUNDLE` / `SSL_CERT_FILE` environment variables.
+
+### zlib-ng by default
+
+- [zlib-ng](https://github.com/zlib-ng/zlib-ng) replaces zlib by default, providing faster gzip/deflate compression and decompression with SIMD optimizations (SSE/AVX, NEON, etc.) selected at runtime based on the CPU.
+- It is built in zlib compatible mode (`ZLIB_COMPAT=ON`), so `curl -V` reports it as `zlib/x.y.z.zlib-ng`, and the `dev` package still provides `libz.a` and `zlib.h`.
+- Set `ZLIB_LIB=zlib` to build with the original zlib instead.
 
 ### Platform-specific features
 
