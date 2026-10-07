@@ -189,9 +189,30 @@ For all `VERSION` variables, leaving them blank will automatically fetch the lat
 
 The compiled files will be saved in the current `release` directory.
 
-### ECH Support
+## Important Changes
 
-Starting from cURL 8.20.0, ECH (Encrypted Client Hello) support is enabled by default using OpenSSL 4.x.
+### ECH enabled by default (cURL >= 8.20.0)
 
-- **cURL >= 8.20.0**: Built with OpenSSL 4.x, ECH enabled by default.
-- **cURL < 8.20.0**: Two build variants were provided (with and without ECH support). OpenSSL 3.x is still supported for compatibility.
+- All builds now use OpenSSL 4.x with ECH (Encrypted Client Hello) enabled by default, so there is only one build variant per platform.
+- The `ENABLE_ECH` variable has been removed.
+- For older releases (cURL < 8.20.0), two variants were provided (with and without ECH). OpenSSL 3.x can still be selected via `OPENSSL_VERSION` for compatibility.
+
+### Embedded CA certificates
+
+- The [curl.se CA bundle](https://curl.se/docs/caextract.html) (`cacert.pem`, checksum-verified at build time) is embedded into every binary via `--with-ca-embed`.
+- The binaries no longer depend on a CA file path from the build machine (e.g. Debian's `/etc/ssl/certs/ca-certificates.crt`), so HTTPS works out of the box on any distro, even without a system CA bundle.
+- Windows builds no longer ship a separate `curl-ca-bundle.crt` file; they use the same embedded bundle.
+- `cacert.pem` is included in each `dev` package, and its SHA256 is recorded in the release notes.
+- You can still override the trust store at runtime with `--cacert` / `--capath` or the `CURL_CA_BUNDLE` / `SSL_CERT_FILE` environment variables.
+
+### Platform-specific features
+
+- **Windows**: built with `--enable-sspi` and `--enable-windows-unicode` (SSPI authentication and Unicode file names/arguments).
+- **macOS**: built with `--with-apple-sectrust` and `--enable-ca-native`, so certificates can also be verified via the Apple Security framework / system keychain.
+
+### Other changes
+
+- **No more `Insufficient randomness` errors**: OpenSSL is now built with a private `openssldir` (`/opt/static-curl/ssl`) instead of `/etc/ssl`, so it no longer loads the host's `/etc/ssl/openssl.cnf`, which could break random seeding on some distros.
+- **SMB and NTLM** are explicitly enabled again, as they are disabled by default since cURL 8.20.0.
+- **`--libcurl` option** is enabled (`--enable-libcurl-option`), so `curl --libcurl file.c` can generate libcurl source code.
+- **Podman** can be used as a drop-in replacement for Docker when building for Linux and Windows.
