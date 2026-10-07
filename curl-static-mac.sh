@@ -27,9 +27,9 @@ init_env() {
     esac
 
     case "${ZLIB_LIB}" in
-        ""|zlib)
-            ZLIB_LIB="zlib" ;;
-        zlib-ng)
+        ""|zlib-ng)
+            ZLIB_LIB="zlib-ng" ;;
+        zlib)
             ;;
         *)
             echo "Unsupported ZLIB_LIB: ${ZLIB_LIB}, must be zlib or zlib-ng";

@@ -20,7 +20,7 @@
 #     -e NGTCP2_VERSION="" \
 #     -e NGHTTP3_VERSION="" \
 #     -e NGHTTP2_VERSION="" \
-#     -e ZLIB_LIB="zlib" \
+#     -e ZLIB_LIB="zlib-ng" \
 #     -e ZLIB_VERSION="" \
 #     -e ZLIB_NG_VERSION="" \
 #     -e LIBUNISTRING_VERSION="" \
@@ -53,9 +53,9 @@ init_env() {
     esac
 
     case "${ZLIB_LIB}" in
-        ""|zlib)
-            ZLIB_LIB="zlib" ;;
-        zlib-ng)
+        ""|zlib-ng)
+            ZLIB_LIB="zlib-ng" ;;
+        zlib)
             ;;
         *)
             echo "Unsupported ZLIB_LIB: ${ZLIB_LIB}, must be zlib or zlib-ng";

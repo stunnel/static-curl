@@ -25,7 +25,7 @@ on:
         default: ''
         type: string
       ZLIB_LIB:
-        description: 'zlib Library (zlib or zlib-ng, default zlib)'
+        description: 'zlib Library (zlib-ng or zlib, default zlib-ng)'
         required: false
         default: ''
         type: string
