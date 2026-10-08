@@ -219,6 +219,8 @@ The compiled files will be saved in the current `release` directory.
 - It is built in zlib compatible mode (`ZLIB_COMPAT=ON`), so `curl -V` reports it as `zlib/x.y.z.zlib-ng`, and the `dev` package still provides `libz.a` and `zlib.h`.
 - Set `ZLIB_LIB=zlib` to build with the original zlib instead.
 
+Pull Request and performance test result: https://github.com/stunnel/static-curl/pull/180
+
 ### Platform-specific features
 
 - **Windows**: built with `--enable-sspi` and `--enable-windows-unicode` (SSPI authentication and Unicode file names/arguments).
