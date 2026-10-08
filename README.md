@@ -199,11 +199,13 @@ The compiled files will be saved in the current `release` directory.
 
 ## Important Changes
 
-### ECH enabled by default (cURL release >= 8.20.0)
+### zlib-ng by default (cURL release > 8.22.0)
 
-- All builds now use OpenSSL 4.x with ECH (Encrypted Client Hello) enabled by default, so there is only one build variant per platform.
-- The `ENABLE_ECH` variable has been removed.
-- For older releases (cURL < 8.20.0), two variants were provided (with and without ECH). OpenSSL 3.x can still be selected via `OPENSSL_VERSION` for compatibility.
+- [zlib-ng](https://github.com/zlib-ng/zlib-ng) replaces zlib by default, providing faster gzip/deflate compression and decompression with SIMD optimizations (SSE/AVX, NEON, etc.) selected at runtime based on the CPU.
+- It is built in zlib compatible mode (`ZLIB_COMPAT=ON`), so `curl -V` reports it as `zlib/x.y.z.zlib-ng`, and the `dev` package still provides `libz.a` and `zlib.h`.
+- Set `ZLIB_LIB=zlib` to build with the original zlib instead.
+
+Pull Request and performance test result: https://github.com/stunnel/static-curl/pull/180
 
 ### Embedded CA certificates (cURL release >= 8.22.0)
 
@@ -213,13 +215,11 @@ The compiled files will be saved in the current `release` directory.
 - `cacert.pem` is included in each `dev` package, and its SHA256 is recorded in the release notes.
 - You can still override the trust store at runtime with `--cacert` / `--capath` or the `CURL_CA_BUNDLE` / `SSL_CERT_FILE` environment variables.
 
-### zlib-ng by default (cURL release > 8.22.0)
+### ECH enabled by default (cURL release >= 8.20.0)
 
-- [zlib-ng](https://github.com/zlib-ng/zlib-ng) replaces zlib by default, providing faster gzip/deflate compression and decompression with SIMD optimizations (SSE/AVX, NEON, etc.) selected at runtime based on the CPU.
-- It is built in zlib compatible mode (`ZLIB_COMPAT=ON`), so `curl -V` reports it as `zlib/x.y.z.zlib-ng`, and the `dev` package still provides `libz.a` and `zlib.h`.
-- Set `ZLIB_LIB=zlib` to build with the original zlib instead.
-
-Pull Request and performance test result: https://github.com/stunnel/static-curl/pull/180
+- All builds now use OpenSSL 4.x with ECH (Encrypted Client Hello) enabled by default, so there is only one build variant per platform.
+- The `ENABLE_ECH` variable has been removed.
+- For older releases (cURL < 8.20.0), two variants were provided (with and without ECH). OpenSSL 3.x can still be selected via `OPENSSL_VERSION` for compatibility.
 
 ### Platform-specific features
 
