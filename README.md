@@ -205,7 +205,7 @@ The compiled files will be saved in the current `release` directory.
 - The `ENABLE_ECH` variable has been removed.
 - For older releases (cURL < 8.20.0), two variants were provided (with and without ECH). OpenSSL 3.x can still be selected via `OPENSSL_VERSION` for compatibility.
 
-### Embedded CA certificates
+### Embedded CA certificates (cURL >= 8.22.0)
 
 - The [curl.se CA bundle](https://curl.se/docs/caextract.html) (`cacert.pem`, checksum-verified at build time) is embedded into every binary via `--with-ca-embed`.
 - The binaries no longer depend on a CA file path from the build machine (e.g. Debian's `/etc/ssl/certs/ca-certificates.crt`), so HTTPS works out of the box on any distro, even without a system CA bundle.
@@ -213,7 +213,7 @@ The compiled files will be saved in the current `release` directory.
 - `cacert.pem` is included in each `dev` package, and its SHA256 is recorded in the release notes.
 - You can still override the trust store at runtime with `--cacert` / `--capath` or the `CURL_CA_BUNDLE` / `SSL_CERT_FILE` environment variables.
 
-### zlib-ng by default(cURL > 8.22.0)
+### zlib-ng by default (cURL > 8.22.0)
 
 - [zlib-ng](https://github.com/zlib-ng/zlib-ng) replaces zlib by default, providing faster gzip/deflate compression and decompression with SIMD optimizations (SSE/AVX, NEON, etc.) selected at runtime based on the CPU.
 - It is built in zlib compatible mode (`ZLIB_COMPAT=ON`), so `curl -V` reports it as `zlib/x.y.z.zlib-ng`, and the `dev` package still provides `libz.a` and `zlib.h`.
