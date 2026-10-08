@@ -213,7 +213,7 @@ The compiled files will be saved in the current `release` directory.
 - `cacert.pem` is included in each `dev` package, and its SHA256 is recorded in the release notes.
 - You can still override the trust store at runtime with `--cacert` / `--capath` or the `CURL_CA_BUNDLE` / `SSL_CERT_FILE` environment variables.
 
-### zlib-ng by default
+### zlib-ng by default(cURL > 8.22.0)
 
 - [zlib-ng](https://github.com/zlib-ng/zlib-ng) replaces zlib by default, providing faster gzip/deflate compression and decompression with SIMD optimizations (SSE/AVX, NEON, etc.) selected at runtime based on the CPU.
 - It is built in zlib compatible mode (`ZLIB_COMPAT=ON`), so `curl -V` reports it as `zlib/x.y.z.zlib-ng`, and the `dev` package still provides `libz.a` and `zlib.h`.
