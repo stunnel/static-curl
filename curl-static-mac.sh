@@ -789,7 +789,7 @@ compile_zstd() {
 
 curl_config() {
     echo "Configuring curl, Arch: ${ARCH}" | tee "${RELEASE_DIR}/running"
-    local with_ech enable_gssapi_apple
+    local with_ech enable_gssapi_apple enable_smb
 
     # Resolve OpenSSL 4.x compatibility issues where API returns 'const' pointers.
     # These flags prevent "discarded-qualifiers" warnings from being treated as errors 
@@ -811,6 +811,14 @@ curl_config() {
         enable_gssapi_apple="--enable-gssapi-apple"
     fi
 
+    # SMB support was removed in cURL 8.23.0, only enable it for older versions
+    # https://github.com/curl/curl/pull/22652
+    if [ "${CURL_VERSION}" = "dev" ] || { [ "$(printf '%s\n' "8.23.0" "${CURL_VERSION}" | sort -V | head -n1)" = "8.23.0" ]; }; then
+        echo "cURL version ${CURL_VERSION} has removed SMB support, disabling it"
+    else
+        enable_smb="--enable-smb"
+    fi
+
     if [ ! -f configure ]; then
         autoreconf -fi;
     fi
@@ -829,7 +837,7 @@ curl_config() {
         --enable-proxy --enable-file --enable-http \
         --enable-ftp --enable-telnet --enable-tftp \
         --enable-pop3 --enable-imap --enable-smtp \
-        --enable-gopher --enable-mqtt --enable-smb --enable-ntlm \
+        --enable-gopher --enable-mqtt "${enable_smb}" --enable-ntlm \
         --enable-doh --enable-dateparse --enable-verbose \
         --enable-alt-svc --enable-websockets \
         --enable-ipv6 --enable-unix-sockets --enable-socketpair \

@@ -227,6 +227,6 @@ The compiled files will be saved in the current `release` directory.
 ### Other changes
 
 - **No more `Insufficient randomness` errors**: OpenSSL is now built with a private `openssldir` (`/opt/static-curl/ssl`) instead of `/etc/ssl`, so it no longer loads the host's `/etc/ssl/openssl.cnf`, which could break random seeding on some distros.
-- **SMB and NTLM** are explicitly enabled again, as they are disabled by default since cURL 8.20.0.
+- **SMB and NTLM** are explicitly enabled again, as they are disabled by default since cURL 8.20.0. SMB support was [removed](https://github.com/curl/curl/pull/22652) in cURL 8.23.0, so `smb`/`smbs` are only available for cURL < 8.23.0.
 - **`--libcurl` option** is enabled (`--enable-libcurl-option`), so `curl --libcurl file.c` can generate libcurl source code.
 - **Podman** can be used as a drop-in replacement for Docker when building for Linux and Windows.
