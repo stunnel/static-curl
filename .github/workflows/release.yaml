@@ -61,14 +61,15 @@ concurrency:
 
 jobs:
   approve:
-    name: approve PR #${{ github.event.pull_request.number }}
+    name: "approve PR #${{ github.event.pull_request.number }}"
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     environment: pr-test
 
     steps:
       - name: Approved
-        run: echo "PR #${{ github.event.pull_request.number }} approved, start building"
+        run: |
+          echo "PR #${{ github.event.pull_request.number }} approved, start building"
 
   build-Linux:
     name: build-Linux (${{ github.ref_name }})
