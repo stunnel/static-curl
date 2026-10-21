@@ -789,7 +789,7 @@ compile_zstd() {
 
 curl_config() {
     echo "Configuring curl, Arch: ${ARCH}" | tee "${RELEASE_DIR}/running"
-    local with_ech enable_gssapi_apple enable_smb
+    local with_ech enable_gssapi_apple enable_smb enable_proxy_http3
 
     # Resolve OpenSSL 4.x compatibility issues where API returns 'const' pointers.
     # These flags prevent "discarded-qualifiers" warnings from being treated as errors 
@@ -819,6 +819,11 @@ curl_config() {
         enable_smb="--enable-smb"
     fi
 
+    # HTTP/3 proxy support was added in cURL 8.21.0, only enable it for newer versions
+    if [ "${CURL_VERSION}" = "dev" ] || { [ "$(printf '%s\n' "8.21.0" "${CURL_VERSION}" | sort -V | head -n1)" = "8.21.0" ]; }; then
+        enable_proxy_http3="--enable-proxy-http3"
+    fi
+
     if [ ! -f configure ]; then
         autoreconf -fi;
     fi
@@ -834,7 +839,8 @@ curl_config() {
         "${enable_gssapi_apple}" \
         --enable-hsts --enable-mime --enable-cookies \
         --enable-http-auth --enable-manual \
-        --enable-proxy --enable-file --enable-http \
+        --enable-proxy "${enable_proxy_http3}" \
+        --enable-file --enable-http \
         --enable-ftp --enable-telnet --enable-tftp \
         --enable-pop3 --enable-imap --enable-smtp \
         --enable-gopher --enable-mqtt "${enable_smb}" --enable-ntlm \
