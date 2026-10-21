@@ -834,7 +834,8 @@ curl_config() {
         "${enable_gssapi_apple}" \
         --enable-hsts --enable-mime --enable-cookies \
         --enable-http-auth --enable-manual \
-        --enable-proxy --enable-file --enable-http \
+        --enable-proxy --enable-proxy-http3 \
+        --enable-file --enable-http \
         --enable-ftp --enable-telnet --enable-tftp \
         --enable-pop3 --enable-imap --enable-smtp \
         --enable-gopher --enable-mqtt "${enable_smb}" --enable-ntlm \
