@@ -50,10 +50,33 @@ on:
         default: 'x86_64 arm64'
         type: string
 
+  # test PRs (requires manual approval via the pr-test environment)
+  pull_request:
+    branches: [main]
+    paths-ignore: ['**.md']
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+
 jobs:
+  approve:
+    name: approve PR #${{ github.event.pull_request.number }}
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    environment: pr-test
+
+    steps:
+      - name: Approved
+        run: echo "PR #${{ github.event.pull_request.number }} approved, start building"
+
   build-Linux:
     name: build-Linux (${{ github.ref_name }})
-    if: inputs.ARCHES_LINUX_GLIBC != 'none'
+    needs: approve
+    if: >-
+      !cancelled() &&
+      (needs.approve.result == 'success' || needs.approve.result == 'skipped') &&
+      inputs.ARCHES_LINUX_GLIBC != 'none'
     runs-on: ubuntu-latest
 
     steps:
@@ -65,7 +88,7 @@ jobs:
       - name: Set build variables
         run: |
           # Set all build variables with fallback logic
-          echo "ARCHES=${{ inputs.ARCHES_LINUX_GLIBC != '' && inputs.ARCHES_LINUX_GLIBC || vars.ARCHES_LINUX_GLIBC }}" >> $GITHUB_ENV
+          echo "ARCHES=${{ github.event_name == 'pull_request' && (vars.PR_ARCHES || 'x86_64 aarch64') || (inputs.ARCHES_LINUX_GLIBC != '' && inputs.ARCHES_LINUX_GLIBC || vars.ARCHES_LINUX_GLIBC) }}" >> $GITHUB_ENV
           echo "CURL_VERSION=${{ inputs.CURL_VERSION != '' && inputs.CURL_VERSION || vars.CURL_VERSION }}" >> $GITHUB_ENV
           echo "TLS_LIB=${{ inputs.TLS_LIB != '' && inputs.TLS_LIB || vars.TLS_LIB }}" >> $GITHUB_ENV
           echo "OPENSSL_VERSION=${{ inputs.OPENSSL_VERSION != '' && inputs.OPENSSL_VERSION || vars.OPENSSL_VERSION }}" >> $GITHUB_ENV
@@ -117,7 +140,11 @@ jobs:
 
   build-Linux-musl:
     name: build-Linux-musl (${{ github.ref_name }})
-    if: inputs.ARCHES_LINUX_MUSL != 'none'
+    needs: approve
+    if: >-
+      !cancelled() &&
+      (needs.approve.result == 'success' || needs.approve.result == 'skipped') &&
+      inputs.ARCHES_LINUX_MUSL != 'none'
     runs-on: ubuntu-latest
 
     steps:
@@ -129,7 +156,7 @@ jobs:
       - name: Set build variables
         run: |
           # Set all build variables with fallback logic
-          echo "ARCHES=${{ inputs.ARCHES_LINUX_MUSL != '' && inputs.ARCHES_LINUX_MUSL || vars.ARCHES_LINUX_MUSL }}" >> $GITHUB_ENV
+          echo "ARCHES=${{ github.event_name == 'pull_request' && (vars.PR_ARCHES || 'x86_64 aarch64') || (inputs.ARCHES_LINUX_MUSL != '' && inputs.ARCHES_LINUX_MUSL || vars.ARCHES_LINUX_MUSL) }}" >> $GITHUB_ENV
           echo "CURL_VERSION=${{ inputs.CURL_VERSION != '' && inputs.CURL_VERSION || vars.CURL_VERSION }}" >> $GITHUB_ENV
           echo "TLS_LIB=${{ inputs.TLS_LIB != '' && inputs.TLS_LIB || vars.TLS_LIB }}" >> $GITHUB_ENV
           echo "OPENSSL_VERSION=${{ inputs.OPENSSL_VERSION != '' && inputs.OPENSSL_VERSION || vars.OPENSSL_VERSION }}" >> $GITHUB_ENV
@@ -182,7 +209,11 @@ jobs:
 
   build-Windows:
     name: build-Windows (${{ github.ref_name }})
-    if: inputs.ARCHES_WINDOWS != 'none'
+    needs: approve
+    if: >-
+      !cancelled() &&
+      (needs.approve.result == 'success' || needs.approve.result == 'skipped') &&
+      inputs.ARCHES_WINDOWS != 'none'
     runs-on: ubuntu-latest
 
     steps:
@@ -194,7 +225,7 @@ jobs:
       - name: Set build variables
         run: |
           # Set all build variables with fallback logic
-          echo "ARCHES=${{ inputs.ARCHES_WINDOWS != '' && inputs.ARCHES_WINDOWS || vars.ARCHES_WINDOWS }}" >> $GITHUB_ENV
+          echo "ARCHES=${{ github.event_name == 'pull_request' && (vars.PR_ARCHES || 'x86_64 aarch64') || (inputs.ARCHES_WINDOWS != '' && inputs.ARCHES_WINDOWS || vars.ARCHES_WINDOWS) }}" >> $GITHUB_ENV
           echo "CURL_VERSION=${{ inputs.CURL_VERSION != '' && inputs.CURL_VERSION || vars.CURL_VERSION }}" >> $GITHUB_ENV
           echo "TLS_LIB=${{ inputs.TLS_LIB != '' && inputs.TLS_LIB || vars.TLS_LIB }}" >> $GITHUB_ENV
           echo "OPENSSL_VERSION=${{ inputs.OPENSSL_VERSION != '' && inputs.OPENSSL_VERSION || vars.OPENSSL_VERSION }}" >> $GITHUB_ENV
@@ -244,7 +275,11 @@ jobs:
 
   build-macOS:
     name: build-macOS (${{ github.ref_name }})
-    if: inputs.ARCHES_MACOS != 'none'
+    needs: approve
+    if: >-
+      !cancelled() &&
+      (needs.approve.result == 'success' || needs.approve.result == 'skipped') &&
+      inputs.ARCHES_MACOS != 'none'
     runs-on: macos-latest
 
     steps:
