@@ -1065,7 +1065,7 @@ compile_trurl() {
 
 curl_config() {
     echo "Configuring curl, Arch: ${ARCH}" | tee "${RELEASE_DIR}/running"
-    local with_ech ac_cv_header_stdatomic_h enable_smb
+    local with_ech ac_cv_header_stdatomic_h enable_smb enable_proxy_http3
 
     if [ "${ARCH}" = "mips" ] && [ "${LIBC}" != "musl" ]; then
         ac_cv_header_stdatomic_h="ac_cv_header_stdatomic_h=no"
@@ -1098,6 +1098,11 @@ curl_config() {
         enable_smb="--enable-smb"
     fi
 
+    # HTTP/3 proxy support was added in cURL 8.21.0, only enable it for newer versions
+    if [ "${CURL_VERSION}" = "dev" ] || { [ "$(printf '%s\n' "8.21.0" "${CURL_VERSION}" | sort -V | head -n1)" = "8.21.0" ]; }; then
+        enable_proxy_http3="--enable-proxy-http3"
+    fi
+
     if [ ! -f configure ]; then
         autoreconf -fi;
     fi
@@ -1113,7 +1118,7 @@ curl_config() {
         "${ac_cv_header_stdatomic_h}" \
         --enable-hsts --enable-mime --enable-cookies \
         --enable-http-auth --enable-manual \
-        --enable-proxy --enable-proxy-http3 \
+        --enable-proxy "${enable_proxy_http3}" \
         --enable-file --enable-http \
         --enable-ftp --enable-telnet --enable-tftp \
         --enable-pop3 --enable-imap --enable-smtp \
