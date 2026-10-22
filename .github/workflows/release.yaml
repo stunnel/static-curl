@@ -57,6 +57,12 @@ on:
 
   # called by pr-test.yaml to test PRs after manual approval
   workflow_call:
+    inputs:
+      PR_ARCHES:
+        description: 'Architecture list for PR builds, parsed from the approval comment'
+        required: false
+        default: ''
+        type: string
 
 concurrency:
   # hardcoded prefix: when called, github.workflow is the caller's name and would collide with its group
@@ -78,7 +84,7 @@ jobs:
       - name: Set build variables
         run: |
           # Set all build variables with fallback logic
-          echo "ARCHES=${{ github.event_name == 'pull_request' && (vars.PR_ARCHES || 'x86_64 aarch64') || (inputs.ARCHES_LINUX_GLIBC != '' && inputs.ARCHES_LINUX_GLIBC || vars.ARCHES_LINUX_GLIBC) }}" >> $GITHUB_ENV
+          echo "ARCHES=${{ github.event_name == 'pull_request' && (inputs.PR_ARCHES || vars.PR_ARCHES || 'x86_64 aarch64') || (inputs.ARCHES_LINUX_GLIBC != '' && inputs.ARCHES_LINUX_GLIBC || vars.ARCHES_LINUX_GLIBC) }}" >> $GITHUB_ENV
           echo "CURL_VERSION=${{ inputs.CURL_VERSION != '' && inputs.CURL_VERSION || vars.CURL_VERSION }}" >> $GITHUB_ENV
           echo "TLS_LIB=${{ inputs.TLS_LIB != '' && inputs.TLS_LIB || vars.TLS_LIB }}" >> $GITHUB_ENV
           echo "OPENSSL_VERSION=${{ inputs.OPENSSL_VERSION != '' && inputs.OPENSSL_VERSION || vars.OPENSSL_VERSION }}" >> $GITHUB_ENV
@@ -142,7 +148,7 @@ jobs:
       - name: Set build variables
         run: |
           # Set all build variables with fallback logic
-          echo "ARCHES=${{ github.event_name == 'pull_request' && (vars.PR_ARCHES || 'x86_64 aarch64') || (inputs.ARCHES_LINUX_MUSL != '' && inputs.ARCHES_LINUX_MUSL || vars.ARCHES_LINUX_MUSL) }}" >> $GITHUB_ENV
+          echo "ARCHES=${{ github.event_name == 'pull_request' && (inputs.PR_ARCHES || vars.PR_ARCHES || 'x86_64 aarch64') || (inputs.ARCHES_LINUX_MUSL != '' && inputs.ARCHES_LINUX_MUSL || vars.ARCHES_LINUX_MUSL) }}" >> $GITHUB_ENV
           echo "CURL_VERSION=${{ inputs.CURL_VERSION != '' && inputs.CURL_VERSION || vars.CURL_VERSION }}" >> $GITHUB_ENV
           echo "TLS_LIB=${{ inputs.TLS_LIB != '' && inputs.TLS_LIB || vars.TLS_LIB }}" >> $GITHUB_ENV
           echo "OPENSSL_VERSION=${{ inputs.OPENSSL_VERSION != '' && inputs.OPENSSL_VERSION || vars.OPENSSL_VERSION }}" >> $GITHUB_ENV
@@ -207,7 +213,18 @@ jobs:
       - name: Set build variables
         run: |
           # Set all build variables with fallback logic
-          echo "ARCHES=${{ github.event_name == 'pull_request' && (vars.PR_ARCHES || 'x86_64 aarch64') || (inputs.ARCHES_WINDOWS != '' && inputs.ARCHES_WINDOWS || vars.ARCHES_WINDOWS) }}" >> $GITHUB_ENV
+          arches="${{ github.event_name == 'pull_request' && (inputs.PR_ARCHES || vars.PR_ARCHES || 'x86_64 aarch64') || (inputs.ARCHES_WINDOWS != '' && inputs.ARCHES_WINDOWS || vars.ARCHES_WINDOWS) }}"
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            # PR arches are shared with Linux, keep only the ones Windows supports
+            win_arches=""
+            for arch in ${arches}; do
+              case "${arch}" in
+                x86_64|aarch64|armv7|i686) win_arches="${win_arches:+${win_arches} }${arch}" ;;
+              esac
+            done
+            arches="${win_arches:-x86_64}"
+          fi
+          echo "ARCHES=${arches}" >> $GITHUB_ENV
           echo "CURL_VERSION=${{ inputs.CURL_VERSION != '' && inputs.CURL_VERSION || vars.CURL_VERSION }}" >> $GITHUB_ENV
           echo "TLS_LIB=${{ inputs.TLS_LIB != '' && inputs.TLS_LIB || vars.TLS_LIB }}" >> $GITHUB_ENV
           echo "OPENSSL_VERSION=${{ inputs.OPENSSL_VERSION != '' && inputs.OPENSSL_VERSION || vars.OPENSSL_VERSION }}" >> $GITHUB_ENV
