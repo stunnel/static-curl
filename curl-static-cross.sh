@@ -1021,12 +1021,13 @@ compile_brotli() {
 
     url_from_github google/brotli "${BROTLI_VERSION}"
     url="${URL}"
-    # for loongarch64, if version is 1.2.0, replace it with 1.1.0
-    # there is a bug in 1.2.0 for loongarch64, see https://github.com/google/brotli/commit/e230f474b87134e8c6c85b630084c612057f253e
-    if [ "${ARCH}" = "loongarch64" ]; then
-        url=$(echo "${url}" | sed 's/v1.2.0/v1.1.0/g');
-    fi
     download_and_extract "${url}"
+
+    # brotli 1.2.x uses __attribute__((model("small"))), which is not supported on loongarch64,
+    # see https://github.com/google/brotli/commit/e230f474b87134e8c6c85b630084c612057f253e
+    if [ "${ARCH}" = "loongarch64" ]; then
+        sed -i 's/^#if BROTLI_GNUC_HAS_ATTRIBUTE(model, 3, 0, 3)$/#if 0/' c/common/platform.h;
+    fi
 
     mkdir -p out
     cd out/
