@@ -795,7 +795,7 @@ _curl_version_ge() {
 
 curl_config() {
     echo "Configuring curl, Arch: ${ARCH}" | tee "${RELEASE_DIR}/running"
-    local with_ech enable_gssapi_apple enable_smb enable_proxy_http3 enable_tls_srp
+    local with_ech enable_gssapi_apple enable_smb enable_proxy_http3 enable_tls_srp enable_httpsig
 
     # Resolve OpenSSL 4.x compatibility issues where API returns 'const' pointers.
     # These flags prevent "discarded-qualifiers" warnings from being treated as errors 
@@ -835,6 +835,11 @@ curl_config() {
         enable_tls_srp="--enable-tls-srp"
     fi
 
+    # HTTP Message Signatures (RFC 9421) support was added in cURL 8.22.0, only enable it for newer versions
+    if _curl_version_ge 8.22.0; then
+        enable_httpsig="--enable-httpsig"
+    fi
+
     if [ ! -f configure ]; then
         autoreconf -fi;
     fi
@@ -866,7 +871,7 @@ curl_config() {
         --enable-get-easy-options --enable-progress-meter \
         --with-apple-sectrust --enable-ca-native \
         --with-ca-embed="${CACERT_FILE}" \
-        --enable-ares --enable-httpsrr --enable-ipfs \
+        --enable-ares --enable-httpsrr --enable-ipfs "${enable_httpsig}" \
         --disable-ldap --disable-ldaps --disable-rtsp \
         --disable-rtmp --disable-rtmps --enable-ssls-export \
         "${ENABLE_DEBUG}" \
