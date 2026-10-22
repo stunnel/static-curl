@@ -924,7 +924,7 @@ _curl_version_ge() {
 
 curl_config() {
     echo "Configuring curl, Arch: ${ARCH}" | tee "${RELEASE_DIR}/running"
-    local with_idn with_ech enable_smb enable_proxy_http3 enable_tls_srp
+    local with_idn with_ech enable_smb enable_proxy_http3 enable_tls_srp enable_httpsig
 
     # it's possible to use libidn2 instead of winidn
     with_idn="--with-winidn"
@@ -954,6 +954,11 @@ curl_config() {
     # TLS-SRP support was removed in cURL 8.22.0, only enable it for older versions
     if ! _curl_version_ge 8.22.0; then
         enable_tls_srp="--enable-tls-srp"
+    fi
+
+    # HTTP Message Signatures (RFC 9421) support was added in cURL 8.22.0, only enable it for newer versions
+    if _curl_version_ge 8.22.0; then
+        enable_httpsig="--enable-httpsig"
     fi
 
     if [ ! -f configure ]; then
@@ -989,7 +994,7 @@ curl_config() {
         --enable-get-easy-options --enable-progress-meter \
         --enable-sspi --enable-windows-unicode \
         --with-ca-embed="${CACERT_FILE}" \
-        --enable-ares --enable-httpsrr --enable-ipfs \
+        --enable-ares --enable-httpsrr --enable-ipfs "${enable_httpsig}" \
         --disable-ldap --disable-ldaps --enable-ssls-export \
         "${ENABLE_DEBUG}";
 }

@@ -22,7 +22,7 @@ Simply execute it to compile the most recent version.
 
 `curl -V`
 - Protocols: dict file ftp ftps gopher gophers http https imap imaps ipfs ipns mqtt mqtts pop3 pop3s rtsp scp sftp smtp smtps telnet tftp ws wss
-- Features: alt-svc asyn-rr AsynchDNS brotli CAcert ECH HSTS HTTP2 HTTP3 HTTPS-proxy HTTPSRR IDN IPv6 Largefile libz NTLM proxy-HTTP3 PSL SSL SSLS-EXPORT threadsafe UnixSockets zstd
+- Features: alt-svc asyn-rr AsynchDNS brotli CAcert ECH HSTS HTTP2 HTTP3 HTTPS-proxy HTTPSIG HTTPSRR IDN IPv6 Largefile libz NTLM proxy-HTTP3 PSL SSL SSLS-EXPORT threadsafe UnixSockets zstd
   - macOS additionally: AppleSecTrust GSS-API Kerberos SPNEGO
   - Windows additionally: Kerberos SPNEGO SSPI Unicode
 
@@ -233,5 +233,6 @@ Pull Request and performance test result: https://github.com/stunnel/static-curl
 - **No more `Insufficient randomness` errors**: OpenSSL is now built with a private `openssldir` (`/opt/static-curl/ssl`) instead of `/etc/ssl`, so it no longer loads the host's `/etc/ssl/openssl.cnf`, which could break random seeding on some distros.
 - **SMB and NTLM** are explicitly enabled again, as they are disabled by default since cURL 8.20.0. SMB support was [removed](https://github.com/curl/curl/pull/22652) in cURL 8.23.0, so `smb`/`smbs` are only available for cURL < 8.23.0.
 - **TLS-SRP** was [removed](https://github.com/curl/curl/blob/master/docs/DEPRECATE.md) in cURL 8.22.0, so it is only enabled for cURL < 8.22.0.
+- **HTTP Message Signatures** ([RFC 9421](https://www.rfc-editor.org/rfc/rfc9421)) are enabled (`--enable-httpsig`, experimental) for cURL >= 8.22.0, requests can be signed with `--httpsig-key`, `--httpsig-keyid`, `--httpsig-algo` (`ed25519` or `hmac-sha256`) and `--httpsig-headers`.
 - **`--libcurl` option** is enabled (`--enable-libcurl-option`), so `curl --libcurl file.c` can generate libcurl source code.
 - **Podman** can be used as a drop-in replacement for Docker when building for Linux and Windows.
