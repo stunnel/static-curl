@@ -1,0 +1,26 @@
+name: pr-test
+
+on:
+  pull_request:
+    branches: [main]
+    paths-ignore: ['**.md']
+
+concurrency:
+  group: pr-test-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  approve:
+    name: "approve PR #${{ github.event.pull_request.number }}"
+    runs-on: ubuntu-latest
+    # requires manual approval via the pr-test environment
+    environment: pr-test
+
+    steps:
+      - name: Approved
+        run: |
+          echo "PR #${{ github.event.pull_request.number }} approved, start building"
+
+  build:
+    needs: approve
+    uses: ./.github/workflows/release.yaml

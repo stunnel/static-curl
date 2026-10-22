@@ -55,34 +55,18 @@ on:
         default: ''
         type: string
 
-  # test PRs (requires manual approval via the pr-test environment)
-  pull_request:
-    branches: [main]
-    paths-ignore: ['**.md']
+  # called by pr-test.yaml to test PRs after manual approval
+  workflow_call:
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  # hardcoded prefix: when called, github.workflow is the caller's name and would collide with its group
+  group: build-and-release-${{ github.event.pull_request.number || github.run_id }}
   cancel-in-progress: true
 
 jobs:
-  approve:
-    name: "approve PR #${{ github.event.pull_request.number }}"
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    environment: pr-test
-
-    steps:
-      - name: Approved
-        run: |
-          echo "PR #${{ github.event.pull_request.number }} approved, start building"
-
   build-Linux:
     name: build-Linux (${{ github.ref_name }})
-    needs: approve
-    if: >-
-      !cancelled() &&
-      (needs.approve.result == 'success' || needs.approve.result == 'skipped') &&
-      inputs.ARCHES_LINUX_GLIBC != 'none'
+    if: inputs.ARCHES_LINUX_GLIBC != 'none'
     runs-on: ubuntu-latest
 
     steps:
@@ -146,11 +130,7 @@ jobs:
 
   build-Linux-musl:
     name: build-Linux-musl (${{ github.ref_name }})
-    needs: approve
-    if: >-
-      !cancelled() &&
-      (needs.approve.result == 'success' || needs.approve.result == 'skipped') &&
-      inputs.ARCHES_LINUX_MUSL != 'none'
+    if: inputs.ARCHES_LINUX_MUSL != 'none'
     runs-on: ubuntu-latest
 
     steps:
@@ -215,11 +195,7 @@ jobs:
 
   build-Windows:
     name: build-Windows (${{ github.ref_name }})
-    needs: approve
-    if: >-
-      !cancelled() &&
-      (needs.approve.result == 'success' || needs.approve.result == 'skipped') &&
-      inputs.ARCHES_WINDOWS != 'none'
+    if: inputs.ARCHES_WINDOWS != 'none'
     runs-on: ubuntu-latest
 
     steps:
@@ -281,11 +257,7 @@ jobs:
 
   build-macOS:
     name: build-macOS (${{ github.ref_name }})
-    needs: approve
-    if: >-
-      !cancelled() &&
-      (needs.approve.result == 'success' || needs.approve.result == 'skipped') &&
-      inputs.ARCHES_MACOS != 'none'
+    if: inputs.ARCHES_MACOS != 'none'
     runs-on: macos-latest
 
     steps:
