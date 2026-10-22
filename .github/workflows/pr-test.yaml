@@ -15,12 +15,51 @@ jobs:
     runs-on: ubuntu-latest
     # requires manual approval via the pr-test environment
     environment: pr-test
+    permissions:
+      actions: read
+    outputs:
+      arches: ${{ steps.arches.outputs.arches }}
 
     steps:
       - name: Approved
         run: |
           echo "PR #${{ github.event.pull_request.number }} approved, start building"
 
+      # A line "ARCHES=x86_64 aarch64 loongarch64" in the approval comment overrides the PR build arches,
+      # other lines are ignored.
+      - name: Parse ARCHES from approval comment
+        id: arches
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          set -f
+          supported="x86_64 aarch64 armv7 armv5 riscv64 s390x mips64 mips64el mips mipsel powerpc64le powerpc i686 loongarch64"
+
+          comment=$(gh api "repos/${REPO}/actions/runs/${RUN_ID}/approvals" \
+            --jq '[.[] | select(.state == "approved")] | last | .comment // ""')
+          line=$(printf '%s\n' "${comment}" | tr -d '\r' | sed -n 's/^[[:space:]]*ARCHES=//p' | head -n 1)
+
+          arches=""
+          invalid=""
+          for arch in $(printf '%s' "${line}" | tr ',' ' '); do
+            case " ${supported} " in
+              *" ${arch} "*) arches="${arches:+${arches} }${arch}" ;;
+              *) invalid="${invalid:+${invalid} }${arch}" ;;
+            esac
+          done
+
+          if [ -n "${invalid}" ]; then
+            echo "::error::Unsupported arches in approval comment: ${invalid}. Supported: ${supported}"
+            exit 1
+          fi
+
+          echo "PR arches: ${arches:-default}"
+          echo "arches=${arches}" >> "$GITHUB_OUTPUT"
+
   build:
     needs: approve
     uses: ./.github/workflows/release.yaml
+    with:
+      PR_ARCHES: ${{ needs.approve.outputs.arches }}

@@ -106,13 +106,13 @@ arch_variants() {
 }
 
 _get_github() {
-    local repo release_file auth_header status_code size_of
+    local repo release_file auth_header status_code per_page found
     repo=$1
     release_file="github-${repo#*/}.json"
+    found=0
 
     # GitHub API has a limit of 60 requests per hour, cache the results.
     echo "Downloading ${repo} releases from GitHub"
-    echo "URL: https://api.github.com/repos/${repo}/releases?per_page=100"
 
     # get token from github settings
     auth_header=""
@@ -121,15 +121,38 @@ _get_github() {
         auth_header="token ${TOKEN_READ}"
     fi
 
-    status_code=$(curl --retry 5 --retry-max-time 120 "https://api.github.com/repos/${repo}/releases?per_page=100" \
-        -w "%{http_code}" \
-        -o "${release_file}" \
-        -H "Authorization: ${auth_header}" \
-        -s -L --compressed)
+    # GitHub randomly returns an empty array with status 200 for repos that do have releases,
+    # retry a few times with different page sizes.
+    for per_page in 100 50 30 100 50 30; do
+        echo "URL: https://api.github.com/repos/${repo}/releases?per_page=${per_page}"
+        status_code=$(curl --retry 5 --retry-max-time 120 "https://api.github.com/repos/${repo}/releases?per_page=${per_page}" \
+            -w "%{http_code}" \
+            -o "${release_file}" \
+            -H "Authorization: ${auth_header}" \
+            -s -L --compressed)
+        if [ "${status_code}" -eq 200 ] && jq -e 'type == "array" and length > 0' "${release_file}" > /dev/null 2>&1; then
+            found=1
+            break
+        fi
+        sleep 2
+    done
+
+    if [ "${found}" = "0" ]; then
+        # the latest release endpoint is not affected, use it as a single-element release list
+        echo "URL: https://api.github.com/repos/${repo}/releases/latest"
+        status_code=$(curl --retry 5 --retry-max-time 120 "https://api.github.com/repos/${repo}/releases/latest" \
+            -w "%{http_code}" \
+            -o "${release_file}" \
+            -H "Authorization: ${auth_header}" \
+            -s -L --compressed)
+        if [ "${status_code}" -eq 200 ] && jq -e '.tag_name' "${release_file}" > /dev/null 2>&1; then
+            jq '[.]' "${release_file}" > "${release_file}.tmp" && mv -f "${release_file}.tmp" "${release_file}"
+            found=1
+        fi
+    fi
 
     set -o xtrace
-    size_of=$(stat -c "%s" "${release_file}")
-    if [ "${size_of}" -lt 200 ] || [ "${status_code}" -ne 200 ]; then
+    if [ "${found}" = "0" ]; then
         echo "The release of ${repo} is empty, download tags instead."
         set +o xtrace
         status_code=$(curl --retry 5 --retry-max-time 120 "https://api.github.com/repos/${repo}/tags?per_page=100" \
