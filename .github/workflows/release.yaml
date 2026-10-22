@@ -49,6 +49,11 @@ on:
         required: false
         default: 'x86_64 arm64'
         type: string
+      RELEASE_REVISION:
+        description: "Release revision for rebuilding an already released cURL version (e.g. '1' releases as 8.23.0-1); leave empty for a normal release"
+        required: false
+        default: ''
+        type: string
 
   # test PRs (requires manual approval via the pr-test environment)
   pull_request:
@@ -372,8 +377,16 @@ jobs:
           echo "VERSION=$VERSION" >> $GITHUB_ENV
 
       - name: Set RELEASE_TAG
+        env:
+          RELEASE_REVISION: ${{ inputs.RELEASE_REVISION }}
         run: |
           RELEASE_TAG="${{ env.VERSION }}"
+          if [ -n "$RELEASE_REVISION" ]; then
+            case "$RELEASE_REVISION" in
+              *[!0-9]*) echo "::error::RELEASE_REVISION must be a number, got: $RELEASE_REVISION"; exit 1 ;;
+            esac
+            RELEASE_TAG="${RELEASE_TAG}-${RELEASE_REVISION}"
+          fi
           echo "RELEASE_TAG=$RELEASE_TAG" >> $GITHUB_ENV
           echo "Will release as: $RELEASE_TAG"
 
@@ -437,7 +450,7 @@ jobs:
           body_path: release/release.md
           tag_name: ${{ env.RELEASE_TAG }}
           name: Release ${{ env.RELEASE_TAG }}
-          make_latest: ${{ env.RELEASE_TAG == env.VERSION }}
+          make_latest: true
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload artifact

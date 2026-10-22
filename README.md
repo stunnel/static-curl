@@ -45,6 +45,8 @@ For older releases (before 8.20.0), two versions were provided: one with ECH sup
 - `curl-windows-ARCH-VERSION`: binaries for Windows
 - `curl-windows-ARCH-dev-VERSION`: binaries, headers and library archives for Windows
 
+A release tagged `VERSION-N` (e.g. `8.23.0-1`) is a rebuild of the same cURL version, e.g. to pick up an updated CA bundle or a security fix in a dependency. It supersedes `VERSION` and any earlier revisions.
+
 ## Known issue
 For Linux glibc versions, if your system’s `/etc/nsswitch.conf` file is configured with `passwd: compat`, `glibc` will attempt to load `libnss_compat.so`, `libnss_nis.so`, `libpthread.so`, etc. These libraries may not be compatible with the statically linked `glibc`, and the program might crash.  
 Currently, there is no good solution for this issue, except for compiling glibc within the script.  
