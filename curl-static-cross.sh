@@ -1063,9 +1063,15 @@ compile_trurl() {
     fi
 }
 
+_curl_version_ge() {
+    # Return 0 if CURL_VERSION >= $1, "dev" is treated as the newest version
+    [ "${CURL_VERSION}" = "dev" ] && return 0
+    [ "$(printf '%s\n' "$1" "${CURL_VERSION}" | sort -V | head -n1)" = "$1" ]
+}
+
 curl_config() {
     echo "Configuring curl, Arch: ${ARCH}" | tee "${RELEASE_DIR}/running"
-    local with_ech ac_cv_header_stdatomic_h enable_smb enable_proxy_http3
+    local with_ech ac_cv_header_stdatomic_h enable_smb enable_proxy_http3 enable_tls_srp
 
     if [ "${ARCH}" = "mips" ] && [ "${LIBC}" != "musl" ]; then
         ac_cv_header_stdatomic_h="ac_cv_header_stdatomic_h=no"
@@ -1092,15 +1098,20 @@ curl_config() {
 
     # SMB support was removed in cURL 8.23.0, only enable it for older versions
     # https://github.com/curl/curl/pull/22652
-    if [ "${CURL_VERSION}" = "dev" ] || { [ "$(printf '%s\n' "8.23.0" "${CURL_VERSION}" | sort -V | head -n1)" = "8.23.0" ]; }; then
+    if _curl_version_ge 8.23.0; then
         echo "cURL version ${CURL_VERSION} has removed SMB support, disabling it"
     else
         enable_smb="--enable-smb"
     fi
 
     # HTTP/3 proxy support was added in cURL 8.21.0, only enable it for newer versions
-    if [ "${CURL_VERSION}" = "dev" ] || { [ "$(printf '%s\n' "8.21.0" "${CURL_VERSION}" | sort -V | head -n1)" = "8.21.0" ]; }; then
+    if _curl_version_ge 8.21.0; then
         enable_proxy_http3="--enable-proxy-http3"
+    fi
+
+    # TLS-SRP support was removed in cURL 8.22.0, only enable it for older versions
+    if ! _curl_version_ge 8.22.0; then
+        enable_tls_srp="--enable-tls-srp"
     fi
 
     if [ ! -f configure ]; then
@@ -1130,7 +1141,7 @@ curl_config() {
         --enable-threaded-resolver --enable-optimize \
         --enable-warnings --enable-libcurl-option \
         --enable-dict --enable-netrc \
-        --enable-bearer-auth --enable-tls-srp --enable-dnsshuffle \
+        --enable-bearer-auth "${enable_tls_srp}" --enable-dnsshuffle \
         --enable-get-easy-options --enable-progress-meter \
         --with-ca-embed="${CACERT_FILE}" \
         --enable-ares --enable-httpsrr --enable-ipfs \
